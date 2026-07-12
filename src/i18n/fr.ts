@@ -60,7 +60,8 @@ export const fr: Resources = {
     currentValue: 'Valeur actuelle',
     appreciation: 'Appréciation / an',
     ownershipCost: 'Coût de possession / an',
-    ownershipHint: "Taxe foncière, assurance et entretien en pourcentage de la valeur (règle courante : 2 à 3 %).",
+    ownershipHint:
+      'Taxe foncière, assurance et entretien en pourcentage de la valeur (règle courante : 2 à 3 %).',
     hasMortgage: 'Hypothèque',
     mortgageBalance: 'Solde restant',
     mortgageRate: "Taux d'intérêt",
@@ -72,7 +73,7 @@ export const fr: Resources = {
     hasSale: 'Vendre / réduire',
     saleYear: 'Année de vente',
     saleFee: 'Frais de vente',
-    saleTaxable: "Imposer le gain en capital (décocher pour une résidence principale exonérée)",
+    saleTaxable: 'Imposer le gain en capital (décocher pour une résidence principale exonérée)',
     remove: 'Retirer la maison',
     previewTitle: 'Ce que cela crée',
     equityNow: "Équité aujourd'hui",
@@ -83,7 +84,8 @@ export const fr: Resources = {
     flowOwnership: 'Coûts de possession',
     flowSale: 'Produit de la vente',
     noFlows: 'Aucun flux pour le moment — ajoutez une hypothèque, un achat ou une vente ci-dessus.',
-    flowsNote: 'Ces flux sont ajoutés à vos dépenses & entrées et alimentent la projection et le Monte Carlo.',
+    flowsNote:
+      'Ces flux sont ajoutés à vos dépenses & entrées et alimentent la projection et le Monte Carlo.',
   },
   language: {
     label: 'Langue',
@@ -94,6 +96,10 @@ export const fr: Resources = {
     dark: 'Sombre',
     switchToLight: 'Passer au thème clair',
     switchToDark: 'Passer au thème sombre',
+  },
+  settings: {
+    title: 'Réglages',
+    open: 'Réglages',
   },
   sidebar: {
     plans: 'Plans',
@@ -579,10 +585,10 @@ export const fr: Resources = {
     assetType: 'Type',
     assetTypeOther: 'Autre',
     assetTypeCash: 'Liquidités / épargne',
-    assetTypeCashHint:
-      'Aucune volatilité de marché par défaut — croît au taux indiqué ci-dessous.',
+    assetTypeCashHint: 'Aucune volatilité de marché par défaut — croît au taux indiqué ci-dessous.',
     drawableLabel: 'Peut être vendu pour financer la retraite',
-    drawableHint: "Illiquide : il croît et compte dans votre patrimoine net, mais n'est jamais liquidé pour les dépenses.",
+    drawableHint:
+      "Illiquide : il croît et compte dans votre patrimoine net, mais n'est jamais liquidé pour les dépenses.",
     quantity: 'Quantité',
     expectedCagr: 'CAGR attendu %',
     ariaCagr: 'CAGR attendu',
@@ -937,13 +943,13 @@ export const fr: Resources = {
     tipFailedMiddle:
       "L'argent s'est épuisé tôt — avant le point d'échec typique. Ce sont les plans qui ont flanché le plus vite.",
     tipTop25:
-      "Un scénario chanceux : seule environ 1 simulation sur 4 a terminé plus riche que ça. Agréable si ça arrive, mais à ne pas tenir pour acquis.",
+      'Un scénario chanceux : seule environ 1 simulation sur 4 a terminé plus riche que ça. Agréable si ça arrive, mais à ne pas tenir pour acquis.',
     tipMedian:
-      "Le résultat du milieu. Classez toutes les simulations de la plus pauvre à la plus riche : celle-ci est pile au centre — la moitié finit au-dessus, la moitié en dessous. Le résultat le plus typique.",
+      'Le résultat du milieu. Classez toutes les simulations de la plus pauvre à la plus riche : celle-ci est pile au centre — la moitié finit au-dessus, la moitié en dessous. Le résultat le plus typique.',
     tipBottom25:
       "Le côté pessimiste : environ 1 simulation sur 4 a terminé ici ou plus bas. Un aperçu réaliste de ce qu'un parcours sous la moyenne pourrait laisser.",
     tipBottom10:
-      "Un cas de stress : seule environ 1 simulation sur 10 a terminé plus bas que ça. La queue des marchés difficiles à prévoir dans son plan.",
+      'Un cas de stress : seule environ 1 simulation sur 10 a terminé plus bas que ça. La queue des marchés difficiles à prévoir dans son plan.',
     outcomeBreakdown: 'Répartition des résultats',
     outcomeLargeSurplus: 'Gros surplus',
     outcomeComfortable: 'Confortable',
@@ -1068,9 +1074,11 @@ export const fr: Resources = {
     picker: {
       title: 'Suivre la visite',
       dashboardTitle: 'Visite du tableau de bord',
-      dashboardDesc: 'Réglez votre horizon, vos comptes, vos actifs et vos dépenses — les données derrière chaque projection.',
+      dashboardDesc:
+        'Réglez votre horizon, vos comptes, vos actifs et vos dépenses — les données derrière chaque projection.',
       projectionTitle: 'Visite de la projection',
-      projectionDesc: 'Lisez le chemin déterministe, année par année, sur lequel votre plan est engagé.',
+      projectionDesc:
+        'Lisez le chemin déterministe, année par année, sur lequel votre plan est engagé.',
       monteCarloTitle: 'Visite Monte Carlo',
       monteCarloDesc: 'Éprouvez votre plan face à des milliers de futurs de marché simulés.',
       start: 'Démarrer',
