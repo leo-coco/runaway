@@ -4,6 +4,7 @@ import { successStatus, type SuccessZone } from '@/domain/successRate';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/cn';
 import { OverviewCards } from './OverviewCards';
+import { PortfolioTrendCard } from './PortfolioTrendCard';
 import { usePlanContext } from './PlanLayout';
 
 const SUCCESS_COLOR: Record<SuccessZone, string> = {
@@ -66,6 +67,12 @@ export const DashboardPage = () => {
           )}
         </div>
       </div>
+
+      {hasAssets ? (
+        <ErrorBoundary feature="portfolio trend">
+          <PortfolioTrendCard projection={projection} currency={plan.currency} />
+        </ErrorBoundary>
+      ) : null}
 
       <div className="settings-head">
         <span className="settings-head__title">{t('dashboard.planSettings')}</span>
