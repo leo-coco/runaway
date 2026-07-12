@@ -1,19 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type FocusEvent, type MouseEvent } from 'react';
 import { Link, NavLink, useMatch, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGS, LANG_LABEL, type Lang } from '@/i18n';
 import { useAppStore } from '@/store';
-import { useThemeStore } from '@/store/themeStore';
 import { estimatePlanSuccess } from '@/services/planSuccess';
 import {
   CompassIcon,
   CopyIcon,
   GearIcon,
   MenuIcon,
-  MoonIcon,
   PencilIcon,
   PlusIcon,
-  SunIcon,
   TrashIcon,
 } from '@/components/icons';
 import { PlanNameModal } from '@/features/settings/PlanNameModal';
@@ -151,15 +147,13 @@ const PlanRow = ({
 };
 
 export const Sidebar = () => {
-  const theme = useThemeStore((s) => s.theme);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const plans = useAppStore((s) => s.plans);
   const createPlan = useAppStore((s) => s.createPlan);
   const deletePlan = useAppStore((s) => s.deletePlan);
   const duplicatePlan = useAppStore((s) => s.duplicatePlan);
   const renamePlan = useAppStore((s) => s.renamePlan);
   const successByPlan = useAppStore((s) => s.successByPlan);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const match = useMatch('/plan/:id/*');
   const activeId = match?.params.id;
@@ -413,42 +407,6 @@ export const Sidebar = () => {
             </nav>
           </>
         )}
-
-        <div className="sb-theme">
-          <button
-            type="button"
-            className="sb-toggle"
-            onClick={toggleTheme}
-            aria-label={t(theme === 'dark' ? 'theme.switchToLight' : 'theme.switchToDark')}
-            onMouseEnter={showTip(t(theme === 'dark' ? 'theme.dark' : 'theme.light'))}
-            onMouseLeave={hideTip}
-            onFocus={showTip(t(theme === 'dark' ? 'theme.dark' : 'theme.light'))}
-            onBlur={hideTip}
-          >
-            {theme === 'dark' ? <MoonIcon size={17} /> : <SunIcon size={17} />}
-          </button>
-          <span className="sb-theme__label">
-            {t(theme === 'dark' ? 'theme.dark' : 'theme.light')}
-          </span>
-        </div>
-
-        <div className="sb-lang">
-          <label htmlFor="sb-lang-select" className="sb-lang__label">
-            {t('language.label')}
-          </label>
-          <select
-            id="sb-lang-select"
-            className="select"
-            value={i18n.resolvedLanguage ?? 'en'}
-            onChange={(e) => void i18n.changeLanguage(e.target.value as Lang)}
-          >
-            {SUPPORTED_LANGS.map((l) => (
-              <option key={l} value={l}>
-                {LANG_LABEL[l]}
-              </option>
-            ))}
-          </select>
-        </div>
 
         <AuthMenu />
       </aside>

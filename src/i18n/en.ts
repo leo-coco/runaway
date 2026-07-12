@@ -56,7 +56,8 @@ export const en = {
     currentValue: 'Current value',
     appreciation: 'Appreciation / yr',
     ownershipCost: 'Ownership cost / yr',
-    ownershipHint: 'Property tax, insurance and maintenance as a percent of value (a common rule of thumb is 2–3%).',
+    ownershipHint:
+      'Property tax, insurance and maintenance as a percent of value (a common rule of thumb is 2–3%).',
     hasMortgage: 'Mortgage',
     mortgageBalance: 'Outstanding balance',
     mortgageRate: 'Interest rate',
@@ -79,7 +80,8 @@ export const en = {
     flowOwnership: 'Ownership costs',
     flowSale: 'Sale proceeds',
     noFlows: 'No cashflows yet — add a mortgage, purchase or sale above.',
-    flowsNote: 'These flows are added to your expenses & income and drive the projection and Monte Carlo.',
+    flowsNote:
+      'These flows are added to your expenses & income and drive the projection and Monte Carlo.',
   },
   language: {
     label: 'Language',
@@ -90,6 +92,10 @@ export const en = {
     dark: 'Dark',
     switchToLight: 'Switch to light theme',
     switchToDark: 'Switch to dark theme',
+  },
+  settings: {
+    title: 'Settings',
+    open: 'Settings',
   },
   sidebar: {
     plans: 'Plans',
@@ -562,7 +568,8 @@ export const en = {
     assetTypeCash: 'Cash / savings',
     assetTypeCashHint: 'No market volatility by default — grows at the rate you set below.',
     drawableLabel: 'Can be sold to fund retirement',
-    drawableHint: 'Illiquid: it still grows and counts toward your net worth, but is never drawn down for spending.',
+    drawableHint:
+      'Illiquid: it still grows and counts toward your net worth, but is never drawn down for spending.',
     quantity: 'Quantity',
     expectedCagr: 'Expected CAGR %',
     ariaCagr: 'Expected CAGR',
@@ -791,7 +798,7 @@ export const en = {
     effectiveTaxRateTip:
       'Tax paid ÷ gross withdrawal for the year. Blends every account drawn (ordinary-income brackets, capital gains, foreign withholding) plus any conversion and RMD tax.',
     withdrawalRate: 'Withdrawal rate',
-    withdrawalRateTip: "Gross withdrawal ÷ opening portfolio balance for the year.",
+    withdrawalRateTip: 'Gross withdrawal ÷ opening portfolio balance for the year.',
     closing: 'Closing Balance',
     portfolioReturn: 'Portfolio return',
   },
@@ -1042,7 +1049,8 @@ export const en = {
     picker: {
       title: 'Take the tour',
       dashboardTitle: 'Dashboard guide',
-      dashboardDesc: 'Set your timeline, accounts, assets and spending — the inputs behind every projection.',
+      dashboardDesc:
+        'Set your timeline, accounts, assets and spending — the inputs behind every projection.',
       projectionTitle: 'Projection guide',
       projectionDesc: 'Read the deterministic, year-by-year path your plan is on.',
       monteCarloTitle: 'Monte Carlo guide',
@@ -1124,7 +1132,7 @@ export const en = {
       },
       dashboardOutro: {
         title: 'Dashboard set up',
-        body: "That's the full loop for building your plan. Next, take the Projection guide or the Monte Carlo guide from \"Take the tour\" to see it in action.",
+        body: 'That\'s the full loop for building your plan. Next, take the Projection guide or the Monte Carlo guide from "Take the tour" to see it in action.',
       },
       projectionIntro: {
         title: 'The projection guide',
