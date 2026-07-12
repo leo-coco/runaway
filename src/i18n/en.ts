@@ -166,6 +166,7 @@ export const en = {
     portfolioValue: 'Portfolio Value (deterministic)',
     successRate: 'Success Rate · Monte Carlo (probabilistic)',
     planSettings: 'Plan Settings',
+    trendTitle: 'Total value over time',
     simulating: 'Simulating…',
     fundedIn: 'Your plan was fully funded in {{count}} of {{total}} simulated markets.',
     depletes: '● DEPLETES {{year}} · {{years}} YRS AFTER RETIRING',

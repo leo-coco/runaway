@@ -171,6 +171,7 @@ export const fr: Resources = {
     portfolioValue: 'Valeur du portefeuille (déterministe)',
     successRate: 'Taux de réussite · Monte-Carlo (probabiliste)',
     planSettings: 'Réglages du plan',
+    trendTitle: 'Évolution de la valeur totale',
     simulating: 'Simulation…',
     fundedIn:
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
