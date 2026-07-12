@@ -7,6 +7,7 @@ import { useAppStore } from '@/store';
 import { PlansPage } from '@/features/plans/PlansPage';
 import { PlanLayout } from '@/features/portfolio/PlanLayout';
 import { DashboardPage } from '@/features/portfolio/DashboardPage';
+import { PortfolioPage } from '@/features/portfolio/PortfolioPage';
 import { ProjectionPage } from '@/features/portfolio/ProjectionPage';
 import { MonteCarloPage } from '@/features/portfolio/MonteCarloPage';
 import { MethodologyPage } from '@/features/methodology/MethodologyPage';
@@ -33,10 +34,10 @@ export const App = () => (
               <Route path="/plan/:id" element={<PlanLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="portfolio" element={<PortfolioPage />} />
                 <Route path="projection" element={<ProjectionPage />} />
                 <Route path="monte-carlo" element={<MonteCarloPage />} />
                 <Route path="methodology" element={<MethodologyPage />} />
-                <Route path="portfolio" element={<Navigate to="../dashboard" replace />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

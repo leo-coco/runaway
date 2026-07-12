@@ -1,7 +1,13 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { InvestmentBreakdown } from './InvestmentBreakdown';
+import { usePlanContext } from './PlanLayout';
 
-/** Back-compat redirect: the old single page is now split into Dashboard / Projection / Monte Carlo. */
 export const PortfolioPage = () => {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={id ? `/plan/${id}/dashboard` : '/plans'} replace />;
+  const { plan, rates, totalValue } = usePlanContext();
+
+  return (
+    <ErrorBoundary feature="investment breakdown">
+      <InvestmentBreakdown plan={plan} totalValue={totalValue} rates={rates} />
+    </ErrorBoundary>
+  );
 };

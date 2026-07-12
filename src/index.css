@@ -415,11 +415,17 @@ h4 {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 11px 12px;
+  border: none;
   border-radius: 10px;
+  background: transparent;
   color: var(--text-muted);
   text-decoration: none;
+  font: inherit;
   font-size: 16px;
+  text-align: left;
+  cursor: pointer;
 }
 .sb-nav__link:hover {
   background: var(--overlay-hover-soft);

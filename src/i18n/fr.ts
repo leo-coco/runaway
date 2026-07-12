@@ -99,6 +99,7 @@ export const fr: Resources = {
     plans: 'Plans',
     newPlan: 'Nouveau plan',
     dashboard: 'Tableau de bord',
+    portfolio: 'Mon portefeuille',
     projection: 'Projection',
     monteCarlo: 'Monte-Carlo',
     optionsFor: 'Options pour {{name}}',

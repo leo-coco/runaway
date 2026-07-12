@@ -4,7 +4,6 @@ import { successStatus, type SuccessZone } from '@/domain/successRate';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/cn';
 import { OverviewCards } from './OverviewCards';
-import { InvestmentBreakdown } from './InvestmentBreakdown';
 import { usePlanContext } from './PlanLayout';
 
 const SUCCESS_COLOR: Record<SuccessZone, string> = {
@@ -73,10 +72,6 @@ export const DashboardPage = () => {
       </div>
       <ErrorBoundary feature="plan settings">
         <OverviewCards plan={plan} rates={rates} />
-      </ErrorBoundary>
-
-      <ErrorBoundary feature="investment breakdown">
-        <InvestmentBreakdown plan={plan} totalValue={totalValue} rates={rates} />
       </ErrorBoundary>
     </>
   );
