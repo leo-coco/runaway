@@ -95,6 +95,7 @@ export const en = {
     plans: 'Plans',
     newPlan: 'New plan',
     dashboard: 'Dashboard',
+    portfolio: 'My portfolio',
     projection: 'Projection',
     monteCarlo: 'Monte Carlo',
     optionsFor: 'Options for {{name}}',

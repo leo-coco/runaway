@@ -8,6 +8,7 @@ import { ServicesProvider } from '@/providers/ServicesContext';
 import { createQueryClient } from '@/providers/queryClient';
 import { PlanLayout } from '@/features/portfolio/PlanLayout';
 import { DashboardPage } from '@/features/portfolio/DashboardPage';
+import { PortfolioPage } from '@/features/portfolio/PortfolioPage';
 import { ProjectionPage } from '@/features/portfolio/ProjectionPage';
 import { MonteCarloPage } from '@/features/portfolio/MonteCarloPage';
 import { useAppStore } from '@/store';
@@ -35,7 +36,7 @@ const mockServices: Services = {
   search: { search: vi.fn(async () => ok([])) },
 };
 
-const renderAt = (section: 'dashboard' | 'projection' | 'monte-carlo') => {
+const renderAt = (section: 'dashboard' | 'portfolio' | 'projection' | 'monte-carlo') => {
   const planId = useAppStore.getState().plans[0]!.id;
   const client = createQueryClient();
   return render(
@@ -45,6 +46,7 @@ const renderAt = (section: 'dashboard' | 'projection' | 'monte-carlo') => {
           <Routes>
             <Route path="/plan/:id" element={<PlanLayout />}>
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="portfolio" element={<PortfolioPage />} />
               <Route path="projection" element={<ProjectionPage />} />
               <Route path="monte-carlo" element={<MonteCarloPage />} />
             </Route>
@@ -56,17 +58,17 @@ const renderAt = (section: 'dashboard' | 'projection' | 'monte-carlo') => {
 };
 
 describe('plan pages (smoke)', () => {
-  it('dashboard shows the plan header, currency control and multi-currency breakdown', () => {
+  it('dashboard shows the plan header, currency control and plan settings', () => {
     renderAt('dashboard');
     expect(screen.getByRole('heading', { name: /My plan/i })).toBeInTheDocument();
-    expect(screen.getByText('My Portfolio')).toBeInTheDocument();
-    expect(screen.getByText('Converted Price (USD)')).toBeInTheDocument();
     expect(screen.getByLabelText('Currency')).toBeInTheDocument();
     expect(screen.getByText('Savings Capacity')).toBeInTheDocument();
   });
 
-  it('dashboard shows the investment breakdown rows for seeded assets', () => {
-    renderAt('dashboard');
+  it('portfolio page shows the multi-currency breakdown and investment rows for seeded assets', () => {
+    renderAt('portfolio');
+    expect(screen.getByText('My Portfolio')).toBeInTheDocument();
+    expect(screen.getByText('Converted Price (USD)')).toBeInTheDocument();
     expect(screen.getByText('Bitcoin')).toBeInTheDocument();
     // The asset name is visually truncated (AssetRow.tsx), but the full name
     // is preserved in the title attribute for a tooltip on hover.
