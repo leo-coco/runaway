@@ -1,9 +1,9 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db } from './db/client';
-import { authSchema } from './db/schema';
-import { serverEnv } from './env';
-import { sendResetPasswordEmail, sendVerificationEmail } from './email';
+import { db } from './db/client.js';
+import { authSchema } from './db/schema.js';
+import { serverEnv } from './env.js';
+import { sendResetPasswordEmail, sendVerificationEmail } from './email.js';
 
 /**
  * Better Auth server instance. Owns auth logic (tokens, sessions, verification);
