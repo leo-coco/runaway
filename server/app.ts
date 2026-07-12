@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { auth } from './auth';
-import { plansRoutes } from './routes/plans';
+import { auth } from './auth.js';
+import { plansRoutes } from './routes/plans.js';
 
 /** The single Hono app, shared by the Vercel function and the local dev server. */
 export const app = new Hono();
