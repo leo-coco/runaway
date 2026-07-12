@@ -2,7 +2,7 @@ import { useMemo, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { PlusIcon, RefreshIcon } from '@/components/icons';
+import { PencilIcon, PlusIcon, RefreshIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/Spinner';
 import { useCurrencyFormatter, type CurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { usePriceFetcher } from '@/hooks/usePriceFetcher';
@@ -57,6 +57,9 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const removeHolding = useAppStore((s) => s.removeHolding);
   const openModal = useAppStore((s) => s.openModal);
   const { statuses, isFetchingAll, fetchPrice, fetchAll } = usePriceFetcher(plan.id);
+
+  // Read-only by default; the Edit toggle turns the row cells into inputs.
+  const [editing, setEditing] = useState(false);
 
   // Drag-and-drop: move an asset to another account by dragging its handle.
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -133,8 +136,23 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           >
             {isFetchingAll ? <Spinner /> : <RefreshIcon size={15} />} {t('portfolio.fetchPrices')}
           </Button>
-          <Button variant="accent" data-tour="addasset-btn" onClick={() => openModal('addAsset')}>
-            <PlusIcon /> {t('portfolio.addAsset')}
+          {editing && (
+            <Button variant="accent" data-tour="addasset-btn" onClick={() => openModal('addAsset')}>
+              <PlusIcon /> {t('portfolio.addAsset')}
+            </Button>
+          )}
+          <Button
+            variant={editing ? 'accent' : 'default'}
+            onClick={() => setEditing((v) => !v)}
+            aria-pressed={editing}
+          >
+            {editing ? (
+              t('portfolio.done')
+            ) : (
+              <>
+                <PencilIcon size={15} /> {t('portfolio.edit')}
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -194,6 +212,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                     plan={plan}
                     holding={h}
                     index={rowIndex++}
+                    editing={editing}
                     rates={rates}
                     fetchState={statuses[h.id]}
                     onFetchPrice={fetchPrice}
