@@ -68,7 +68,9 @@ describe('plan pages (smoke)', () => {
   it('dashboard shows the investment breakdown rows for seeded assets', () => {
     renderAt('dashboard');
     expect(screen.getByText('Bitcoin')).toBeInTheDocument();
-    expect(screen.getByText('NVIDIA Corporation')).toBeInTheDocument();
+    // The asset name is visually truncated (AssetRow.tsx), but the full name
+    // is preserved in the title attribute for a tooltip on hover.
+    expect(screen.getByTitle('NVIDIA Corporation')).toBeInTheDocument();
   });
 
   it('projection page shows the projections panel and savings flow row', () => {
