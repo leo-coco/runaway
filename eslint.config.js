@@ -6,7 +6,11 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage']),
+  // `.claude` holds Claude Code state, including nested git worktrees
+  // (.claude/worktrees/*) that are full copies of this repo. Never lint into
+  // them: a nested worktree's own tsconfig makes typescript-eslint see two
+  // candidate roots and fail with a "multiple TSConfigRootDirs" parse error.
+  globalIgnores(['dist', 'coverage', '.claude']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -18,6 +22,9 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2023,
       globals: { ...globals.browser },
+      // Pin the root so tseslint resolves tsconfig deterministically no matter
+      // where the repo is checked out (e.g. inside a parent's worktree tree).
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
     },
     rules: {
       // Spec: no `any`, no `as unknown`.
