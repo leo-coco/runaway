@@ -5,6 +5,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/cn';
 import { OverviewCards } from './OverviewCards';
 import { PortfolioTrendCard } from './PortfolioTrendCard';
+import { RunwayTimeline } from './RunwayTimeline';
 import { usePlanContext } from './PlanLayout';
 
 const SUCCESS_COLOR: Record<SuccessZone, string> = {
@@ -67,6 +68,10 @@ export const DashboardPage = () => {
           )}
         </div>
       </div>
+
+      <ErrorBoundary feature="runway">
+        <RunwayTimeline />
+      </ErrorBoundary>
 
       {hasAssets ? (
         <ErrorBoundary feature="portfolio trend">

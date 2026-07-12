@@ -13,7 +13,7 @@ export type AppStore = PlansSlice & UiSlice;
  * the server sync layer (sent as `schemaVersion` when a plan is pushed), so both
  * agree on which migration a stored plan needs.
  */
-export const PLANS_SCHEMA_VERSION = 10;
+export const PLANS_SCHEMA_VERSION = 11;
 
 /**
  * Backfill fields added after a plan was first persisted, so older saved plans
@@ -76,6 +76,8 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
       withdrawalOrder: plan.withdrawalOrder ?? (plan.accounts ?? []).map((a) => a.id),
       // v4: current age added for age annotations on the projection.
       // v6: life-expectancy age added — drives the Monte Carlo horizon.
+      // v11: ExpenseIncome.category added — optional, absent reads as 'general',
+      // so existing flows need no backfill (the spread above preserves them).
       settings: {
         ...plan.settings,
         currentAge,
