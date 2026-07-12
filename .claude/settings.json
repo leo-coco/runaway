@@ -4,7 +4,8 @@
       "Bash(git *)",
       "Bash(gh *)",
       "Bash(npm run *)",
-      "Bash(npx *)"
+      "Bash(npx *)",
+      "Bash(./scripts/create-pr.sh *)"
     ]
   }
 }
