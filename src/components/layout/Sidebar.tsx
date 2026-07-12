@@ -78,7 +78,7 @@ const PlanRow = ({
 
   useEffect(() => {
     if (!menuOpen) return;
-    const onDoc = (e: MouseEvent) => {
+    const onDoc = (e: globalThis.MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);

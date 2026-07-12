@@ -83,7 +83,15 @@ const AccountPresetCombobox = ({
 
   const flat = useMemo(() => sections.flatMap((s) => s.presets), [sections]);
 
-  useEffect(() => setHighlight(0), [query]);
+  // Reset the highlighted option whenever the query changes, adjusted during
+  // render (React's supported pattern for resetting state on a prop change)
+  // rather than in an effect, since setState-in-effect causes an extra,
+  // avoidable render pass (see the identical pattern in Sidebar.tsx).
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setHighlight(0);
+  }
 
   useEffect(() => {
     if (!open) return;

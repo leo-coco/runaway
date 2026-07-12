@@ -70,7 +70,9 @@ describe('plan pages (smoke)', () => {
     expect(screen.getByText('My Portfolio')).toBeInTheDocument();
     expect(screen.getByText('Converted Price (USD)')).toBeInTheDocument();
     expect(screen.getByText('Bitcoin')).toBeInTheDocument();
-    expect(screen.getByText('NVIDIA Corporation')).toBeInTheDocument();
+    // The asset name is visually truncated (AssetRow.tsx), but the full name
+    // is preserved in the title attribute for a tooltip on hover.
+    expect(screen.getByTitle('NVIDIA Corporation')).toBeInTheDocument();
   });
 
   it('projection page shows the projections panel and savings flow row', () => {
