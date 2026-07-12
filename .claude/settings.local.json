@@ -7,7 +7,9 @@
       "Bash(npx vite-node *)",
       "Bash(npx tsc *)",
       "Bash(sed -i '' 's/“Historical \\(real\\)”/“Historical cohort”/g' src/i18n/en.ts)",
-      "Bash(sed -i '' 's/« Historique \\(réel\\) »/« Cohorte historique »/g' src/i18n/fr.ts)"
+      "Bash(sed -i '' 's/« Historique \\(réel\\) »/« Cohorte historique »/g' src/i18n/fr.ts)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(grep -n \"^button\\\\|^ *button {\\\\|button,\\\\|\\\\*,\\\\s*\\\\*::before\\\\|box-sizing\" src/index.css)"
     ]
   }
 }
