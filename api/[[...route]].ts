@@ -2,10 +2,11 @@ import { handle } from 'hono/vercel';
 import app from '../server/app';
 
 /**
- * Vercel entry: a single Edge function that catches every /api/* request and
- * hands it to the Hono app. Edge suits us — Neon HTTP + Better Auth are both
- * fetch/Web-Crypto based, no Node-only APIs.
+ * Vercel entry: a single Node.js serverless function that catches every
+ * /api/* request and hands it to the Hono app. Node runtime is required
+ * because Better Auth's drizzle adapter pulls in modules the Edge runtime
+ * doesn't support (see @better-auth/core/db/adapter and friends).
  */
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
 
 export default handle(app);
