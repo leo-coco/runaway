@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest *)",
+      "Bash(grep -n '`+\\\\|`\\(\\\\${' src/features/projections/YearlyJourneyTable.tsx src/features/projections/SampleScenarioTable.tsx)",
+      "Bash(grep -rn \"n > 0 ? \\\\`+\\\\|n >= 0 ? '+'\\\\|> 0 ? \\\\`+\\\\${\" src/features/)",
+      "Bash(npx vite-node *)",
+      "Bash(npx tsc *)",
+      "Bash(sed -i '' 's/“Historical \\(real\\)”/“Historical cohort”/g' src/i18n/en.ts)",
+      "Bash(sed -i '' 's/« Historique \\(réel\\) »/« Cohorte historique »/g' src/i18n/fr.ts)"
+    ]
+  }
+}

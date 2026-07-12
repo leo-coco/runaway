@@ -1,0 +1,82 @@
+import type { ReactNode } from 'react';
+import type * as Recharts from 'recharts';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ServicesProvider } from '@/providers/ServicesContext';
+import { createQueryClient } from '@/providers/queryClient';
+import { PlanLayout } from '@/features/portfolio/PlanLayout';
+import { DashboardPage } from '@/features/portfolio/DashboardPage';
+import { ProjectionPage } from '@/features/portfolio/ProjectionPage';
+import { MonteCarloPage } from '@/features/portfolio/MonteCarloPage';
+import { useAppStore } from '@/store';
+import { ok } from '@/domain/result';
+import type { Services } from '@/services/container';
+
+// ResponsiveContainer needs a non-zero size in jsdom.
+vi.mock('recharts', async (importOriginal) => {
+  const actual = await importOriginal<typeof Recharts>();
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: ReactNode }) => (
+      <div style={{ width: 800, height: 360 }}>{children}</div>
+    ),
+  };
+});
+
+const mockServices: Services = {
+  price: {
+    cryptoPrice: vi.fn(async () => ok(100)),
+    cryptoPrices: vi.fn(async () => ok({})),
+    stockPrice: vi.fn(async () => ok(50)),
+    rates: vi.fn(async () => ok({ base: 'USD', rates: { USD: 1, CAD: 1.35 }, asOf: 0 })),
+  },
+  search: { search: vi.fn(async () => ok([])) },
+};
+
+const renderAt = (section: 'dashboard' | 'projection' | 'monte-carlo') => {
+  const planId = useAppStore.getState().plans[0]!.id;
+  const client = createQueryClient();
+  return render(
+    <QueryClientProvider client={client}>
+      <ServicesProvider services={mockServices}>
+        <MemoryRouter initialEntries={[`/plan/${planId}/${section}`]}>
+          <Routes>
+            <Route path="/plan/:id" element={<PlanLayout />}>
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="projection" element={<ProjectionPage />} />
+              <Route path="monte-carlo" element={<MonteCarloPage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </ServicesProvider>
+    </QueryClientProvider>,
+  );
+};
+
+describe('plan pages (smoke)', () => {
+  it('dashboard shows the plan header, currency control and multi-currency breakdown', () => {
+    renderAt('dashboard');
+    expect(screen.getByRole('heading', { name: /My plan/i })).toBeInTheDocument();
+    expect(screen.getByText('My Portfolio')).toBeInTheDocument();
+    expect(screen.getByText('Converted Price (USD)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Currency')).toBeInTheDocument();
+    expect(screen.getByText('Savings Capacity')).toBeInTheDocument();
+  });
+
+  it('dashboard shows the investment breakdown rows for seeded assets', () => {
+    renderAt('dashboard');
+    expect(screen.getByText('Bitcoin')).toBeInTheDocument();
+    expect(screen.getByText('NVIDIA Corporation')).toBeInTheDocument();
+  });
+
+  it('projection page shows the projections panel and savings flow row', () => {
+    renderAt('projection');
+    expect(screen.getByText('Portfolio Projections')).toBeInTheDocument();
+    // The "Savings Contributions" detail row is nested inside the "Total
+    // Income" row's expand-to-detail section, which is collapsed by default.
+    fireEvent.click(screen.getByRole('button', { name: /Total Income/i }));
+    expect(screen.getByText(/Savings Contributions/)).toBeInTheDocument();
+  });
+});

@@ -1,0 +1,105 @@
+/* Dark-theme skin for the driver.js popover, matching the app's design tokens. */
+.driver-popover.tour-popover {
+  background: var(--bg-card, #0d0e10);
+  color: var(--text, #f4f5f7);
+  border: 1px solid var(--border, #26272b);
+  border-radius: var(--radius, 14px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  max-width: 340px;
+  padding: 16px 16px 12px;
+}
+
+.driver-popover.tour-popover .driver-popover-title {
+  color: var(--text, #f4f5f7);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.driver-popover.tour-popover .driver-popover-description {
+  color: var(--text-dim, #9ca3af);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.driver-popover.tour-popover .driver-popover-progress-text {
+  color: var(--text-dim, #9ca3af);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide the arrow: it is drawn with borders that can't cleanly match the card. */
+.driver-popover.tour-popover .driver-popover-arrow {
+  display: none;
+}
+
+.driver-popover.tour-popover .driver-popover-footer {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.driver-popover.tour-popover button {
+  text-shadow: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  transition: filter 0.15s ease;
+}
+
+.driver-popover.tour-popover button.driver-popover-next-btn {
+  background: var(--accent, #d6a85b);
+  color: var(--accent-contrast, #241a0b);
+  border: 1px solid transparent;
+}
+
+.driver-popover.tour-popover button.driver-popover-next-btn:hover {
+  filter: brightness(1.08);
+}
+
+.driver-popover.tour-popover button.driver-popover-prev-btn,
+.driver-popover.tour-popover button.driver-popover-close-btn {
+  background: transparent;
+  color: var(--text-dim, #9ca3af);
+  border: 1px solid var(--border, #26272b);
+}
+
+.driver-popover.tour-popover button.driver-popover-prev-btn:hover,
+.driver-popover.tour-popover button.driver-popover-close-btn:hover {
+  color: var(--text, #f4f5f7);
+  border-color: var(--border-strong, #3a3b40);
+}
+
+/* Guide picker — the 3 cards shown when "Take the tour" is clicked. */
+.tour-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .tour-picker {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tour-picker__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.tour-picker__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tour-picker__desc {
+  margin: 0;
+  color: var(--text-dim, #9ca3af);
+  font-size: 13px;
+  line-height: 1.5;
+  flex: 1;
+}
