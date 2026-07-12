@@ -165,9 +165,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
   const [showGoalSeek, setShowGoalSeek] = useState(false);
   const [showModelInfo, setShowModelInfo] = useState(false);
   const [showTrialExplorer, setShowTrialExplorer] = useState(false);
-  const [trialFilterCategory, setTrialFilterCategory] = useState<TrialOutcomeCategory | null>(
-    null,
-  );
+  const [trialFilterCategory, setTrialFilterCategory] = useState<TrialOutcomeCategory | null>(null);
   // Fan chart: projected net worth (portfolio balance) or projected withdrawal rate,
   // both percentiled across every simulated run (like the projection page's selector).
   const [fanView, setFanView] = useState<'netWorth' | 'withdrawalRate'>('netWorth');
@@ -525,29 +523,6 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                 />
                 <span>{t('mc.fadeToggle')}</span>
               </label>
-
-              <div className="wo-section-label" style={{ marginTop: 18 }}>
-                {t('mc.whereYouLand', { year: horizonEndYear })}
-              </div>
-              <div className="prob-land">
-                {(
-                  [
-                    ['#4ade80', t('mc.top25'), endPctl?.p75, t('mc.tipTop25')],
-                    [FAN_ORANGE, t('mc.median'), endPctl?.p50, t('mc.tipMedian')],
-                    ['#fb7185', t('mc.bottom25'), endPctl?.p25, t('mc.tipBottom25')],
-                    ['#f43f5e', t('mc.bottom10'), endPctl?.p10, t('mc.tipBottom10')],
-                  ] as const
-                ).map(([color, label, value, tip]) => (
-                  <div key={label}>
-                    <span>
-                      <i style={{ background: color }} /> {label}
-                      <InfoTip title={label} body={tip} right />
-                    </span>
-                    <b style={{ color }}>{fmt.compact(value ?? 0)}</b>
-                  </div>
-                ))}
-              </div>
-
             </div>
 
             {showGoalSeek && (
@@ -688,8 +663,29 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   </span>
                 </div>
               </div>
-            </div>
 
+              <div className="wo-section-label" style={{ marginTop: 16 }}>
+                {t('mc.whereYouLand', { year: horizonEndYear })}
+              </div>
+              <div className="prob-land">
+                {(
+                  [
+                    ['#4ade80', t('mc.top25'), endPctl?.p75, t('mc.tipTop25')],
+                    [FAN_ORANGE, t('mc.median'), endPctl?.p50, t('mc.tipMedian')],
+                    ['#fb7185', t('mc.bottom25'), endPctl?.p25, t('mc.tipBottom25')],
+                    ['#f43f5e', t('mc.bottom10'), endPctl?.p10, t('mc.tipBottom10')],
+                  ] as const
+                ).map(([color, label, value, tip]) => (
+                  <div key={label}>
+                    <span>
+                      <i style={{ background: color }} /> {label}
+                      <InfoTip title={label} body={tip} right />
+                    </span>
+                    <b style={{ color }}>{fmt.compact(value ?? 0)}</b>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}
