@@ -25,6 +25,22 @@ export const PlansPage = () => {
 
   return (
     <div className="container">
+      <div style={{ marginBottom: '1rem' }}>
+        <button
+          style={{
+            backgroundColor: '#dc2626',
+            color: 'white',
+            padding: '0.75rem 1rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '500',
+          }}
+        >
+          Test Red Button
+        </button>
+      </div>
       <div className="page-head">
         <div>
           <h1>My Plans</h1>
