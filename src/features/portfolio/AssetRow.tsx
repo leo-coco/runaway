@@ -20,6 +20,8 @@ interface AssetRowProps {
   plan: Plan;
   holding: Holding;
   index: number;
+  /** When false the editable cells render as plain read-only values. */
+  editing: boolean;
   rates: RatesTable | undefined;
   fetchState: PriceFetchState | undefined;
   onFetchPrice: (h: Holding) => void;
@@ -39,6 +41,7 @@ export const AssetRow = ({
   plan,
   holding,
   index,
+  editing,
   rates,
   fetchState,
   onFetchPrice,
@@ -142,18 +145,24 @@ export const AssetRow = ({
         </div>
       </div>
 
-      {/* Asset price in its native currency (currency is fixed by the market) */}
+      {/* Asset price in its native currency (currency is fixed by the market).
+          The live-price refresh stays available in read-only mode; only the
+          editable value collapses to plain text. */}
       <div>
         <div className="price-cell">
-          <Stepper
-            ariaLabel={`${holding.instrument.symbol} price`}
-            value={holding.pricePerUnit}
-            step={priceStep}
-            min={0}
-            suffix={native}
-            hideButtons
-            onChange={(v) => onUpdate(holding.id, { pricePerUnit: v })}
-          />
+          {editing ? (
+            <Stepper
+              ariaLabel={`${holding.instrument.symbol} price`}
+              value={holding.pricePerUnit}
+              step={priceStep}
+              min={0}
+              suffix={native}
+              hideButtons
+              onChange={(v) => onUpdate(holding.id, { pricePerUnit: v })}
+            />
+          ) : (
+            <span className="read-value">{nativeFmt.price(holding.pricePerUnit)}</span>
+          )}
           <button
             type="button"
             className={`fetch-btn ${status === 'error' ? 'is-error' : ''} ${
@@ -165,7 +174,9 @@ export const AssetRow = ({
               status === 'error'
                 ? (fetchState?.error?.message ?? t('portfolio.fetchError'))
                 : status === 'success'
-                  ? t('portfolio.fetchSuccess', { price: nativeFmt.price(holding.pricePerUnit) })
+                  ? t('portfolio.fetchSuccess', {
+                      price: nativeFmt.price(holding.pricePerUnit),
+                    })
                   : t('portfolio.fetchIdle')
             }
           >
@@ -212,15 +223,19 @@ export const AssetRow = ({
 
       {/* Cost basis (native currency) — drives dynamic capital-gains tracking */}
       <div className="narrow-cell">
-        <Stepper
-          ariaLabel={t('portfolio.costBasisAria', { symbol: holding.instrument.symbol })}
-          value={costBasisPerUnit}
-          step={priceStep}
-          min={0}
-          suffix={native}
-          hideButtons
-          onChange={(v) => onUpdate(holding.id, { costBasis: v })}
-        />
+        {editing ? (
+          <Stepper
+            ariaLabel={t('portfolio.costBasisAria', { symbol: holding.instrument.symbol })}
+            value={costBasisPerUnit}
+            step={priceStep}
+            min={0}
+            suffix={native}
+            hideButtons
+            onChange={(v) => onUpdate(holding.id, { costBasis: v })}
+          />
+        ) : (
+          <span className="read-value">{nativeFmt.price(costBasisPerUnit)}</span>
+        )}
       </div>
 
       {/* Unrealised gain / loss (ROI) vs cost basis */}
@@ -245,61 +260,73 @@ export const AssetRow = ({
       </div>
 
       <div className="narrow-cell" data-tour={index === 0 ? 'quantity-input' : undefined}>
-        <Stepper
-          ariaLabel={`${holding.instrument.symbol} quantity`}
-          value={holding.quantity}
-          step={1}
-          min={0}
-          hideButtons
-          onChange={(v) => onUpdate(holding.id, { quantity: v })}
-        />
+        {editing ? (
+          <Stepper
+            ariaLabel={`${holding.instrument.symbol} quantity`}
+            value={holding.quantity}
+            step={1}
+            min={0}
+            hideButtons
+            onChange={(v) => onUpdate(holding.id, { quantity: v })}
+          />
+        ) : (
+          <span className="read-value">{holding.quantity}</span>
+        )}
       </div>
 
       <div data-tour={index === 0 ? 'cagr-input' : undefined}>
-        <Stepper
-          ariaLabel={`${holding.instrument.symbol} expected CAGR`}
-          value={holding.expectedCagrPct}
-          step={1}
-          suffix="%"
-          hideButtons
-          compact
-          onChange={(v) => onUpdate(holding.id, { expectedCagrPct: v })}
-        />
-        <div className="cagr-note">
-          {t('portfolio.appliedCagr')} <b>{effectiveCagr}%</b>
-        </div>
-      </div>
-
-      <div className="asset-row__remove" ref={removeRef}>
-        <Button
-          variant="danger"
-          size="sm"
-          aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
-          aria-haspopup="dialog"
-          aria-expanded={confirmingRemove}
-          onClick={() => setConfirmingRemove((v) => !v)}
-        >
-          <TrashIcon size={16} />
-        </Button>
-        {confirmingRemove && (
-          <div className="asset-row__confirm" role="dialog" aria-label="Confirm removal">
-            <span className="asset-row__confirm-text">{t('common.removeQuestion')}</span>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => {
-                setConfirmingRemove(false);
-                onRemove(holding.id);
-              }}
-            >
-              {t('common.remove')}
-            </Button>
-            <Button size="sm" onClick={() => setConfirmingRemove(false)}>
-              {t('common.cancel')}
-            </Button>
-          </div>
+        {editing ? (
+          <>
+            <Stepper
+              ariaLabel={`${holding.instrument.symbol} expected CAGR`}
+              value={holding.expectedCagrPct}
+              step={1}
+              suffix="%"
+              hideButtons
+              compact
+              onChange={(v) => onUpdate(holding.id, { expectedCagrPct: v })}
+            />
+            <div className="cagr-note">
+              {t('portfolio.appliedCagr')} <b>{effectiveCagr}%</b>
+            </div>
+          </>
+        ) : (
+          <span className="read-value">{effectiveCagr}%</span>
         )}
       </div>
+
+      {editing && (
+        <div className="asset-row__remove" ref={removeRef}>
+          <Button
+            variant="danger"
+            size="sm"
+            aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
+            aria-haspopup="dialog"
+            aria-expanded={confirmingRemove}
+            onClick={() => setConfirmingRemove((v) => !v)}
+          >
+            <TrashIcon size={16} />
+          </Button>
+          {confirmingRemove && (
+            <div className="asset-row__confirm" role="dialog" aria-label="Confirm removal">
+              <span className="asset-row__confirm-text">{t('common.removeQuestion')}</span>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  setConfirmingRemove(false);
+                  onRemove(holding.id);
+                }}
+              >
+                {t('common.remove')}
+              </Button>
+              <Button size="sm" onClick={() => setConfirmingRemove(false)}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

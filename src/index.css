@@ -1308,6 +1308,14 @@ h4 {
   font-size: 11px;
   padding: 0 4px 0 6px;
 }
+/* Plain read-only cell value (shown when the table is not in edit mode). */
+.brow .read-value {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
 .roi-cell {
   display: flex;
   flex-direction: column;

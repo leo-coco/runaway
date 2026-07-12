@@ -1015,6 +1015,8 @@ export const en = {
     desc: 'View and manage all assets in your retirement portfolio',
     fetchPrices: 'Fetch Latest Prices',
     addAsset: 'Add New Asset',
+    edit: 'Edit',
+    done: 'Done',
     empty: 'No assets in this plan yet. Use “Add New Asset” to search crypto and equities.',
     colAsset: 'Asset / Ticker',
     colPrice: 'Asset Price',

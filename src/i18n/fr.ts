@@ -1039,6 +1039,8 @@ export const fr: Resources = {
     desc: 'Consultez et gérez tous les actifs de votre portefeuille de retraite',
     fetchPrices: 'Actualiser les prix',
     addAsset: 'Ajouter un actif',
+    edit: 'Modifier',
+    done: 'Terminer',
     empty:
       'Aucun actif dans ce plan pour l’instant. Utilisez « Ajouter un actif » pour rechercher cryptos et actions.',
     colAsset: 'Actif / Symbole',
