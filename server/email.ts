@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { serverEnv } from './env';
+import { serverEnv } from './env.js';
 
 let client: Resend | null = null;
 const resend = (): Resend => (client ??= new Resend(serverEnv().RESEND_API_KEY));

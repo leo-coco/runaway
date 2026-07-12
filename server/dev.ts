@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { serve } from '@hono/node-server';
-import app from './app';
+import app from './app.js';
 
 /**
  * Local dev API server. Vite proxies /api to this port (see vite.config.ts), so

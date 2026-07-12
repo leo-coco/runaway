@@ -1,5 +1,5 @@
 import { handle } from 'hono/vercel';
-import app from '../server/app';
+import app from '../server/app.js';
 
 /**
  * Vercel entry: a single Node.js serverless function that catches every

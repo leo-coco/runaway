@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { and, eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../db/client';
-import { plans } from '../db/schema';
-import { auth } from '../auth';
+import { db } from '../db/client.js';
+import { plans } from '../db/schema.js';
+import { auth } from '../auth.js';
 import type { Plan } from '../../src/domain/plan';
 
 type Vars = { userId: string };
