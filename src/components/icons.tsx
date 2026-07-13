@@ -179,6 +179,20 @@ export const ListIcon = ({ size = 16, ...p }: IconProps) => (
     <line x1="3" y1="18" x2="3.01" y2="18" />
   </svg>
 );
+export const CalendarIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="4.5" width="18" height="16.5" rx="2" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <line x1="8" y1="2.5" x2="8" y2="6" />
+    <line x1="16" y1="2.5" x2="16" y2="6" />
+  </svg>
+);
+export const TrendingUpIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <polyline points="3 16 9 10 13 14 21 6" />
+    <polyline points="15 6 21 6 21 12" />
+  </svg>
+);
 
 // --- Runway timeline icons ---
 
@@ -263,9 +277,29 @@ export const StarIcon = ({ size = 16, ...p }: IconProps) => (
 );
 export const WalletIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
-    <path d="M3 7a2 2 0 0 1 2-2h12v3" />
-    <path d="M3 7v10a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-1Z" />
-    <circle cx="16.5" cy="13.5" r="1.2" fill="currentColor" stroke="none" />
+    <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18a1 1 0 0 1 1 1v1" />
+    <rect x="3" y="7" width="18" height="12" rx="2.5" />
+    <path d="M16 12.5h1.5" />
+  </svg>
+);
+export const CartIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="9" cy="20" r="1.4" />
+    <circle cx="18" cy="20" r="1.4" />
+    <path d="M2.5 3h2l2.2 12.2a1.5 1.5 0 0 0 1.5 1.3h8.4a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6" />
+  </svg>
+);
+export const PieChartIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M21 15.5A9 9 0 1 1 8.5 3" />
+    <path d="M21.5 11.5A9 9 0 0 0 12.5 2.5V11.5Z" />
+  </svg>
+);
+export const LayersIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <polygon points="12 3 21 8 12 13 3 8 12 3" />
+    <polyline points="3 12 12 17 21 12" />
+    <polyline points="3 16 12 21 21 16" />
   </svg>
 );
 export const SwapIcon = ({ size = 16, ...p }: IconProps) => (

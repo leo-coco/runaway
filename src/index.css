@@ -862,6 +862,7 @@ h4 {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  min-height: 38px;
 }
 .ov__title {
   font-size: 14px;
@@ -894,10 +895,32 @@ h4 {
   font-size: 12.5px;
   margin: 12px 0 6px;
 }
+.ov__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 10px;
+}
+.ov__icon {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.ov__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .ov__big {
   font-size: 30px;
   font-weight: 700;
-  margin-top: auto;
+  line-height: 1;
 }
 .ov__sub {
   color: var(--text-muted);
