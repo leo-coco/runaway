@@ -68,6 +68,7 @@ describe('plan pages (smoke)', () => {
   it('portfolio page shows the multi-currency breakdown and investment rows for seeded assets', () => {
     renderAt('portfolio');
     expect(screen.getByText('My Portfolio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add New Asset/i })).toBeInTheDocument();
     expect(screen.getByText('Converted Price (USD)')).toBeInTheDocument();
     expect(screen.getByText('Bitcoin')).toBeInTheDocument();
     // The asset name is visually truncated (AssetRow.tsx), but the full name

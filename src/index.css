@@ -45,6 +45,8 @@
   --sp-6: 1.5rem; /* 24px */
   --sp-8: 2rem; /* 32px */
 
+  --z-modal: 1000;
+
   font-family:
     'Inter',
     system-ui,
@@ -2736,7 +2738,7 @@ h4 {
   display: grid;
   place-items: center;
   padding: 20px;
-  z-index: 50;
+  z-index: var(--z-modal);
 }
 .modal {
   width: 100%;
