@@ -78,5 +78,25 @@ export const plans = pgTable(
   (t) => [index('plans_user_id_idx').on(t.userId)],
 );
 
+/**
+ * Generic shared cache for third-party market API responses (FX rates, stock
+ * quotes, symbol search). Keyed by a namespaced string (e.g. 'fx:USD',
+ * 'quote:AAPL'); `payload` is the already-validated upstream DTO stored as JSONB.
+ * A single row is reused by every user until `expiresAt`, so one upstream call
+ * per key per TTL serves the whole app — this is what keeps free-tier quotas
+ * (especially Alpha Vantage's ~25 req/day) viable. See server/lib/cachedFetch.ts.
+ */
+export const apiCache = pgTable(
+  'api_cache',
+  {
+    key: text('key').primaryKey(),
+    payload: jsonb('payload').notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('api_cache_expires_at_idx').on(t.expiresAt)],
+);
+
 export const authSchema = { user, session, account, verification };
 export type PlanRow = typeof plans.$inferSelect;
+export type ApiCacheRow = typeof apiCache.$inferSelect;
