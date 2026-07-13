@@ -54,7 +54,10 @@ const isThrottled = (note?: string, info?: string): boolean => Boolean(note ?? i
 const errorStatus = (cause: unknown): 429 | 502 =>
   cause instanceof Error && cause.message === RATE_LIMIT ? 429 : 502;
 
-const cacheHeader = (status: CacheStatus): Record<string, string> => ({ 'x-cache': status });
+const cacheHeader = (status: CacheStatus): Record<string, string> => ({
+  'x-cache': status,
+  'cache-control': 'private, max-age=0, must-revalidate',
+});
 
 const ALPHA_VANTAGE_BASE = 'https://www.alphavantage.co/query';
 
