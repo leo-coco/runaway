@@ -117,11 +117,9 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           >
             {isFetchingAll ? <Spinner /> : <RefreshIcon size={15} />} {t('portfolio.fetchPrices')}
           </Button>
-          {editing && (
-            <Button variant="accent" data-tour="addasset-btn" onClick={() => openModal('addAsset')}>
-              <PlusIcon /> {t('portfolio.addAsset')}
-            </Button>
-          )}
+          <Button variant="accent" data-tour="addasset-btn" onClick={() => openModal('addAsset')}>
+            <PlusIcon /> {t('portfolio.addAsset')}
+          </Button>
           <Button
             variant={editing ? 'accent' : 'default'}
             onClick={() => setEditing((v) => !v)}
