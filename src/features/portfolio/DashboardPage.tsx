@@ -5,6 +5,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/cn';
 import { OverviewCards } from './OverviewCards';
 import { PortfolioTrendCard } from './PortfolioTrendCard';
+import { DashboardAssetsCard } from './DashboardAssetsCard';
 import { usePlanContext } from './PlanLayout';
 
 const SUCCESS_COLOR: Record<SuccessZone, string> = {
@@ -69,9 +70,14 @@ export const DashboardPage = () => {
       </div>
 
       {hasAssets ? (
-        <ErrorBoundary feature="portfolio trend">
-          <PortfolioTrendCard projection={projection} currency={plan.currency} />
-        </ErrorBoundary>
+        <div className="dash-split">
+          <ErrorBoundary feature="portfolio trend">
+            <PortfolioTrendCard projection={projection} currency={plan.currency} />
+          </ErrorBoundary>
+          <ErrorBoundary feature="dashboard assets">
+            <DashboardAssetsCard plan={plan} rates={rates} totalValue={totalValue} />
+          </ErrorBoundary>
+        </div>
       ) : null}
 
       <div className="settings-head">
