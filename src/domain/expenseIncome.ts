@@ -6,6 +6,32 @@
  */
 export type FlowFrequency = 'once' | 'recurring';
 
+/**
+ * Optional tag chosen by the user, purely presentational: it drives which icon a
+ * flow shows on the runway timeline. Absent = 'general'. Never affects amounts,
+ * tax, or projection maths.
+ */
+export type ExpenseCategory =
+  | 'general'
+  | 'vehicle'
+  | 'travel'
+  | 'education'
+  | 'health'
+  | 'wedding'
+  | 'gift'
+  | 'home';
+
+export const EXPENSE_CATEGORIES: readonly ExpenseCategory[] = [
+  'general',
+  'vehicle',
+  'travel',
+  'education',
+  'health',
+  'wedding',
+  'gift',
+  'home',
+];
+
 export interface ExpenseIncome {
   readonly id: string;
   readonly name: string;
@@ -15,6 +41,8 @@ export interface ExpenseIncome {
   readonly year: number;
   /** Outflow (purchase, big expense) or inflow (sale proceeds, inheritance). */
   readonly kind: 'expense' | 'income';
+  /** Presentational tag driving the runway-timeline icon. Default 'general'. */
+  readonly category?: ExpenseCategory;
   /** Grow with inflation from today to the target year(s). Default true. */
   readonly inflate?: boolean;
   /** 'once' (default) fires only in `year`; 'recurring' fires every year through `endYear`. */

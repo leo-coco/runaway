@@ -1,5 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { expenseIncomeAmountsForYear, type ExpenseIncome } from './expenseIncome';
+import {
+  EXPENSE_CATEGORIES,
+  expenseIncomeAmountsForYear,
+  type ExpenseCategory,
+  type ExpenseIncome,
+} from './expenseIncome';
+
+describe('ExpenseIncome.category', () => {
+  it('is optional and does not affect amounts', () => {
+    const withCategory: ExpenseIncome = {
+      id: 'car',
+      name: 'New car',
+      amount: 20_000,
+      year: 2030,
+      kind: 'expense',
+      category: 'vehicle',
+    };
+    const withoutCategory: ExpenseIncome = { ...withCategory, id: 'car2', category: undefined };
+    expect(expenseIncomeAmountsForYear([withCategory], 2030, 1).expense).toBe(20_000);
+    expect(expenseIncomeAmountsForYear([withoutCategory], 2030, 1).expense).toBe(20_000);
+  });
+
+  it('reads an absent category as the general default', () => {
+    const item: ExpenseIncome = { id: 'x', name: 'X', amount: 1, year: 2030, kind: 'expense' };
+    const category: ExpenseCategory = item.category ?? 'general';
+    expect(category).toBe('general');
+    expect(EXPENSE_CATEGORIES).toContain('general');
+    expect(EXPENSE_CATEGORIES).toContain('vehicle');
+  });
+});
 
 describe('expenseIncomeAmountsForYear', () => {
   it('returns zeroes when the list is empty or undefined', () => {
