@@ -5,7 +5,12 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ageInYear } from '@/domain/retirementSettings';
 import { cn } from '@/lib/cn';
 import type { CurrencyCode } from '@/domain/money';
-import type { ExpenseIncome, FlowFrequency } from '@/domain/expenseIncome';
+import {
+  EXPENSE_CATEGORIES,
+  type ExpenseCategory,
+  type ExpenseIncome,
+  type FlowFrequency,
+} from '@/domain/expenseIncome';
 
 export const EXPENSE_COLOR = 'var(--danger, #f43f5e)';
 export const INCOME_COLOR = 'var(--success, #34d399)';
@@ -74,6 +79,7 @@ export interface ExpenseIncomeDraft {
   amount: number;
   year: number;
   kind: 'expense' | 'income';
+  category: ExpenseCategory;
   inflate: boolean;
   frequency: FlowFrequency;
   endYear: number;
@@ -85,6 +91,7 @@ export const draftFromItem = (item: ExpenseIncome): ExpenseIncomeDraft => ({
   amount: item.amount,
   year: item.year,
   kind: item.kind,
+  category: item.category ?? 'general',
   inflate: item.inflate ?? true,
   frequency: item.frequency ?? 'once',
   endYear: item.endYear ?? item.year,
@@ -198,13 +205,31 @@ export const ExpenseIncomeFields = ({
           className={cn('search-input flow-card__name', nameError && 'is-invalid')}
           value={draft.name}
           placeholder={t(
-            isIncome ? 'expensesIncomes.namePlaceholderIncome' : 'expensesIncomes.namePlaceholderExpense',
+            isIncome
+              ? 'expensesIncomes.namePlaceholderIncome'
+              : 'expensesIncomes.namePlaceholderExpense',
           )}
           aria-label={t('expensesIncomes.name')}
           onChange={(e) => onChange({ name: e.target.value })}
         />
         {nameError && <p className="field__error">{nameError}</p>}
       </div>
+
+      <label className="field flow-category">
+        <span className="ov__sub">{t('expensesIncomes.category')}</span>
+        <select
+          className="search-input flow-category__select"
+          value={draft.category}
+          aria-label={t('expensesIncomes.category')}
+          onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
+        >
+          {EXPENSE_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {t(`expensesIncomes.categories.${c}`)}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div className={cn('flow-card__grid', isRecurring && 'flow-card__grid--periodic')}>
         {isRecurring ? (
@@ -313,7 +338,9 @@ export const ExpenseIncomeFields = ({
             onChange={(v) => onChange({ inflate: v })}
             label={t('expensesIncomes.inflationLabel', { year: inflationUntilYear })}
           />
-          <span className="ov__sub">{t('expensesIncomes.inflationLabel', { year: inflationUntilYear })}</span>
+          <span className="ov__sub">
+            {t('expensesIncomes.inflationLabel', { year: inflationUntilYear })}
+          </span>
         </label>
         <span className="flow-projection">
           {isRecurring
