@@ -88,7 +88,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             <CalendarIcon size={26} />
           </span>
           <div className="ov__content">
-            <span className="ov__big" style={{ fontSize: 40 }}>
+            <span className="ov__big" style={{ fontSize: '2.5rem' }}>
               {plan.settings.retirementYear}
             </span>
             <span className="ov__sub">
@@ -251,7 +251,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             <PieChartIcon size={26} />
           </span>
           <div className="ov__content">
-            <span className="ov__big" style={{ fontSize: 30 }}>
+            <span className="ov__big" style={{ fontSize: '1.875rem' }}>
               {plan.accounts.length}{' '}
               <span className="ov__big-unit">{t('overview.accountsUnit')}</span>
             </span>
@@ -275,7 +275,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             <span
               className="ov__big"
               style={{
-                fontSize: 30,
+                fontSize: '1.875rem',
                 color: plan.accounts.length === 0 ? 'var(--amber)' : undefined,
               }}
             >

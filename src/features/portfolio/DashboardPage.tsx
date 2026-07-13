@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ShortcutTooltip } from '@/components/ui/ShortcutTooltip';
+import { TrendingUpIcon } from '@/components/icons';
 import { successStatus, type SuccessZone } from '@/domain/successRate';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/cn';
@@ -63,7 +65,7 @@ export const DashboardPage = () => {
               </div>
             </>
           ) : (
-            <span className="hero__big" style={{ fontSize: 32 }}>
+            <span className="hero__big" style={{ fontSize: '2rem' }}>
               {t('dashboard.simulating')}
             </span>
           )}
@@ -87,6 +89,12 @@ export const DashboardPage = () => {
 
       <div className="settings-head">
         <span className="settings-head__title">{t('dashboard.planSettings')}</span>
+        <ShortcutTooltip
+          to={`/plan/${plan.id}/projection`}
+          icon={<TrendingUpIcon size={16} />}
+          label={t('sidebar.projection')}
+          shortcut="P"
+        />
       </div>
       <ErrorBoundary feature="plan settings">
         <OverviewCards plan={plan} rates={rates} />

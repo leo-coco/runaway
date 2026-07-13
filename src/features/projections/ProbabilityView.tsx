@@ -293,7 +293,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <span
                   className="wo-big"
-                  style={{ color: ZONE_COLOR[sx.zone], fontSize: 56, lineHeight: 1 }}
+                  style={{ color: ZONE_COLOR[sx.zone], fontSize: '3.5rem', lineHeight: 1 }}
                 >
                   {sx.pct.toFixed(0)}%
                 </span>

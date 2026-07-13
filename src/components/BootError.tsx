@@ -19,7 +19,7 @@ export const BootError = ({ issues }: { issues: readonly string[] }) => (
           <li key={issue}>{issue}</li>
         ))}
       </ul>
-      <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+      <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem' }}>
         Stock (Alpha Vantage) and FX (ExchangeRate-API) keys are now server-side only — set{' '}
         <code>ALPHA_VANTAGE_API_KEY</code> and <code>EXCHANGERATE_API_KEY</code> in the API
         environment, not here. CoinGecko (crypto) needs no key. Restart the dev server after editing{' '}

@@ -92,8 +92,10 @@ export const fr: Resources = {
   },
   theme: {
     label: 'Thème',
+    appearance: 'Apparence',
     light: 'Clair',
     dark: 'Sombre',
+    system: 'Système',
     switchToLight: 'Passer au thème clair',
     switchToDark: 'Passer au thème sombre',
   },
