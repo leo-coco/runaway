@@ -10,11 +10,10 @@ export interface ExchangeRateClient {
   latest(base: string, signal?: AbortSignal): Promise<Result<ExchangeRateLatestDto, AppError>>;
 }
 
-export const createExchangeRateClient = (apiKey: string): ExchangeRateClient => ({
+// Same-origin proxy (server holds the API key). See server/routes/market.ts.
+export const createExchangeRateClient = (): ExchangeRateClient => ({
   latest: (base, signal) =>
-    getJson(
-      `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${encodeURIComponent(base)}`,
-      exchangeRateLatestSchema,
-      { signal },
-    ),
+    getJson(`/api/market/fx/latest/${encodeURIComponent(base)}`, exchangeRateLatestSchema, {
+      signal,
+    }),
 });

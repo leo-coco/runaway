@@ -15,19 +15,16 @@ export interface AlphaVantageClient {
   quote(symbol: string, signal?: AbortSignal): Promise<Result<AlphaVantageQuoteDto, AppError>>;
 }
 
-const BASE = 'https://www.alphavantage.co/query';
+// Same-origin proxy (server holds the API key). See server/routes/market.ts.
+const BASE = '/api/market/equities';
 
-export const createAlphaVantageClient = (apiKey: string): AlphaVantageClient => ({
+export const createAlphaVantageClient = (): AlphaVantageClient => ({
   search: (query, signal) =>
-    getJson(
-      `${BASE}?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(query)}&apikey=${apiKey}`,
-      alphaVantageSearchSchema,
-      { signal },
-    ),
+    getJson(`${BASE}/search?keywords=${encodeURIComponent(query)}`, alphaVantageSearchSchema, {
+      signal,
+    }),
   quote: (symbol, signal) =>
-    getJson(
-      `${BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`,
-      alphaVantageQuoteSchema,
-      { signal },
-    ),
+    getJson(`${BASE}/quote?symbol=${encodeURIComponent(symbol)}`, alphaVantageQuoteSchema, {
+      signal,
+    }),
 });
