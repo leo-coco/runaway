@@ -9,25 +9,20 @@ import { getJson } from './httpClient';
 export type AlphaVantageSearchDto = ReturnType<typeof alphaVantageSearchSchema.parse>;
 export type AlphaVantageQuoteDto = ReturnType<typeof alphaVantageQuoteSchema.parse>;
 
-/** Raw Alpha Vantage access for equities/ETFs (US + Canadian listings). */
+/**
+ * Equities/ETFs (US + Canadian listings) via our cached server proxy
+ * (/api/market/quote, /api/market/search). No provider key on the client.
+ */
 export interface AlphaVantageClient {
   search(query: string, signal?: AbortSignal): Promise<Result<AlphaVantageSearchDto, AppError>>;
   quote(symbol: string, signal?: AbortSignal): Promise<Result<AlphaVantageQuoteDto, AppError>>;
 }
 
-const BASE = 'https://www.alphavantage.co/query';
-
-export const createAlphaVantageClient = (apiKey: string): AlphaVantageClient => ({
+export const createAlphaVantageClient = (): AlphaVantageClient => ({
   search: (query, signal) =>
-    getJson(
-      `${BASE}?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(query)}&apikey=${apiKey}`,
-      alphaVantageSearchSchema,
-      { signal },
-    ),
+    getJson(`/api/market/search?q=${encodeURIComponent(query)}`, alphaVantageSearchSchema, {
+      signal,
+    }),
   quote: (symbol, signal) =>
-    getJson(
-      `${BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`,
-      alphaVantageQuoteSchema,
-      { signal },
-    ),
+    getJson(`/api/market/quote/${encodeURIComponent(symbol)}`, alphaVantageQuoteSchema, { signal }),
 });

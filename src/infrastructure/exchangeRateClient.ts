@@ -5,16 +5,12 @@ import { getJson } from './httpClient';
 
 export type ExchangeRateLatestDto = ReturnType<typeof exchangeRateLatestSchema.parse>;
 
-/** Raw ExchangeRate-API access for live FX rates. */
+/** FX rates via our cached server proxy (/api/market/fx). No provider key on the client. */
 export interface ExchangeRateClient {
   latest(base: string, signal?: AbortSignal): Promise<Result<ExchangeRateLatestDto, AppError>>;
 }
 
-export const createExchangeRateClient = (apiKey: string): ExchangeRateClient => ({
+export const createExchangeRateClient = (): ExchangeRateClient => ({
   latest: (base, signal) =>
-    getJson(
-      `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${encodeURIComponent(base)}`,
-      exchangeRateLatestSchema,
-      { signal },
-    ),
+    getJson(`/api/market/fx/${encodeURIComponent(base)}`, exchangeRateLatestSchema, { signal }),
 });

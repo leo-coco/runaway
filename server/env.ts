@@ -16,6 +16,10 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1),
   /** Verified sender, e.g. "Retire on Model <no-reply@yourdomain.com>". */
   EMAIL_FROM: z.string().min(3),
+  /** Alpha Vantage API key (equities/ETF quotes + symbol search). Server-only. */
+  ALPHA_VANTAGE_API_KEY: z.string().min(1),
+  /** ExchangeRate-API key (live FX rates). Server-only. */
+  EXCHANGERATE_API_KEY: z.string().min(1),
 });
 
 export type ServerEnv = z.infer<typeof schema>;
