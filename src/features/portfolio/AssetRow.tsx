@@ -243,10 +243,7 @@ export const AssetRow = ({
         {roiPct === null ? (
           <span className="muted">—</span>
         ) : (
-          <div
-            className="roi-cell"
-            style={{ color: roiPct >= 0 ? 'var(--success)' : 'var(--danger, #f43f5e)' }}
-          >
+          <div className={`roi-cell ${roiPct >= 0 ? 'is-pos' : 'is-neg'}`}>
             <span className="roi-pill">
               {roiPct >= 0 ? '+' : ''}
               {roiPct.toFixed(1)}%

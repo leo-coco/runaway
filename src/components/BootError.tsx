@@ -19,7 +19,7 @@ export const BootError = ({ issues }: { issues: readonly string[] }) => (
           <li key={issue}>{issue}</li>
         ))}
       </ul>
-      <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+      <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem' }}>
         Get free keys from{' '}
         <a style={{ color: 'var(--accent)' }} href="https://www.alphavantage.co/support/#api-key">
           Alpha Vantage

@@ -280,7 +280,9 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
       <div className="gs-progress">
         <div className="gs-progress__top">
           <span className="gs-progress__label">{t('goalSeek.progressTo', { pct: targetPct })}</span>
-          <span style={{ color: reached ? 'var(--success)' : 'var(--text-dim)', fontSize: 13 }}>
+          <span
+            style={{ color: reached ? 'var(--success)' : 'var(--text-dim)', fontSize: '0.8125rem' }}
+          >
             {reached ? t('goalSeek.targetReached') : t('goalSeek.keepGoing')}
           </span>
         </div>

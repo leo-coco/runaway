@@ -88,8 +88,10 @@ export const en = {
   },
   theme: {
     label: 'Theme',
+    appearance: 'Appearance',
     light: 'Light',
     dark: 'Dark',
+    system: 'System',
     switchToLight: 'Switch to light theme',
     switchToDark: 'Switch to dark theme',
   },

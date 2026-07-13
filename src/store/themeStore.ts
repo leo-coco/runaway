@@ -1,12 +1,21 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type Theme = 'dark' | 'light';
+/** The user's appearance *choice*. 'system' follows the OS colour scheme. */
+export type Theme = 'dark' | 'light' | 'system';
+/** The concrete theme actually applied to <html data-theme>. */
+export type ResolvedTheme = 'dark' | 'light';
 
-const prefersLight = () =>
-  typeof window !== 'undefined' &&
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia('(prefers-color-scheme: light)').matches;
+const darkMql = () =>
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+
+const systemTheme = (): ResolvedTheme => (darkMql()?.matches ? 'dark' : 'light');
+
+/** Resolve a choice to the concrete theme, consulting the OS for 'system'. */
+export const resolveTheme = (theme: Theme): ResolvedTheme =>
+  theme === 'system' ? systemTheme() : theme;
 
 interface ThemeStore {
   theme: Theme;
@@ -17,9 +26,12 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
-      theme: prefersLight() ? 'light' : 'dark',
+      // Default to following the OS so first-run matches the user's environment.
+      theme: 'system',
       setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      // Cycle only between the explicit modes (used by the compact toggle).
+      toggleTheme: () =>
+        set((s) => ({ theme: resolveTheme(s.theme) === 'dark' ? 'light' : 'dark' })),
     }),
     {
       name: 'retire-on-model/theme',
@@ -29,10 +41,15 @@ export const useThemeStore = create<ThemeStore>()(
 );
 
 const applyTheme = (theme: Theme) => {
-  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', resolveTheme(theme));
 };
 
 // Apply immediately (before React renders) so there's no flash of the wrong
 // theme, then keep <html data-theme> in sync with every future change.
 applyTheme(useThemeStore.getState().theme);
 useThemeStore.subscribe((state) => applyTheme(state.theme));
+
+// When the choice is 'system', re-apply whenever the OS scheme flips live.
+darkMql()?.addEventListener('change', () => {
+  if (useThemeStore.getState().theme === 'system') applyTheme('system');
+});
