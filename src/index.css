@@ -1475,10 +1475,11 @@ h4 {
 /* ---------- breakdown table ---------- */
 .breakdown {
   overflow-x: auto;
+  --row-cols: 1.5fr 1fr 0.9fr 0.9fr 0.7fr 0.75fr 1fr 1.2fr 36px;
 }
 .brow {
   display: grid;
-  grid-template-columns: 1.3fr 1.15fr 0.85fr 0.85fr 0.95fr 0.85fr 0.8fr 0.95fr 36px;
+  grid-template-columns: var(--row-cols);
   gap: 10px;
   align-items: center;
   padding: 8px 16px;
@@ -1519,31 +1520,42 @@ h4 {
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
-.roi-cell {
+/* Total-return cell: signed amount on the left, a coloured percentage pill on
+   the right (green for gains, red for losses). */
+.ret-cell {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 1px;
+  justify-content: flex-end;
+  gap: 8px;
   line-height: 1.2;
+  white-space: nowrap;
 }
-/* Sign-based colour flows from these classes (unified with .gain-badge) rather
-   than an inline style on the element. */
-.roi-cell.is-pos {
+.ret-amt {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ret-cell.is-pos .ret-amt {
   color: var(--success);
 }
-.roi-cell.is-neg {
+.ret-cell.is-neg .ret-amt {
   color: var(--danger);
 }
-.roi-pill {
+.ret-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
-.roi-amt {
-  font-size: var(--fs-sm);
-  opacity: 0.8;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.ret-cell.is-pos .ret-pill {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+.ret-cell.is-neg .ret-pill {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
 }
 .brow--head {
   color: var(--text-dim);
@@ -1551,18 +1563,20 @@ h4 {
   font-weight: 600;
   text-transform: none;
   padding: 10px 16px;
+  background: var(--bg);
 }
 .brow:last-child {
   border-bottom: none;
 }
 
-/* account section header inside the breakdown */
+/* account section header inside the breakdown — same grid as .brow so the
+   subtotal lines up exactly under the "Valeur totale" column. */
 .acct-section {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--row-cols);
+  gap: 10px;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: var(--bg);
   border-top: 1px solid var(--border-strong);
   border-bottom: 1px solid var(--border);
@@ -1570,25 +1584,28 @@ h4 {
   min-width: 1160px;
 }
 .acct-section__main {
+  grid-column: 1 / 6;
   display: flex;
   align-items: baseline;
   gap: 12px;
+  min-width: 0;
 }
 .acct-section__name {
   font-weight: 700;
-  font-size: var(--fs-body);
+  font-size: var(--fs-sm);
 }
 .acct-section__meta {
   color: var(--text-dim);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
 }
-.acct-section__right {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 10px;
+.acct-section__gain {
+  grid-column: 7;
+  text-align: center;
 }
 .acct-section__total {
+  grid-column: 6;
+  text-align: center;
+  font-size: var(--fs-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1638,9 +1655,30 @@ h4 {
   color: #0a0a0a;
   flex-shrink: 0;
 }
+/* Ticker + name on a single truncated line to keep rows short. */
 .asset-id__text {
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
 }
+.asset-sym {
+  font-weight: 700;
+  font-size: 0.84375rem;
+  line-height: 1.25;
+  flex-shrink: 0;
+}
+.asset-nm {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+/* Two-line asset identity used by other lists (dialogs, savings modal). */
 .asset-name {
   font-weight: 600;
   font-size: 0.84375rem;

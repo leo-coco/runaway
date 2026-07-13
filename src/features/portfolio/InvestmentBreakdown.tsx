@@ -143,10 +143,10 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           <span>{t('portfolio.colAsset')}</span>
           <span>{t('portfolio.colPrice')}</span>
           <span>{t('portfolio.colConverted', { currency: plan.currency })}</span>
-          <span>{t('portfolio.colValue', { currency: plan.currency })}</span>
           <span>{t('portfolio.colCostBasis')}</span>
-          <span>{t('portfolio.colRoi')}</span>
           <span>{t('portfolio.colQuantity')}</span>
+          <span>{t('portfolio.colValue')}</span>
+          <span>{t('portfolio.colRoi')}</span>
           <span>{t('portfolio.colCagr')}</span>
           <span />
         </div>
@@ -181,10 +181,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                         : ''}
                     </span>
                   </div>
-                  <div className="acct-section__right">
-                    <GainLine gain={g.gain} fmt={fmt} />
-                    <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
-                  </div>
+                  <GainLine gain={g.gain} fmt={fmt} className="acct-section__gain" />
+                  <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
                 </div>
 
                 {g.holdings.map((h) => (
