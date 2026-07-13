@@ -11,6 +11,15 @@ import { useAppStore } from '@/store';
 import { totalMonthlyContribution, valueHoldings } from '@/services/portfolioService';
 import type { RatesTable } from '@/services/currencyService';
 import { cn } from '@/lib/cn';
+import {
+  CalendarIcon,
+  TrendingUpIcon,
+  WalletIcon,
+  CartIcon,
+  HomeIcon,
+  PieChartIcon,
+  LayersIcon,
+} from '@/components/icons';
 
 interface OverviewCardsProps {
   plan: Plan;
@@ -61,7 +70,9 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
     .sort((a, b) => a.year - b.year)[0];
 
   // Home equity today (value − mortgage), for the summary card.
-  const homeEquityNow = plan.home ? homeEquitySeries(plan.home, startYear, 0)[0]?.equity : undefined;
+  const homeEquityNow = plan.home
+    ? homeEquitySeries(plan.home, startYear, 0)[0]?.equity
+    : undefined;
 
   return (
     <div className="overview-grid">
@@ -72,18 +83,25 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <span className="ov__big" style={{ fontSize: 40 }}>
-          {plan.settings.retirementYear}
-        </span>
-        <span className="ov__sub">
-          {retiringAtAge !== null
-            ? t('overview.timelineSub', {
-                age: plan.settings.currentAge,
-                retireAge: retiringAtAge,
-                lifeAge: plan.settings.lifeExpectancyAge,
-              })
-            : t('overview.timelineSubShort', { lifeAge: plan.settings.lifeExpectancyAge })}
-        </span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <CalendarIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span className="ov__big" style={{ fontSize: 40 }}>
+              {plan.settings.retirementYear}
+            </span>
+            <span className="ov__sub">
+              {retiringAtAge !== null
+                ? t('overview.timelineSub', {
+                    age: plan.settings.currentAge,
+                    retireAge: retiringAtAge,
+                    lifeAge: plan.settings.lifeExpectancyAge,
+                  })
+                : t('overview.timelineSubShort', { lifeAge: plan.settings.lifeExpectancyAge })}
+            </span>
+          </div>
+        </div>
       </Card>
 
       <Card className="ov" data-tour="savings-card">
@@ -93,16 +111,23 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <span className="ov__big">
-          {fmt.compact(monthlyContribution)}
-          {t('common.perMonth')}
-        </span>
-        <span className="ov__sub">
-          {t('overview.savingsSub', {
-            yearly: fmt.compact(monthlyContribution * 12),
-            year: plan.settings.retirementYear,
-          })}
-        </span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <TrendingUpIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span className="ov__big">
+              {fmt.compact(monthlyContribution)}
+              {t('common.perMonth')}
+            </span>
+            <span className="ov__sub">
+              {t('overview.savingsSub', {
+                yearly: fmt.compact(monthlyContribution * 12),
+                year: plan.settings.retirementYear,
+              })}
+            </span>
+          </div>
+        </div>
       </Card>
 
       <Card className="ov" data-tour="spending-card">
@@ -115,22 +140,29 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <span className="ov__big">
-          {fmt.compact(plan.settings.annualSpending)}
-          {t('common.perYear')}
-        </span>
-        <span className="ov__sub">
-          {phasedSpending
-            ? t('overview.spendingSubPhased', {
-                end: fmt.compact(endOfLifeSpending ?? 0),
-                inflation: plan.settings.inflationPct,
-              })
-            : t('overview.spendingSub', {
-                monthly: fmt.compact(monthlyEquivalent(plan.settings.annualSpending)),
-                inflation: plan.settings.inflationPct,
-                year: plan.settings.retirementYear,
-              })}
-        </span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <WalletIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span className="ov__big">
+              {fmt.compact(plan.settings.annualSpending)}
+              {t('common.perYear')}
+            </span>
+            <span className="ov__sub">
+              {phasedSpending
+                ? t('overview.spendingSubPhased', {
+                    end: fmt.compact(endOfLifeSpending ?? 0),
+                    inflation: plan.settings.inflationPct,
+                  })
+                : t('overview.spendingSub', {
+                    monthly: fmt.compact(monthlyEquivalent(plan.settings.annualSpending)),
+                    inflation: plan.settings.inflationPct,
+                    year: plan.settings.retirementYear,
+                  })}
+            </span>
+          </div>
+        </div>
       </Card>
 
       <Card className="ov">
@@ -140,17 +172,24 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <span className="ov__big">
-          {flowCount === 0 ? '—' : t('overview.expensesIncomesCount', { count: flowCount })}
-        </span>
-        <span className="ov__sub">
-          {nextFlow
-            ? t('overview.expensesIncomesNext', {
-                amount: fmt.compact(nextFlow.amount),
-                year: nextFlow.year,
-              })
-            : t('overview.expensesIncomesEmpty')}
-        </span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <CartIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span className="ov__big">
+              {flowCount === 0 ? '—' : t('overview.expensesIncomesCount', { count: flowCount })}
+            </span>
+            <span className="ov__sub">
+              {nextFlow
+                ? t('overview.expensesIncomesNext', {
+                    amount: fmt.compact(nextFlow.amount),
+                    year: nextFlow.year,
+                  })
+                : t('overview.expensesIncomesEmpty')}
+            </span>
+          </div>
+        </div>
       </Card>
 
       <Card className="ov">
@@ -160,12 +199,19 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {plan.home ? t('common.edit') : t('common.add')}
           </span>
         </div>
-        <span className="ov__big">
-          {homeEquityNow !== undefined ? fmt.compact(homeEquityNow) : '—'}
-        </span>
-        <span className="ov__sub">
-          {plan.home ? t('overview.homeSub') : t('overview.homeEmpty')}
-        </span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <HomeIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span className="ov__big">
+              {homeEquityNow !== undefined ? fmt.compact(homeEquityNow) : '—'}
+            </span>
+            <span className="ov__sub">
+              {plan.home ? t('overview.homeSub') : t('overview.homeEmpty')}
+            </span>
+          </div>
+        </div>
       </Card>
 
       <Card className="ov" data-tour="scenario-pills">
@@ -200,10 +246,18 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <span className="ov__big" style={{ fontSize: 30 }}>
-          {plan.accounts.length} <span className="ov__big-unit">{t('overview.accountsUnit')}</span>
-        </span>
-        <span className="ov__sub">{t('overview.accountsSub')}</span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <PieChartIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span className="ov__big" style={{ fontSize: 30 }}>
+              {plan.accounts.length}{' '}
+              <span className="ov__big-unit">{t('overview.accountsUnit')}</span>
+            </span>
+            <span className="ov__sub">{t('overview.accountsSub')}</span>
+          </div>
+        </div>
       </Card>
 
       <Card className="ov" data-tour="withdrawal-card">
@@ -213,15 +267,25 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <span
-          className="ov__big"
-          style={{ fontSize: 30, color: plan.accounts.length === 0 ? 'var(--amber)' : undefined }}
-        >
-          {plan.accounts.length === 0
-            ? t('overview.withdrawalNotSet')
-            : t('overview.withdrawalReady')}
-        </span>
-        <span className="ov__sub">{t('overview.withdrawalSub')}</span>
+        <div className="ov__body">
+          <span className="ov__icon">
+            <LayersIcon size={26} />
+          </span>
+          <div className="ov__content">
+            <span
+              className="ov__big"
+              style={{
+                fontSize: 30,
+                color: plan.accounts.length === 0 ? 'var(--amber)' : undefined,
+              }}
+            >
+              {plan.accounts.length === 0
+                ? t('overview.withdrawalNotSet')
+                : t('overview.withdrawalReady')}
+            </span>
+            <span className="ov__sub">{t('overview.withdrawalSub')}</span>
+          </div>
+        </div>
       </Card>
     </div>
   );
