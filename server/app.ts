@@ -12,8 +12,7 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
 // Application API.
 app.route('/api/plans', plansRoutes);
 
-// Cached, server-side proxy for market data (FX + Alpha Vantage). Public: the
-// data is not user-specific and keeps provider keys off the client.
+// Market-data proxy (keeps provider API keys server-side).
 app.route('/api/market', marketRoutes);
 
 app.get('/api/health', (c) => c.json({ ok: true }));

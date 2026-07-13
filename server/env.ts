@@ -16,9 +16,9 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1),
   /** Verified sender, e.g. "Retire on Model <no-reply@yourdomain.com>". */
   EMAIL_FROM: z.string().min(3),
-  /** Alpha Vantage API key (equities/ETF quotes + symbol search). Server-only. */
+  /** Alpha Vantage API key — US/CA stock & ETF quotes. Proxied via /api/market. */
   ALPHA_VANTAGE_API_KEY: z.string().min(1),
-  /** ExchangeRate-API key (live FX rates). Server-only. */
+  /** ExchangeRate-API key — live FX rates. Proxied via /api/market. */
   EXCHANGERATE_API_KEY: z.string().min(1),
 });
 

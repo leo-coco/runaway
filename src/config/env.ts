@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 /**
- * Client environment configuration, validated with Zod at module load.
+ * Environment configuration, validated with Zod at module load.
  *
- * Only non-secret client config lives here. Alpha Vantage and ExchangeRate keys
- * are NOT client env anymore: those calls go through the cached server proxy
- * (server/routes/market.ts), so their keys stay server-side. CoinGecko needs no
- * key. If required config is missing the app surfaces a typed configuration
- * screen instead of silently proceeding.
+ * Only non-secret client config lives here. The Alpha Vantage and
+ * ExchangeRate-API keys are secrets and are held server-side (see
+ * server/env.ts + server/routes/market.ts); the client reaches those providers
+ * through the same-origin /api/market proxy. CoinGecko needs no key, so its
+ * (overridable) base URL stays a client value.
  */
 
 const rawSchema = z.object({

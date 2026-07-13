@@ -14,7 +14,6 @@ export interface Services {
 /** Compose infrastructure clients and services from validated env. */
 export const createServices = (env: AppEnv): Services => {
   const coinGecko = createCoinGeckoClient(env.coinGeckoBaseUrl);
-  // Alpha Vantage & ExchangeRate go through our cached server proxy, so no keys here.
   const alphaVantage = createAlphaVantageClient();
   const exchangeRate = createExchangeRateClient();
 

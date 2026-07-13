@@ -9,14 +9,18 @@ import {
 } from '../../src/schemas/api/alphaVantage.schema.js';
 
 /**
- * Server-side proxy for the two market APIs whose free tiers are most fragile.
- * Every response is cached in Postgres (see server/lib/cachedFetch.ts) so a
- * given key is fetched upstream at most once per TTL for the whole app, and the
- * provider keys stay server-side instead of being shipped in the client bundle.
+ * Market-data proxy. Keeps the Alpha Vantage and ExchangeRate-API keys
+ * server-side (they used to be VITE_-prefixed and thus inlined into the client
+ * bundle) AND caches every response in Postgres (see server/lib/cachedFetch.ts),
+ * so a given key is fetched upstream at most once per TTL for the whole app —
+ * what keeps the fragile free tiers (esp. Alpha Vantage's ~25 req/day) viable.
+ *
+ * Endpoints are named by functional domain (equities, fx), not by provider, so
+ * the upstream vendor can be swapped without changing the client contract.
  *
  * TTLs, tunable:
  *  - FX rates change ~daily and are identical for all users → 24h.
- *  - Quotes are shared per ticker but move intraday → 1h (balance freshness vs quota).
+ *  - Quotes are shared per ticker but move intraday → 1h (freshness vs quota).
  *  - Symbol search results are effectively static → 24h.
  */
 const FX_TTL_MS = 24 * 60 * 60_000;
@@ -47,14 +51,61 @@ const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
 
 const isThrottled = (note?: string, info?: string): boolean => Boolean(note ?? info);
 
+const errorStatus = (cause: unknown): 429 | 502 =>
+  cause instanceof Error && cause.message === RATE_LIMIT ? 429 : 502;
+
+const cacheHeader = (status: CacheStatus): Record<string, string> => ({ 'x-cache': status });
+
+const ALPHA_VANTAGE_BASE = 'https://www.alphavantage.co/query';
+
 export const marketRoutes = new Hono();
 
-const setCacheHeader = (status: CacheStatus): Record<string, string> => ({
-  'x-cache': status,
+// Symbol search across equities/ETFs (Alpha Vantage SYMBOL_SEARCH).
+marketRoutes.get('/equities/search', async (c) => {
+  const keywords = (c.req.query('keywords') ?? '').trim();
+  if (keywords.length < 2) return c.json({ bestMatches: [] }, 200, cacheHeader('hit'));
+  const key = serverEnv().ALPHA_VANTAGE_API_KEY;
+  try {
+    const { value, status } = await getCached(
+      `avsearch:${keywords.toLowerCase()}`,
+      SEARCH_TTL_MS,
+      async () => {
+        const dto = await fetchJson(
+          `${ALPHA_VANTAGE_BASE}?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(keywords)}&apikey=${key}`,
+          alphaVantageSearchSchema,
+        );
+        // A throttled response must not poison the cache; fall back to the last good one.
+        if (isThrottled(dto.Note, dto.Information)) throw new Error(RATE_LIMIT);
+        return dto;
+      },
+    );
+    return c.json(value, 200, cacheHeader(status));
+  } catch (cause) {
+    return c.json({ error: 'Search unavailable' }, errorStatus(cause));
+  }
+});
+
+// Latest quote for an equity/ETF symbol (Alpha Vantage GLOBAL_QUOTE).
+marketRoutes.get('/equities/quote', async (c) => {
+  const symbol = (c.req.query('symbol') ?? '').trim().toUpperCase();
+  const key = serverEnv().ALPHA_VANTAGE_API_KEY;
+  try {
+    const { value, status } = await getCached(`quote:${symbol}`, QUOTE_TTL_MS, async () => {
+      const dto = await fetchJson(
+        `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
+        alphaVantageQuoteSchema,
+      );
+      if (isThrottled(dto.Note, dto.Information)) throw new Error(RATE_LIMIT);
+      return dto;
+    });
+    return c.json(value, 200, cacheHeader(status));
+  } catch (cause) {
+    return c.json({ error: 'Quote unavailable' }, errorStatus(cause));
+  }
 });
 
 // Live FX rates relative to a base currency (ExchangeRate-API).
-marketRoutes.get('/fx/:base', async (c) => {
+marketRoutes.get('/fx/latest/:base', async (c) => {
   const base = c.req.param('base').toUpperCase();
   const key = serverEnv().EXCHANGERATE_API_KEY;
   try {
@@ -69,61 +120,8 @@ marketRoutes.get('/fx/:base', async (c) => {
       }
       return dto;
     });
-    return c.json(value, 200, setCacheHeader(status));
+    return c.json(value, 200, cacheHeader(status));
   } catch (cause) {
-    return c.json(
-      { error: 'FX rates unavailable' },
-      cause instanceof Error && cause.message === RATE_LIMIT ? 429 : 502,
-    );
-  }
-});
-
-// Latest quote for an equity/ETF symbol (Alpha Vantage GLOBAL_QUOTE).
-marketRoutes.get('/quote/:symbol', async (c) => {
-  const symbol = c.req.param('symbol').toUpperCase();
-  const key = serverEnv().ALPHA_VANTAGE_API_KEY;
-  try {
-    const { value, status } = await getCached(`quote:${symbol}`, QUOTE_TTL_MS, async () => {
-      const dto = await fetchJson(
-        `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
-        alphaVantageQuoteSchema,
-      );
-      // A throttled response must not poison the cache; fall back to the last good quote.
-      if (isThrottled(dto.Note, dto.Information)) throw new Error(RATE_LIMIT);
-      return dto;
-    });
-    return c.json(value, 200, setCacheHeader(status));
-  } catch (cause) {
-    return c.json(
-      { error: 'Quote unavailable' },
-      cause instanceof Error && cause.message === RATE_LIMIT ? 429 : 502,
-    );
-  }
-});
-
-// Symbol search across equities/ETFs (Alpha Vantage SYMBOL_SEARCH).
-marketRoutes.get('/search', async (c) => {
-  const q = (c.req.query('q') ?? '').trim();
-  if (q.length < 2) return c.json({ bestMatches: [] }, 200, setCacheHeader('hit'));
-  const key = serverEnv().ALPHA_VANTAGE_API_KEY;
-  try {
-    const { value, status } = await getCached(
-      `avsearch:${q.toLowerCase()}`,
-      SEARCH_TTL_MS,
-      async () => {
-        const dto = await fetchJson(
-          `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(q)}&apikey=${key}`,
-          alphaVantageSearchSchema,
-        );
-        if (isThrottled(dto.Note, dto.Information)) throw new Error(RATE_LIMIT);
-        return dto;
-      },
-    );
-    return c.json(value, 200, setCacheHeader(status));
-  } catch (cause) {
-    return c.json(
-      { error: 'Search unavailable' },
-      cause instanceof Error && cause.message === RATE_LIMIT ? 429 : 502,
-    );
+    return c.json({ error: 'FX rates unavailable' }, errorStatus(cause));
   }
 });
