@@ -24,8 +24,7 @@ const limitsSchema = z.object({
 const featuresSchema = z.object({
   monteCarlo: z.boolean(),
   withdrawalOrdering: z.boolean(),
-  taxOptimization: z.boolean(),
-  multiAccount: z.boolean(),
+  accountsTax: z.boolean(),
   phasedSpending: z.boolean(),
   realEstate: z.boolean(),
 });

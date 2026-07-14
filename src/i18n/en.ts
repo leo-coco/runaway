@@ -1249,8 +1249,7 @@ export const en = {
     reason: {
       monteCarlo: 'Monte Carlo probability analysis is a Premium feature.',
       withdrawalOrdering: 'Withdrawal ordering is a Premium feature.',
-      taxOptimization: 'Tax-advantaged accounts and tax settings are a Premium feature.',
-      multiAccount: 'Multiple accounts are a Premium feature.',
+      accountsTax: 'Multiple accounts and tax settings are a Premium feature.',
       phasedSpending: 'Phased (go-go / slow-go / no-go) spending is a Premium feature.',
       realEstate: 'Modelling a home and its equity is a Premium feature.',
       plans: "You've reached the plan limit for the Free tier.",
@@ -1284,8 +1283,7 @@ export const en = {
     feature: {
       monteCarlo: 'Monte Carlo',
       withdrawalOrdering: 'Withdrawal ordering',
-      taxOptimization: 'Tax optimization',
-      multiAccount: 'Multiple accounts',
+      accountsTax: 'Accounts & tax',
       phasedSpending: 'Phased spending',
       realEstate: 'Real estate',
     },

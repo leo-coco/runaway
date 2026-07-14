@@ -15,8 +15,7 @@ import {
 const FEATURE_KEYS: (keyof TierFeatures)[] = [
   'monteCarlo',
   'withdrawalOrdering',
-  'taxOptimization',
-  'multiAccount',
+  'accountsTax',
   'phasedSpending',
   'realEstate',
 ];

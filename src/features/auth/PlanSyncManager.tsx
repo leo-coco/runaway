@@ -77,7 +77,7 @@ export const PlanSyncManager = (): React.ReactElement | null => {
         // rather than failing silently. The over-limit local edit stays in the store.
         if (e instanceof PlanLimitError) {
           const reason: PaywallReason =
-            e.limit === 'assets' ? 'assets' : e.limit === 'accounts' ? 'multiAccount' : 'plans';
+            e.limit === 'assets' ? 'assets' : e.limit === 'accounts' ? 'accountsTax' : 'plans';
           useAppStore.getState().openPaywall(reason);
         } else {
           console.error('Plan sync: push failed', e);

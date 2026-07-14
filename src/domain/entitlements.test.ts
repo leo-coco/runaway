@@ -17,8 +17,7 @@ describe('resolveEntitlements', () => {
     expect(ent.features).toEqual({
       monteCarlo: true,
       withdrawalOrdering: true,
-      taxOptimization: true,
-      multiAccount: true,
+      accountsTax: true,
       phasedSpending: true,
       realEstate: true,
     });
@@ -70,8 +69,7 @@ describe('resolveEntitlements', () => {
         features: {
           monteCarlo: true,
           withdrawalOrdering: false,
-          taxOptimization: false,
-          multiAccount: true,
+          accountsTax: true,
           phasedSpending: false,
           realEstate: false,
         },

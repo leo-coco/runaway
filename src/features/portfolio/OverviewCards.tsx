@@ -43,9 +43,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
   const updateScenario = useAppStore((s) => s.updateScenario);
   // Accounts/tax editing and withdrawal ordering are premium: free can view the
   // resulting numbers but not customize the inputs.
-  const canTax = useFeature('taxOptimization');
-  const canMultiAccount = useFeature('multiAccount');
-  const accountsLocked = !canTax && !canMultiAccount;
+  const accountsLocked = !useFeature('accountsTax');
   const withdrawalLocked = !useFeature('withdrawalOrdering');
   // Real estate (Home) is premium: free keeps any existing equity number visible
   // but cannot open the editor.
@@ -261,7 +259,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         <div className="ov__head">
           <span className="ov__title">{t('overview.accountsTax')}</span>
           {accountsLocked ? (
-            <span className="ov__link" onClick={() => openPaywall('taxOptimization')}>
+            <span className="ov__link" onClick={() => openPaywall('accountsTax')}>
               <ProBadge />
             </span>
           ) : (

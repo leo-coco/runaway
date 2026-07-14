@@ -286,7 +286,13 @@ export const ACCOUNT_PRESETS: readonly AccountPreset[] = [
   { name: 'Compte à terme', kind: 'taxable', sourceCountry: 'FR', costBasisPct: 80 },
   // Compte courant: a checking account yields ~0%, so there is no gain to tax
   // (costBasisPct 100). reducedRatePct 0 is belt-and-suspenders at home.
-  { name: 'Compte courant', kind: 'taxable', sourceCountry: 'FR', costBasisPct: 100, reducedRatePct: 0 },
+  {
+    name: 'Compte courant',
+    kind: 'taxable',
+    sourceCountry: 'FR',
+    costBasisPct: 100,
+    reducedRatePct: 0,
+  },
   // 🇨🇦 Canada
   { name: 'RRSP / REER', kind: 'tax_deferred', sourceCountry: 'CA' },
   { name: 'RRIF / FERR', kind: 'tax_deferred', sourceCountry: 'CA' },
@@ -319,7 +325,13 @@ export const ACCOUNT_PRESETS: readonly AccountPreset[] = [
   { name: 'Brokerage (US)', kind: 'taxable', sourceCountry: 'US', costBasisPct: 60 },
   // Checking Account: the US equivalent of the French compte courant — ~0% yield,
   // no gain to tax (costBasisPct 100).
-  { name: 'Checking Account', kind: 'taxable', sourceCountry: 'US', costBasisPct: 100, reducedRatePct: 0 },
+  {
+    name: 'Checking Account',
+    kind: 'taxable',
+    sourceCountry: 'US',
+    costBasisPct: 100,
+    reducedRatePct: 0,
+  },
   // 🪙 Crypto — country-agnostic; taxed at residence (no fixed source country).
   { name: 'Crypto Wallet', kind: 'taxable', costBasisPct: 40 },
 ];
@@ -335,8 +347,26 @@ export const BASE_TAXABLE_PRESET: Record<Country, AccountPreset> = {
 export const defaultTaxableAccount = (country: Country): Account =>
   accountFromPreset(BASE_TAXABLE_PRESET[country]);
 
+/**
+ * The default account a free-tier plan starts with: a single tax-free sandbox
+ * account, not the honest taxable baseline premium gets. Free is capped at one
+ * account with no tax/kind customization, so this is what that one account is.
+ */
+export const defaultFreeAccount = (): Account => ({
+  id: newId(),
+  name: 'DEMO',
+  taxRatePct: 0,
+  taxableBasePct: 100,
+  taxMode: 'auto',
+  kind: 'tax_free',
+  custom: true,
+});
+
 /** Build a new account from a preset (locked) or blank defaults (custom, editable). */
-export const accountFromPreset = (preset?: AccountPreset, fallbackCountry: Country = 'US'): Account => ({
+export const accountFromPreset = (
+  preset?: AccountPreset,
+  fallbackCountry: Country = 'US',
+): Account => ({
   id: newId(),
   name: preset?.name ?? 'Custom account',
   taxRatePct: 0,

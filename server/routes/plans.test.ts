@@ -44,8 +44,7 @@ const ent = (limits: TierLimits): Entitlements => ({
   features: {
     monteCarlo: false,
     withdrawalOrdering: false,
-    taxOptimization: false,
-    multiAccount: false,
+    accountsTax: false,
     phasedSpending: false,
     realEstate: false,
   },

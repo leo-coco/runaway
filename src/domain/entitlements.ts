@@ -20,15 +20,16 @@ export interface TierLimits {
 /**
  * Calc-affecting capabilities gated by tier. These gate editing UI + navigation
  * and, for `monteCarlo`, whether the simulation is computed at all. They do NOT
- * switch tax on/off in the projection engine: free still models baseline tax on
- * its single taxable account. `taxOptimization` gates tax-advantaged envelope kinds
- * and per-account tax settings; `multiAccount` gates having more than one account.
+ * switch tax on/off in the projection engine: free still models tax on whatever
+ * account(s) it has. `accountsTax` is a single gate on the Accounts & Tax card:
+ * either the user can manage account kinds/tax settings and hold more than one
+ * account, or they can't — there's no half-access, so this isn't split into two
+ * flags.
  */
 export interface TierFeatures {
   readonly monteCarlo: boolean;
   readonly withdrawalOrdering: boolean;
-  readonly taxOptimization: boolean;
-  readonly multiAccount: boolean;
+  readonly accountsTax: boolean;
   /** Phased ("go-go / slow-go / no-go") retirement spending mode. */
   readonly phasedSpending: boolean;
   /** Primary residence / real-estate modelling (the Home card + modal). */
@@ -70,8 +71,7 @@ export const DEFAULT_TIER_CONFIG: TierConfig = {
     features: {
       monteCarlo: false,
       withdrawalOrdering: false,
-      taxOptimization: false,
-      multiAccount: false,
+      accountsTax: false,
       phasedSpending: false,
       realEstate: false,
     },
@@ -81,8 +81,7 @@ export const DEFAULT_TIER_CONFIG: TierConfig = {
     features: {
       monteCarlo: true,
       withdrawalOrdering: true,
-      taxOptimization: true,
-      multiAccount: true,
+      accountsTax: true,
       phasedSpending: true,
       realEstate: true,
     },
