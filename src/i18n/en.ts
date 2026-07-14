@@ -1256,6 +1256,8 @@ export const en = {
       realEstate: 'Modelling a home and its equity is a Premium feature.',
       plans: "You've reached the plan limit for the Free tier.",
       assets: "You've reached the asset limit for the Free tier.",
+      accounts:
+        "You've reached the maximum of {{max}} accounts for the Free plan. Upgrade to add more accounts.",
     },
     benefit: {
       monteCarlo: 'Monte Carlo success probability and trial explorer',

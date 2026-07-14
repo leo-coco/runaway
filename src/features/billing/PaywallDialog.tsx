@@ -15,7 +15,7 @@ export const PaywallDialog = () => {
   const { t } = useTranslation();
   const reason = useAppStore((s) => s.paywall);
   const close = useAppStore((s) => s.closePaywall);
-  const { pricing } = useEntitlements();
+  const { pricing, limits } = useEntitlements();
 
   if (!reason) return null;
   const price = effectivePrice(pricing);
@@ -23,7 +23,7 @@ export const PaywallDialog = () => {
   return (
     <Modal
       title={t('billing.paywallTitle')}
-      description={t(`billing.reason.${reason}`)}
+      description={t(`billing.reason.${reason}`, { max: limits.maxAccounts })}
       onClose={close}
       footer={
         <>

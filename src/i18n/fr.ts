@@ -1286,6 +1286,8 @@ export const fr: Resources = {
         'La modélisation d’un logement et de sa valeur nette est une fonctionnalité Premium.',
       plans: 'Vous avez atteint la limite de plans de l’offre gratuite.',
       assets: 'Vous avez atteint la limite d’actifs de l’offre gratuite.',
+      accounts:
+        'Vous avez atteint la limite maximale de {{max}} comptes pour le plan gratuit. Passez à l’offre supérieure pour ajouter de nouveaux comptes.',
     },
     benefit: {
       monteCarlo: 'Probabilité de succès Monte Carlo et explorateur de tirages',

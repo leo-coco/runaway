@@ -23,6 +23,7 @@ export type PaywallReason =
   | 'monteCarlo'
   | 'withdrawalOrdering'
   | 'accountsTax'
+  | 'accounts'
   | 'phasedSpending'
   | 'realEstate'
   | 'plans'
