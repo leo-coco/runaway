@@ -12,7 +12,11 @@
       "Bash(grep -n \"^button\\\\|^ *button {\\\\|button,\\\\|\\\\*,\\\\s*\\\\*::before\\\\|box-sizing\" src/index.css)",
       "Bash(npm run *)",
       "Bash(npm test *)",
-      "Bash(grep -iA20 \"test:\\\\|test =\\\\|environment\\\\|include\\\\|setupFiles\")"
+      "Bash(grep -iA20 \"test:\\\\|test =\\\\|environment\\\\|include\\\\|setupFiles\")",
+      "Bash(sort -t: -k2 -n)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\)['scripts']\\)\")"
     ]
   }
 }

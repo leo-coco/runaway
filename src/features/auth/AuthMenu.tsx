@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from '@/lib/authClient';
-import { GearIcon, InfoIcon, LogOutIcon } from '@/components/icons';
+import { GearIcon, InfoIcon, LogOutIcon, UserIcon } from '@/components/icons';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { AuthDialog } from './AuthDialog';
 
@@ -100,6 +101,19 @@ export const AuthMenu = () => {
           </div>
 
           <div className="sb-profile-pop__group">
+            {(user as { role?: string } | undefined)?.role === 'admin' && (
+              <Link
+                to="/admin"
+                role="menuitem"
+                className="sb-profile-pop__item"
+                onClick={() => setOpen(false)}
+              >
+                <span className="sb-profile-pop__lead">
+                  <UserIcon size={16} />
+                  <span>{t('admin.title')}</span>
+                </span>
+              </Link>
+            )}
             <SettingsMenu />
             <button type="button" role="menuitem" className="sb-profile-pop__item">
               <span className="sb-profile-pop__lead">

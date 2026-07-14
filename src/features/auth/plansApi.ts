@@ -11,8 +11,32 @@ export interface ServerPlan {
   updatedAt: string;
 }
 
+/** Thrown when the server rejects a write because the user's tier limit is hit. */
+export class PlanLimitError extends Error {
+  readonly limit: string;
+  readonly max: number | null;
+  constructor(limit: string, max: number | null) {
+    super(`Tier limit reached: ${limit}`);
+    this.name = 'PlanLimitError';
+    this.limit = limit;
+    this.max = max;
+  }
+}
+
 const json = async (res: Response): Promise<unknown> => {
-  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text().catch(() => res.statusText)}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    if (res.status === 403) {
+      try {
+        const body = JSON.parse(text) as { reason?: string; limit?: string; max?: number | null };
+        if (body?.reason === 'limit')
+          throw new PlanLimitError(body.limit ?? 'unknown', body.max ?? null);
+      } catch (e) {
+        if (e instanceof PlanLimitError) throw e;
+      }
+    }
+    throw new Error(`API ${res.status}: ${text}`);
+  }
   return res.status === 204 ? null : res.json();
 };
 

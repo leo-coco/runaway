@@ -45,8 +45,10 @@
   --sp-6: 1.5rem; /* 24px */
   --sp-8: 2rem; /* 32px */
 
+  --z-modal: 1000;
+
   font-family:
-    'Inter',
+    'Geist Sans',
     system-ui,
     -apple-system,
     'Segoe UI',
@@ -121,7 +123,7 @@
    canvas (#F8F6F2), crisp white cards, near-black ink (#1F2328), and a copper
    accent (#B88A44) with a darker copper (#9A6F2F) for hover/emphasis. */
 :root[data-theme='light'] {
-  --bg: #f8f6f2;
+  --bg: rgb(242, 242, 242);
   --bg-elev: #ffffff;
   --bg-card: #ffffff;
   --bg-card-hover: #fbf6ec;
@@ -129,8 +131,8 @@
   --border: #e7ded1;
   --border-strong: #d6c9b3;
 
-  --text: #1f2328;
-  --text-muted: #667085;
+  --text: rgb(13, 13, 13);
+  --text-muted: rgba(13, 13, 13, 0.6);
   --text-dim: #98a0ab;
 
   /* Champagne/copper accent — badges, premium chips, active-icon fills. */
@@ -1077,11 +1079,13 @@ h4 {
 
 .overview-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 6px;
 }
 .ov {
+  container-type: inline-size;
+  min-width: 0;
   padding: 18px 20px;
   min-height: 132px;
   display: flex;
@@ -1148,9 +1152,13 @@ h4 {
   min-width: 0;
 }
 .ov__big {
-  font-size: 1.875rem;
+  font-size: clamp(1.125rem, 10cqw, 1.875rem);
   font-weight: 700;
   line-height: 1;
+  overflow-wrap: break-word;
+}
+.ov__big--lg {
+  font-size: clamp(1.375rem, 13cqw, 2.5rem);
 }
 .ov__sub {
   color: var(--text-muted);
@@ -1224,6 +1232,18 @@ h4 {
   background: var(--emphasis-bg);
   color: var(--emphasis-text);
 }
+.scenario-pill.tip-host:last-child .tip-bubble {
+  left: auto;
+  right: 0;
+}
+@container (max-width: 260px) {
+  .scenario-pills--stretch {
+    flex-wrap: wrap;
+  }
+  .scenario-pill {
+    flex: 1 1 100%;
+  }
+}
 
 /* ---------- plan title + auto-saved ---------- */
 .plan-title {
@@ -1235,7 +1255,7 @@ h4 {
 /* ---------- hero (two lenses summary) ---------- */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
   margin: 18px 0 26px;
@@ -1288,9 +1308,10 @@ h4 {
   gap: 18px;
 }
 .hero__big {
-  font-size: 3.75rem;
+  font-size: clamp(1.5rem, 6vw, 3.75rem);
   font-weight: 800;
   line-height: 1;
+  overflow-wrap: break-word;
 }
 .hero__big-note {
   color: var(--text-muted);
@@ -1557,15 +1578,23 @@ h4 {
 /* ---------- breakdown table ---------- */
 .breakdown {
   overflow-x: auto;
+  --row-cols: minmax(160px, 1.5fr) minmax(90px, 1fr) minmax(90px, 0.9fr) minmax(90px, 0.9fr)
+    minmax(64px, 0.7fr) minmax(90px, 0.75fr) minmax(110px, 1fr) minmax(70px, 1.2fr) 64px;
 }
 .brow {
   display: grid;
-  grid-template-columns: 1.3fr 1.15fr 0.85fr 0.85fr 0.95fr 0.85fr 0.8fr 0.95fr 36px;
+  grid-template-columns: var(--row-cols);
   gap: 10px;
   align-items: center;
   padding: 8px 16px;
   border-bottom: 1px solid var(--border);
-  min-width: 1160px;
+  /* Must match the row's true minimum content width (sum of the --row-cols
+     minmax() floors + gaps + padding), so the row's own box — and therefore
+     its background — never falls short of what actually overflows into the
+     .breakdown scroll area. Without this, the box stays clamped to the
+     viewport while grid tracks paint past it, leaving unstyled blank space
+     to the right once scrolled. */
+  min-width: 940px;
 }
 .brow > * {
   text-align: center;
@@ -1601,76 +1630,92 @@ h4 {
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
-.roi-cell {
+/* Total-return cell: signed amount on the left, a coloured percentage pill on
+   the right (green for gains, red for losses). */
+.ret-cell {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 1px;
+  justify-content: flex-end;
+  gap: 8px;
   line-height: 1.2;
+  white-space: nowrap;
 }
-/* Sign-based colour flows from these classes (unified with .gain-badge) rather
-   than an inline style on the element. */
-.roi-cell.is-pos {
+.ret-amt {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ret-cell.is-pos .ret-amt {
   color: var(--success);
 }
-.roi-cell.is-neg {
+.ret-cell.is-neg .ret-amt {
   color: var(--danger);
 }
-.roi-pill {
+.ret-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
-.roi-amt {
-  font-size: var(--fs-sm);
-  opacity: 0.8;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.ret-cell.is-pos .ret-pill {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+.ret-cell.is-neg .ret-pill {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
 }
 .brow--head {
-  color: var(--text-dim);
+  color: rgb(13, 13, 13);
   font-size: 0.71875rem;
   font-weight: 600;
   text-transform: none;
   padding: 10px 16px;
+  background: rgb(250, 250, 250);
 }
 .brow:last-child {
   border-bottom: none;
 }
 
-/* account section header inside the breakdown */
+/* account section header inside the breakdown — same grid as .brow so the
+   subtotal lines up exactly under the "Valeur totale" column. */
 .acct-section {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--row-cols);
+  gap: 10px;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: var(--bg);
   border-top: 1px solid var(--border-strong);
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  min-width: 1160px;
+  min-width: 940px;
 }
 .acct-section__main {
+  grid-column: 1 / 6;
   display: flex;
   align-items: baseline;
   gap: 12px;
+  min-width: 0;
 }
 .acct-section__name {
   font-weight: 700;
-  font-size: var(--fs-body);
+  font-size: var(--fs-sm);
 }
 .acct-section__meta {
   color: var(--text-dim);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
 }
-.acct-section__right {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 10px;
+.acct-section__gain {
+  grid-column: 7;
+  text-align: center;
 }
 .acct-section__total {
+  grid-column: 6;
+  text-align: center;
+  font-size: var(--fs-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1720,9 +1765,30 @@ h4 {
   color: #0a0a0a;
   flex-shrink: 0;
 }
+/* Ticker + name on a single truncated line to keep rows short. */
 .asset-id__text {
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
 }
+.asset-sym {
+  font-weight: 700;
+  font-size: 0.84375rem;
+  line-height: 1.25;
+  flex-shrink: 0;
+}
+.asset-nm {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+/* Two-line asset identity used by other lists (dialogs, savings modal). */
 .asset-name {
   font-weight: 600;
   font-size: 0.84375rem;
@@ -1800,7 +1866,7 @@ h4 {
   justify-content: flex-end;
   gap: 16px;
   align-items: baseline;
-  padding: 16px 20px;
+  padding: 8px 16px;
   border-top: 1px solid var(--border-strong);
 }
 .total-row .label {
@@ -1808,7 +1874,7 @@ h4 {
   font-size: var(--fs-sm);
 }
 .total-row .value {
-  font-size: 1.375rem;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
@@ -2059,6 +2125,12 @@ h4 {
 }
 .stepper.is-invalid {
   border-color: var(--danger);
+}
+.stepper.is-disabled {
+  opacity: 0.5;
+}
+.stepper.is-disabled input {
+  cursor: not-allowed;
 }
 /* compact, button-less variant: number sits right next to the suffix */
 .stepper--plain {
@@ -2316,38 +2388,6 @@ h4 {
   --tip-fg-muted: rgb(246 244 240 / 72%);
   --tip-border: rgb(255 255 255 / 12%);
   --tip-radius: var(--radius-pill);
-}
-
-/* ---------- shortcut action pill ("Go to …" rich tooltip) ---------- */
-.shortcut-tip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
-  border: 1px solid var(--tip-border);
-  border-radius: var(--tip-radius);
-  /* Always the dark chip treatment, per the design-system reference — a warm
-     near-black ground with light text, in both themes. */
-  background: var(--tip-bg);
-  color: var(--tip-fg);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  cursor: pointer;
-  box-shadow: var(--shadow-pop);
-  transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease;
-}
-.shortcut-tip:hover {
-  transform: translateY(-1px);
-}
-.shortcut-tip__icon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--brand-orange);
-}
-.shortcut-tip__label {
-  white-space: nowrap;
 }
 
 .acct-explain {
@@ -2812,7 +2852,7 @@ h4 {
   display: grid;
   place-items: center;
   padding: 20px;
-  z-index: 50;
+  z-index: var(--z-modal);
 }
 .modal {
   width: 100%;
@@ -3630,11 +3670,26 @@ h4 {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+/* Actions column: per-row edit icon, plus the trash button once editing. */
+.asset-row__actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fetch-btn.is-active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.fetch-btn.is-active:hover {
+  color: var(--bg);
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
 /* "Confirm before removing an asset" — a small popover floating to the LEFT of
    the trash button, so the row layout never shifts. */
-.asset-row__remove {
-  position: relative;
-}
 .asset-row__confirm {
   position: absolute;
   top: 50%;
@@ -4375,8 +4430,10 @@ h4 {
   color: var(--text-muted);
 }
 .adj__box {
-  width: 132px;
-  flex-shrink: 0;
+  width: 100%;
+}
+.adj__box .stepper {
+  width: 100%;
 }
 .adj__box .stepper input {
   text-align: center;
@@ -4645,13 +4702,13 @@ h4 {
 
 @media (max-width: 1120px) {
   .overview-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 900px) {
   .overview-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .scenario-grid,
   .adj-grid {
@@ -4659,6 +4716,15 @@ h4 {
   }
   .page-head {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero__card {
+    padding: 18px 20px;
   }
 }
 
@@ -5378,4 +5444,117 @@ h4 {
 .runway-table__amount {
   text-align: right;
   white-space: nowrap;
+}
+
+/* ---------- billing / freemium gating ---------- */
+.pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  padding: 1px 7px;
+  line-height: 1.5;
+}
+.upgrade-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 460px;
+  margin: 24px auto;
+  padding: 28px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.upgrade-card__icon {
+  color: var(--accent);
+}
+.upgrade-card__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.upgrade-card__body {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.paywall__benefits {
+  margin: 4px 0 14px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+.paywall__note {
+  color: var(--text-muted);
+  font-size: var(--fs-2xs);
+}
+.hero__card--locked {
+  cursor: pointer;
+}
+.hero__lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+/* ---------- admin console ---------- */
+.admin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.admin-sub {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.admin-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.admin-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sm);
+}
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.admin-ok {
+  color: var(--success);
+  font-size: var(--fs-sm);
+}
+.admin-table-wrap {
+  overflow-x: auto;
 }

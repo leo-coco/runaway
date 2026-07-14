@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ShortcutTooltip } from '@/components/ui/ShortcutTooltip';
-import { TrendingUpIcon } from '@/components/icons';
 import { successStatus, type SuccessZone } from '@/domain/successRate';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useFeature } from '@/hooks/useEntitlements';
+import { useAppStore } from '@/store';
+import { ProBadge } from '@/features/billing/ProBadge';
+import { StarIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { OverviewCards } from './OverviewCards';
 import { PortfolioTrendCard } from './PortfolioTrendCard';
@@ -21,6 +23,8 @@ export const DashboardPage = () => {
   const { plan, rates, totalValue, projection, monteCarlo } = usePlanContext();
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
+  const mcEnabled = useFeature('monteCarlo');
+  const openPaywall = useAppStore((s) => s.openPaywall);
 
   const hasAssets = plan.holdings.length > 0;
   const sx = monteCarlo.result ? successStatus(monteCarlo.result.successRate) : null;
@@ -43,11 +47,26 @@ export const DashboardPage = () => {
           ) : null}
         </div>
 
-        <div className={cn('hero__card', sx?.zone === 'weak' && 'hero__card--risk')}>
+        <div
+          className={cn(
+            'hero__card',
+            !mcEnabled && 'hero__card--locked',
+            mcEnabled && sx?.zone === 'weak' && 'hero__card--risk',
+          )}
+          {...(!mcEnabled
+            ? { role: 'button', tabIndex: 0, onClick: () => openPaywall('monteCarlo') }
+            : {})}
+        >
           <div className="hero__row">
             <span className="hero__label">{t('dashboard.successRate')}</span>
+            {!mcEnabled && <ProBadge />}
           </div>
-          {!hasAssets ? (
+          {!mcEnabled ? (
+            <span className="hero__lock">
+              <StarIcon size={16} />
+              {t('billing.unlock')}
+            </span>
+          ) : !hasAssets ? (
             <span className="hero__big">—</span>
           ) : sx ? (
             <>
@@ -89,11 +108,6 @@ export const DashboardPage = () => {
 
       <div className="settings-head">
         <span className="settings-head__title">{t('dashboard.planSettings')}</span>
-        <ShortcutTooltip
-          to={`/plan/${plan.id}/projection`}
-          icon={<TrendingUpIcon size={16} />}
-          label={t('sidebar.projection')}
-        />
       </div>
       <ErrorBoundary feature="plan settings">
         <OverviewCards plan={plan} rates={rates} />

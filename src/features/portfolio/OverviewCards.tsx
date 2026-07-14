@@ -4,10 +4,12 @@ import { Card } from '@/components/ui/Card';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { monthlyEquivalent } from '@/domain/retirementSettings';
 import { DEFAULT_PHASED_SPENDING, realSpendingMultiplier } from '@/domain/spendingModel';
-import { SCENARIOS, type ScenarioKey } from '@/domain/scenario';
+import { SCENARIOS, scenarioAdjustmentPts, type ScenarioKey } from '@/domain/scenario';
 import { homeEquitySeries } from '@/domain/home';
 import type { Plan } from '@/domain/plan';
 import { useAppStore } from '@/store';
+import { useFeature } from '@/hooks/useEntitlements';
+import { ProBadge } from '@/features/billing/ProBadge';
 import { totalMonthlyContribution, valueHoldings } from '@/services/portfolioService';
 import type { RatesTable } from '@/services/currencyService';
 import { cn } from '@/lib/cn';
@@ -37,7 +39,15 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
   const openModal = useAppStore((s) => s.openModal);
+  const openPaywall = useAppStore((s) => s.openPaywall);
   const updateScenario = useAppStore((s) => s.updateScenario);
+  // Accounts/tax editing and withdrawal ordering are premium: free can view the
+  // resulting numbers but not customize the inputs.
+  const accountsLocked = !useFeature('accountsTax');
+  const withdrawalLocked = !useFeature('withdrawalOrdering');
+  // Real estate (Home) is premium: free keeps any existing equity number visible
+  // but cannot open the editor.
+  const homeLocked = !useFeature('realEstate');
 
   const monthlyContribution = useMemo(
     () => totalMonthlyContribution(valueHoldings(plan.holdings, plan.currency, rates)),
@@ -88,9 +98,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             <CalendarIcon size={26} />
           </span>
           <div className="ov__content">
-            <span className="ov__big" style={{ fontSize: '2.5rem' }}>
-              {plan.settings.retirementYear}
-            </span>
+            <span className="ov__big ov__big--lg">{plan.settings.retirementYear}</span>
             <span className="ov__sub">
               {retiringAtAge !== null
                 ? t('overview.timelineSub', {
@@ -195,9 +203,15 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
       <Card className="ov">
         <div className="ov__head">
           <span className="ov__title">{t('overview.home')}</span>
-          <span className="ov__link" onClick={() => openModal('home')}>
-            {plan.home ? t('common.edit') : t('common.add')}
-          </span>
+          {homeLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('realEstate')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('home')}>
+              {plan.home ? t('common.edit') : t('common.add')}
+            </span>
+          )}
         </div>
         <div className="ov__body">
           <span className="ov__icon">
@@ -226,32 +240,62 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           role="group"
           aria-label={t('overview.projectionScenario')}
         >
-          {SCENARIOS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={cn('scenario-pill', plan.scenario.active === key && 'is-active')}
-              onClick={() => updateScenario(plan.id, { ...plan.scenario, active: key })}
-            >
-              {t(SCENARIO_PILL_KEY[key])}
-            </button>
-          ))}
+          {SCENARIOS.map((key) => {
+            const adjPts = scenarioAdjustmentPts(plan.scenario, key);
+            const sign = adjPts > 0 ? '+' : '';
+            const title =
+              key === 'conservative'
+                ? t('overview.scenarioTooltipConservative', {
+                    value: plan.scenario.conservativeAdjustmentPts,
+                  })
+                : key === 'optimistic'
+                  ? t('overview.scenarioTooltipOptimistic', {
+                      value: plan.scenario.optimisticAdjustmentPts,
+                    })
+                  : undefined;
+            return (
+              <button
+                key={key}
+                type="button"
+                className={cn(
+                  'scenario-pill',
+                  title && 'tip-host',
+                  plan.scenario.active === key && 'is-active',
+                )}
+                onClick={() => updateScenario(plan.id, { ...plan.scenario, active: key })}
+              >
+                {t(SCENARIO_PILL_KEY[key])} {sign}
+                {adjPts}%
+                {title && (
+                  <span className="tip-bubble" role="tooltip">
+                    {title}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </Card>
 
       <Card className="ov" data-tour="accounts-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.accountsTax')}</span>
-          <span className="ov__link" onClick={() => openModal('accounts')}>
-            {t('common.edit')}
-          </span>
+          {accountsLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('accountsTax')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('accounts')}>
+              {t('common.edit')}
+            </span>
+          )}
         </div>
         <div className="ov__body">
           <span className="ov__icon">
             <PieChartIcon size={26} />
           </span>
           <div className="ov__content">
-            <span className="ov__big" style={{ fontSize: '1.875rem' }}>
+            <span className="ov__big">
               {plan.accounts.length}{' '}
               <span className="ov__big-unit">{t('overview.accountsUnit')}</span>
             </span>
@@ -263,9 +307,15 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
       <Card className="ov" data-tour="withdrawal-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.withdrawalStrategy')}</span>
-          <span className="ov__link" onClick={() => openModal('withdrawalOrder')}>
-            {t('common.edit')}
-          </span>
+          {withdrawalLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('withdrawalOrdering')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('withdrawalOrder')}>
+              {t('common.edit')}
+            </span>
+          )}
         </div>
         <div className="ov__body">
           <span className="ov__icon">
@@ -275,7 +325,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             <span
               className="ov__big"
               style={{
-                fontSize: '1.875rem',
                 color: plan.accounts.length === 0 ? 'var(--amber)' : undefined,
               }}
             >

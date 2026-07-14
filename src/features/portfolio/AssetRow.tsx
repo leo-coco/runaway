@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Stepper } from '@/components/ui/Stepper';
 import { Button } from '@/components/ui/Button';
-import { DragHandleIcon, RefreshIcon, TrashIcon } from '@/components/icons';
+import { DragHandleIcon, PencilIcon, RefreshIcon, TrashIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/Spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { colorForSymbol } from '@/lib/assetColors';
@@ -22,6 +22,7 @@ interface AssetRowProps {
   index: number;
   /** When false the editable cells render as plain read-only values. */
   editing: boolean;
+  onToggleEdit: () => void;
   rates: RatesTable | undefined;
   fetchState: PriceFetchState | undefined;
   onFetchPrice: (h: Holding) => void;
@@ -42,6 +43,7 @@ export const AssetRow = ({
   holding,
   index,
   editing,
+  onToggleEdit,
   rates,
   fetchState,
   onFetchPrice,
@@ -54,6 +56,9 @@ export const AssetRow = ({
   const planFmt = useCurrencyFormatter(plan.currency);
   const nativeFmt = useCurrencyFormatter(holding.instrument.nativeCurrency);
   const color = colorForSymbol(holding.instrument.symbol, index);
+  // Display the bare ticker without its market suffix (e.g. XEQT.TO -> XEQT,
+  // BTC.crypto -> BTC) so the identity column stays compact.
+  const displaySymbol = holding.instrument.symbol.replace(/\.[A-Za-z]+$/, '');
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const removeRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -135,13 +140,9 @@ export const AssetRow = ({
         <span className="asset-badge" style={{ background: color }}>
           {holding.instrument.symbol.slice(0, 1)}
         </span>
-        <div className="asset-id__text">
-          <div className="asset-name">
-            {holding.instrument.symbol} · {holding.instrument.exchange}
-          </div>
-          <div className="asset-ticker" title={holding.instrument.name}>
-            {truncate(holding.instrument.name, 10)}
-          </div>
+        <div className="asset-id__text" title={`${displaySymbol} ${holding.instrument.name}`}>
+          <span className="asset-sym">{displaySymbol}</span>
+          <span className="asset-nm">{truncate(holding.instrument.name, 8)}</span>
         </div>
       </div>
 
@@ -205,20 +206,6 @@ export const AssetRow = ({
             </span>
           )}
         </div>
-        {!isSameCurrency && <div className="cagr-note">{`${native} → ${plan.currency}`}</div>}
-      </div>
-
-      {/* Total value of the holding (master currency) */}
-      <div>
-        <div className="converted-price">
-          {rates || isSameCurrency ? (
-            <b>{planFmt.price(planValue)}</b>
-          ) : (
-            <span className="muted">
-              <Spinner /> {t('portfolio.rate')}
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Cost basis (native currency) — drives dynamic capital-gains tracking */}
@@ -238,24 +225,6 @@ export const AssetRow = ({
         )}
       </div>
 
-      {/* Unrealised gain / loss (ROI) vs cost basis */}
-      <div>
-        {roiPct === null ? (
-          <span className="muted">—</span>
-        ) : (
-          <div className={`roi-cell ${roiPct >= 0 ? 'is-pos' : 'is-neg'}`}>
-            <span className="roi-pill">
-              {roiPct >= 0 ? '+' : ''}
-              {roiPct.toFixed(1)}%
-            </span>
-            <span className="roi-amt">
-              {gainPlan >= 0 ? '+' : ''}
-              {planFmt.compact(gainPlan)}
-            </span>
-          </div>
-        )}
-      </div>
-
       <div className="narrow-cell" data-tour={index === 0 ? 'quantity-input' : undefined}>
         {editing ? (
           <Stepper
@@ -268,6 +237,34 @@ export const AssetRow = ({
           />
         ) : (
           <span className="read-value">{holding.quantity}</span>
+        )}
+      </div>
+
+      {/* Total value of the holding (master currency) */}
+      <div>
+        <div className="converted-price">
+          {rates || isSameCurrency ? (
+            <b>{planFmt.price(planValue)}</b>
+          ) : (
+            <span className="muted">
+              <Spinner /> {t('portfolio.rate')}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Total return: signed amount + percentage pill (green/red) */}
+      <div>
+        {roiPct === null ? (
+          <span className="muted">—</span>
+        ) : (
+          <div className={`ret-cell ${gainPlan >= 0 ? 'is-pos' : 'is-neg'}`}>
+            <span className="ret-amt">
+              {gainPlan >= 0 ? '+' : '−'}
+              {planFmt.compact(Math.abs(gainPlan))}
+            </span>
+            <span className="ret-pill">{Math.abs(roiPct).toFixed(1)}%</span>
+          </div>
         )}
       </div>
 
@@ -292,38 +289,51 @@ export const AssetRow = ({
         )}
       </div>
 
-      {editing && (
-        <div className="asset-row__remove" ref={removeRef}>
-          <Button
-            variant="danger"
-            size="sm"
-            aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
-            aria-haspopup="dialog"
-            aria-expanded={confirmingRemove}
-            onClick={() => setConfirmingRemove((v) => !v)}
-          >
-            <TrashIcon size={16} />
-          </Button>
-          {confirmingRemove && (
-            <div className="asset-row__confirm" role="dialog" aria-label="Confirm removal">
-              <span className="asset-row__confirm-text">{t('common.removeQuestion')}</span>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  setConfirmingRemove(false);
-                  onRemove(holding.id);
-                }}
-              >
-                {t('common.remove')}
-              </Button>
-              <Button size="sm" onClick={() => setConfirmingRemove(false)}>
-                {t('common.cancel')}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="asset-row__actions" ref={removeRef}>
+        <button
+          type="button"
+          className={`fetch-btn ${editing ? 'is-active' : ''}`}
+          onClick={onToggleEdit}
+          aria-label={t(editing ? 'portfolio.doneAria' : 'portfolio.editAria', {
+            symbol: holding.instrument.symbol,
+          })}
+          title={editing ? t('portfolio.done') : t('portfolio.edit')}
+        >
+          <PencilIcon size={14} />
+        </button>
+        {editing && (
+          <>
+            <Button
+              variant="danger"
+              size="sm"
+              aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
+              aria-haspopup="dialog"
+              aria-expanded={confirmingRemove}
+              onClick={() => setConfirmingRemove((v) => !v)}
+            >
+              <TrashIcon size={16} />
+            </Button>
+            {confirmingRemove && (
+              <div className="asset-row__confirm" role="dialog" aria-label="Confirm removal">
+                <span className="asset-row__confirm-text">{t('common.removeQuestion')}</span>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    setConfirmingRemove(false);
+                    onRemove(holding.id);
+                  }}
+                >
+                  {t('common.remove')}
+                </Button>
+                <Button size="sm" onClick={() => setConfirmingRemove(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -11,6 +11,9 @@ import {
   type RetirementSettingsForm,
 } from '@/schemas/retirementSettingsSchema';
 import { safeWithdrawalRate, type SwrZone } from '@/domain/withdrawalRate';
+import { useAppStore } from '@/store';
+import { useFeature } from '@/hooks/useEntitlements';
+import { ProBadge } from '@/features/billing/ProBadge';
 import {
   DEFAULT_PHASED_SPENDING,
   realSpendingMultiplier,
@@ -107,7 +110,12 @@ const PhaseCurve = ({
 export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose }: Props) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
+  const openPaywall = useAppStore((s) => s.openPaywall);
   const phased = plan.settings.phasedSpending ?? DEFAULT_PHASED_SPENDING;
+  // Phased spending is premium. A plan already in phased mode (e.g. built under a
+  // now-lapsed grant) stays editable so its numbers are never lost; free users
+  // just cannot switch a linear plan over to phased.
+  const canPhased = useFeature('phasedSpending');
 
   const {
     control,
@@ -237,9 +245,14 @@ export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose
           role="tab"
           aria-selected={mode === 'phased'}
           className={`seg-tab ${mode === 'phased' ? 'is-active' : ''}`}
-          onClick={() => setValue('spendingMode', 'phased', { shouldDirty: true })}
+          onClick={() =>
+            canPhased || mode === 'phased'
+              ? setValue('spendingMode', 'phased', { shouldDirty: true })
+              : openPaywall('phasedSpending')
+          }
         >
           {t('spending.modePhased')}
+          {!canPhased && mode !== 'phased' && <ProBadge />}
         </button>
       </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/cn';
 import { XIcon } from '@/components/icons';
 
@@ -41,10 +42,15 @@ export const Modal = ({
     };
   }, [onClose]);
 
-  return (
-    <div className="overlay" onMouseDown={onClose} role="presentation">
+  return createPortal(
+    <div className="overlay" role="presentation">
       <div
-        className={cn('modal', wide && 'modal--wide', xl && 'modal--xl', fullscreen && 'modal--fullscreen')}
+        className={cn(
+          'modal',
+          wide && 'modal--wide',
+          xl && 'modal--xl',
+          fullscreen && 'modal--fullscreen',
+        )}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -66,6 +72,7 @@ export const Modal = ({
         </div>
         {footer && <div className="modal__footer">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

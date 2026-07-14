@@ -4,6 +4,7 @@ import {
   accountEffectiveRate,
   accountFromPreset,
   accountTaxProfile,
+  defaultFreeAccount,
   effectiveTaxRate,
   grossFromNet,
   taxOnGross,
@@ -220,5 +221,15 @@ describe('new account envelopes', () => {
       expect(a.taxMode).toBe('auto');
       expect(a.kind).toBeDefined();
     }
+  });
+});
+
+describe('defaultFreeAccount', () => {
+  it('is a custom tax-free account named DEMO', () => {
+    const a = defaultFreeAccount();
+    expect(a.name).toBe('DEMO');
+    expect(a.kind).toBe('tax_free');
+    expect(a.custom).toBe(true);
+    expect(accountEffectiveRate(a, 'US')).toBe(0);
   });
 });

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from '@/lib/authClient';
 import { useAppStore } from '@/store';
 import type { Plan } from '@/domain/plan';
-import { fetchPlans, putPlan, deletePlan } from './plansApi';
+import { fetchPlans, putPlan, deletePlan, PlanLimitError } from './plansApi';
+import type { PaywallReason } from '@/store/uiSlice';
 import { ImportLocalPlansDialog } from './ImportLocalPlansDialog';
 
 /** planId -> updatedAt of the last state we know the server has. */
@@ -68,10 +69,44 @@ export const PlanSyncManager = (): React.ReactElement | null => {
       }
       const deletes = [...prev.keys()].filter((id) => !next.has(id));
       snapshot.current = next;
-      void Promise.all([
-        ...puts.map((p) => putPlan(p)),
+      void Promise.allSettled([
+        ...puts.map((p) =>
+          putPlan(p).catch((e: unknown) => {
+            throw { planId: p.id, error: e };
+          }),
+        ),
         ...deletes.map((id) => deletePlan(id)),
-      ]).catch((e: unknown) => console.error('Plan sync: push failed', e));
+      ]).then((results) => {
+        for (const r of results) {
+          if (r.status !== 'rejected') continue;
+          const reason: unknown = r.reason;
+          const { planId, error } =
+            reason && typeof reason === 'object' && 'error' in reason
+              ? (reason as { planId: string; error: unknown })
+              : { planId: undefined, error: reason };
+          // A rejected over-limit push (client gating bypassed, e.g. a stale second
+          // tab or a tier downgrade after the fact) surfaces the paywall rather than
+          // failing silently.
+          if (error instanceof PlanLimitError) {
+            const paywallReason: PaywallReason =
+              error.limit === 'assets'
+                ? 'assets'
+                : error.limit === 'accounts'
+                  ? 'accounts'
+                  : 'plans';
+            useAppStore.getState().openPaywall(paywallReason);
+            // Trim the local state back down to what the server will accept, so the
+            // over-limit account doesn't linger as a local-only, never-synced entry.
+            if (error.limit === 'accounts' && error.max != null && planId) {
+              const plan = useAppStore.getState().plans.find((p) => p.id === planId);
+              const excess = plan?.accounts.slice(error.max) ?? [];
+              for (const a of excess) useAppStore.getState().removeAccount(planId, a.id);
+            }
+          } else {
+            console.error('Plan sync: push failed', error);
+          }
+        }
+      });
     };
 
     const unsub = useAppStore.subscribe((state, prevState) => {

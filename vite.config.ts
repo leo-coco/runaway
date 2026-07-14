@@ -1,5 +1,5 @@
-/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
@@ -26,6 +26,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Other agent worktrees live under .claude/worktrees/** as separate git
+    // checkouts; without this they get scanned too and their stale test
+    // files fail the run (and thus the pre-push hook).
+    exclude: [...configDefaults.exclude, '**/.claude/**'],
     coverage: {
       provider: 'v8',
       include: ['src/services/**', 'src/hooks/**', 'src/domain/**'],

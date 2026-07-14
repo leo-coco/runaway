@@ -3,6 +3,9 @@ import { Link, NavLink, useMatch, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/store';
 import { estimatePlanSuccess } from '@/services/planSuccess';
+import { useFeature, useLimit } from '@/hooks/useEntitlements';
+import { atLimit } from '@/domain/entitlements';
+import { ProBadge } from '@/features/billing/ProBadge';
 import {
   CompassIcon,
   CopyIcon,
@@ -29,6 +32,7 @@ const PlanRow = ({
   color,
   active,
   published,
+  mcEnabled,
   collapsed,
   onOpen,
   onEdit,
@@ -43,6 +47,8 @@ const PlanRow = ({
   /** The success rate the plan's page computed (same figure as the MC lens), or
    *  undefined if the plan hasn't been opened/simulated this session. */
   published: number | null | undefined;
+  /** Whether Monte Carlo (the source of the success %) is available on this tier. */
+  mcEnabled: boolean;
   collapsed: boolean;
   onOpen: () => void;
   onEdit: () => void;
@@ -52,12 +58,13 @@ const PlanRow = ({
   onHideTip: () => void;
 }) => {
   // Show the exact figure the Monte Carlo page produced. Only fall back to a local
-  // estimate for plans never opened this session (e.g. right after a reload).
+  // estimate for plans never opened this session (e.g. right after a reload). Free
+  // tier has no Monte Carlo, so no success % is shown (the estimate is skipped too).
   const fallback = useMemo(
-    () => (published === undefined ? estimatePlanSuccess(plan, undefined, 500) : null),
-    [published, plan],
+    () => (mcEnabled && published === undefined ? estimatePlanSuccess(plan, undefined, 500) : null),
+    [mcEnabled, published, plan],
   );
-  const pct = published !== undefined ? published : fallback;
+  const pct = !mcEnabled ? null : published !== undefined ? published : fallback;
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -153,6 +160,10 @@ export const Sidebar = () => {
   const duplicatePlan = useAppStore((s) => s.duplicatePlan);
   const renamePlan = useAppStore((s) => s.renamePlan);
   const successByPlan = useAppStore((s) => s.successByPlan);
+  const openPaywall = useAppStore((s) => s.openPaywall);
+  const mcEnabled = useFeature('monteCarlo');
+  const maxPlans = useLimit('maxPlans');
+  const canAccountsTax = useFeature('accountsTax');
   const { t } = useTranslation();
   const navigate = useNavigate();
   const match = useMatch('/plan/:id/*');
@@ -199,11 +210,20 @@ export const Sidebar = () => {
   const hideTip = () => setTip(null);
 
   const onNew = () => {
-    const newId = createPlan('My plan');
+    // Free tier is capped at maxPlans; surface the paywall instead of creating.
+    if (atLimit(plans.length, maxPlans)) {
+      openPaywall('plans');
+      return;
+    }
+    const newId = createPlan('My plan', !canAccountsTax);
     navigate(`/plan/${newId}/dashboard`);
   };
 
   const onDuplicate = (id: string) => {
+    if (atLimit(plans.length, maxPlans)) {
+      openPaywall('plans');
+      return;
+    }
     const copyId = duplicatePlan(id);
     if (copyId) navigate(`/plan/${copyId}/dashboard`);
   };
@@ -263,6 +283,7 @@ export const Sidebar = () => {
               color={DOTS[i % DOTS.length]!}
               active={p.id === activeId}
               published={successByPlan[p.id]}
+              mcEnabled={mcEnabled}
               collapsed={collapsed}
               onOpen={() => navigate(`/plan/${p.id}/dashboard`)}
               onEdit={() => setEditingId(p.id)}
@@ -365,31 +386,61 @@ export const Sidebar = () => {
                 </span>
                 <span className="sb-nav__label">{t('sidebar.projection')}</span>
               </NavLink>
-              <NavLink
-                to={`/plan/${activePlan.id}/monte-carlo`}
-                className="sb-nav__link"
-                aria-label={t('sidebar.monteCarlo')}
-                onMouseEnter={showTip(t('sidebar.monteCarlo'))}
-                onMouseLeave={hideTip}
-                onFocus={showTip(t('sidebar.monteCarlo'))}
-                onBlur={hideTip}
-              >
-                <span aria-hidden="true" className="sb-nav__icon">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="4" y="4" width="16" height="16" rx="2" />
-                    <line x1="12" y1="4" x2="12" y2="20" />
-                    <line x1="4" y1="12" x2="20" y2="12" />
-                  </svg>
-                </span>
-                <span className="sb-nav__label">{t('sidebar.monteCarlo')}</span>
-              </NavLink>
+              {mcEnabled ? (
+                <NavLink
+                  to={`/plan/${activePlan.id}/monte-carlo`}
+                  className="sb-nav__link"
+                  aria-label={t('sidebar.monteCarlo')}
+                  onMouseEnter={showTip(t('sidebar.monteCarlo'))}
+                  onMouseLeave={hideTip}
+                  onFocus={showTip(t('sidebar.monteCarlo'))}
+                  onBlur={hideTip}
+                >
+                  <span aria-hidden="true" className="sb-nav__icon">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                      <line x1="12" y1="4" x2="12" y2="20" />
+                      <line x1="4" y1="12" x2="20" y2="12" />
+                    </svg>
+                  </span>
+                  <span className="sb-nav__label">{t('sidebar.monteCarlo')}</span>
+                </NavLink>
+              ) : (
+                <button
+                  type="button"
+                  className="sb-nav__link"
+                  aria-label={t('sidebar.monteCarlo')}
+                  onClick={() => openPaywall('monteCarlo')}
+                  onMouseEnter={showTip(t('sidebar.monteCarlo'))}
+                  onMouseLeave={hideTip}
+                  onFocus={showTip(t('sidebar.monteCarlo'))}
+                  onBlur={hideTip}
+                >
+                  <span aria-hidden="true" className="sb-nav__icon">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                      <line x1="12" y1="4" x2="12" y2="20" />
+                      <line x1="4" y1="12" x2="20" y2="12" />
+                    </svg>
+                  </span>
+                  <span className="sb-nav__label">{t('sidebar.monteCarlo')}</span>
+                  <ProBadge />
+                </button>
+              )}
               <button
                 type="button"
                 className="sb-nav__link"

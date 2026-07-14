@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { InfoIcon, PencilIcon, PlusIcon, SearchIcon, TrashIcon } from '@/components/icons';
 import { useAppStore } from '@/store';
+import { useLimit } from '@/hooks/useEntitlements';
+import { atLimit } from '@/domain/entitlements';
 import { ACCOUNT_PRESETS, type AccountKind, type AccountPreset } from '@/domain/account';
 import { explainEffectiveRate } from '@/domain/taxExplain';
 import {
@@ -51,11 +53,7 @@ const cryptoPreset = ACCOUNT_PRESETS.find((p) => p.name === 'Crypto Wallet');
  * no separate "Add" button needed. "Custom account" and "Crypto Wallet" are
  * dedicated buttons next to the search bar, not rows in this list.
  */
-const AccountPresetCombobox = ({
-  onAdd,
-}: {
-  onAdd: (preset: AccountPreset) => void;
-}) => {
+const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => void }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -69,7 +67,8 @@ const AccountPresetCombobox = ({
       const presets = ACCOUNT_PRESETS.filter(
         (p) => p.sourceCountry === c && (q === '' || matchesQuery(p.name, q)),
       );
-      if (presets.length > 0) out.push({ label: `${COUNTRY_FLAG[c]} ${COUNTRY_LABEL[c]}`, presets });
+      if (presets.length > 0)
+        out.push({ label: `${COUNTRY_FLAG[c]} ${COUNTRY_LABEL[c]}`, presets });
     }
     const otherPresets = ACCOUNT_PRESETS.filter(
       (p) =>
@@ -77,7 +76,8 @@ const AccountPresetCombobox = ({
         !DEDICATED_BUTTON_PRESETS.includes(p.name) &&
         (q === '' || matchesQuery(p.name, q)),
     );
-    if (otherPresets.length > 0) out.push({ label: t('accounts.cryptoOther'), presets: otherPresets });
+    if (otherPresets.length > 0)
+      out.push({ label: t('accounts.cryptoOther'), presets: otherPresets });
     return out;
   }, [query, t]);
 
@@ -199,6 +199,15 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
   const removeAccount = useAppStore((s) => s.removeAccount);
   const setResidenceCountry = useAppStore((s) => s.setResidenceCountry);
   const setResidenceProvince = useAppStore((s) => s.setResidenceProvince);
+  const openPaywall = useAppStore((s) => s.openPaywall);
+  const maxAccounts = useLimit('maxAccounts');
+
+  // Free tier caps accounts; adding past the cap opens the paywall instantly instead
+  // of letting the account get created and rejected later by the server round-trip.
+  const onAddAccount = (preset?: AccountPreset) =>
+    atLimit(plan.accounts.length, maxAccounts)
+      ? openPaywall('accounts')
+      : addAccount(plan.id, preset);
 
   // Live gain fraction per account (value−basis)/value from the actual holdings,
   // so the displayed rate reflects today's unrealised gains, not a static guess.
@@ -397,12 +406,12 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
       </div>
 
       <div className="acct-add" data-tour="account-preset-add">
-        <AccountPresetCombobox onAdd={(preset) => addAccount(plan.id, preset)} />
-        <Button variant="ghost" onClick={() => addAccount(plan.id, undefined)}>
+        <AccountPresetCombobox onAdd={(preset) => onAddAccount(preset)} />
+        <Button variant="ghost" onClick={() => onAddAccount(undefined)}>
           <PlusIcon size={16} /> {t('accounts.customAccount')}
         </Button>
         {cryptoPreset && (
-          <Button variant="ghost" onClick={() => addAccount(plan.id, cryptoPreset)}>
+          <Button variant="ghost" onClick={() => onAddAccount(cryptoPreset)}>
             <PlusIcon size={16} /> {cryptoPreset.name}
           </Button>
         )}
