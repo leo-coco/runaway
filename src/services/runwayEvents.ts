@@ -294,8 +294,14 @@ export const buildRunwayEvents = (
     });
   }
 
+  // Once the portfolio runs dry, it's the terminal waypoint — nothing after it matters.
+  const visible =
+    projection.depletionYear !== null
+      ? events.filter((e) => e.kind === 'portfolio-dry' || e.year <= projection.depletionYear)
+      : events;
+
   // Stable sort by year (Array.prototype.sort is stable in modern engines).
-  return events.sort((a, b) => a.year - b.year);
+  return visible.sort((a, b) => a.year - b.year);
 };
 
 /** Convenience for renderers: the icon component for an event. */

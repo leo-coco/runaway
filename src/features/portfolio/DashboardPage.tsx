@@ -32,14 +32,19 @@ export const DashboardPage = () => {
       </ErrorBoundary>
 
       {hasAssets ? (
-        <div className="dash-split">
-          <ErrorBoundary feature="portfolio trend">
-            <PortfolioTrendCard projection={projection} currency={plan.currency} />
-          </ErrorBoundary>
-          <ErrorBoundary feature="dashboard assets">
-            <DashboardAssetsCard plan={plan} rates={rates} totalValue={totalValue} />
-          </ErrorBoundary>
-        </div>
+        <>
+          <div className="settings-head">
+            <span className="settings-head__title">{t('portfolio.title')}</span>
+          </div>
+          <div className="dash-split">
+            <ErrorBoundary feature="portfolio trend">
+              <PortfolioTrendCard projection={projection} currency={plan.currency} />
+            </ErrorBoundary>
+            <ErrorBoundary feature="dashboard assets">
+              <DashboardAssetsCard plan={plan} rates={rates} totalValue={totalValue} />
+            </ErrorBoundary>
+          </div>
+        </>
       ) : null}
     </>
   );

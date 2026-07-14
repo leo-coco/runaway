@@ -77,7 +77,7 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
   let rowIndex = 0;
 
   return (
-    <Card padded>
+    <Card padded className="dash-assets-card">
       <div className="mini-assets-scroll">
         <div className="mini-assets">
           <div className="mini-row mini-row--head">
@@ -100,7 +100,6 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
                   </div>
                   <div className="mini-acct__right">
                     <GainLine gain={g.gain} fmt={fmt} />
-                    <span className="mini-acct__total">{fmt.compact(g.subtotal)}</span>
                   </div>
                 </div>
 
