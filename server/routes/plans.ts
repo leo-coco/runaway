@@ -6,6 +6,14 @@ import { plans } from '../db/schema.js';
 import { auth } from '../auth.js';
 import { getEntitlements, toAuthUser, type AuthUser } from '../entitlements.js';
 import { atLimit } from '../../src/domain/entitlements.js';
+import {
+  encrypt,
+  encryptJson,
+  decrypt,
+  decryptJson,
+  isEnvelope,
+  type EncryptedEnvelope,
+} from '../crypto/dataCrypto.js';
 import type { Plan } from '../../src/domain/plan';
 
 type Vars = { userId: string; user: AuthUser };
@@ -20,11 +28,26 @@ const upsertSchema = z.object({
   data: z.object({ id: z.string().min(1) }).passthrough(),
 });
 
+/** Decrypt a stored plan blob. Legacy plaintext rows (pre-backfill) pass through. */
+const decryptData = (data: EncryptedEnvelope | Plan): Plan =>
+  isEnvelope(data) ? decryptJson<Plan>(data) : (data as Plan);
+
+/** Decrypt a stored plan name (a JSON-stringified envelope). Legacy names pass through. */
+const decryptName = (name: string): string => {
+  try {
+    const parsed: unknown = JSON.parse(name);
+    if (isEnvelope(parsed)) return decrypt(parsed);
+  } catch {
+    // Not JSON — a legacy plaintext name from before encryption.
+  }
+  return name;
+};
+
 const toRow = (r: typeof plans.$inferSelect) => ({
   id: r.id,
-  name: r.name,
+  name: decryptName(r.name),
   schemaVersion: r.schemaVersion,
-  data: r.data,
+  data: decryptData(r.data),
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,
 });
@@ -90,7 +113,9 @@ plansRoutes.put('/:id', async (c) => {
 
   // Asset/account caps are growth-only: block increases past the cap, but never
   // reject data a (possibly lapsed-premium) user already has — so no data loss.
-  const prevAssets = existing ? len(existing.data.holdings) : 0;
+  // The stored blob is encrypted, so decrypt before counting.
+  const prevData = existing ? decryptData(existing.data) : undefined;
+  const prevAssets = prevData ? len(prevData.holdings) : 0;
   const newAssets = len(data.holdings);
   if (ent.limits.maxAssets !== null && newAssets > ent.limits.maxAssets && newAssets > prevAssets) {
     return c.json(
@@ -98,7 +123,7 @@ plansRoutes.put('/:id', async (c) => {
       403,
     );
   }
-  const prevAccounts = existing ? len(existing.data.accounts) : 0;
+  const prevAccounts = prevData ? len(prevData.accounts) : 0;
   const newAccounts = len(data.accounts);
   if (
     ent.limits.maxAccounts !== null &&
@@ -116,23 +141,27 @@ plansRoutes.put('/:id', async (c) => {
     );
   }
 
+  // Encrypt at rest: `data` becomes an envelope object, `name` a stringified envelope.
+  const encName = JSON.stringify(encrypt(parsed.data.name));
+  const encData = encryptJson(data);
+
   const [row] = await db
     .insert(plans)
     .values({
       id,
       userId,
-      name: parsed.data.name,
+      name: encName,
       schemaVersion: parsed.data.schemaVersion,
-      data: parsed.data.data as unknown as Plan,
+      data: encData,
     })
     .onConflictDoUpdate({
       target: plans.id,
       // Only the owner may overwrite; a non-owner's id collision updates nothing.
       setWhere: eq(plans.userId, userId),
       set: {
-        name: parsed.data.name,
+        name: encName,
         schemaVersion: parsed.data.schemaVersion,
-        data: parsed.data.data as unknown as Plan,
+        data: encData,
         updatedAt: new Date(),
       },
     })
