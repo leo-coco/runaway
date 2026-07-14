@@ -8,3 +8,8 @@
 
 ## Git workflow
 - When making the first commit for a feature branch, open the PR automatically right after the commit (no need to ask).
+
+## Database migrations
+- Migrations run automatically on deploy (`vercel-build` runs `drizzle-kit migrate` before the app build), so they must be safe to apply against a running prod instance with no downtime.
+- Always additive-first: add new columns as nullable or with a default; never add a `NOT NULL` column without a default in the same migration as a deploy that depends on it. If a column must become `NOT NULL`, do it in a later migration after the backfill/rollout has landed.
+- Never rename or drop a column/table in the same deploy that stops using it — the previous deployed instance (or a rollback) may still read/write the old shape during the rollout.
