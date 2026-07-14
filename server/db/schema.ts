@@ -1,5 +1,6 @@
 import { pgTable, text, boolean, timestamp, jsonb, integer, index } from 'drizzle-orm/pg-core';
 import type { Plan } from '../../src/domain/plan';
+import type { EncryptedEnvelope } from '../crypto/dataCrypto';
 import type { TierConfig } from '../../src/domain/entitlements';
 
 /**
@@ -69,6 +70,10 @@ export const verification = pgTable('verification', {
  * accounts, tax settings, Monte Carlo settings, scenario…) lives in `data` as
  * JSONB, so any field added to the domain `Plan` is persisted with no SQL change.
  * `schemaVersion` mirrors the old zustand/persist version for forward migration.
+ *
+ * `data` and `name` are encrypted at rest (AES-256-GCM, see server/crypto): `data`
+ * holds an EncryptedEnvelope object and `name` a JSON-stringified envelope. The Plan
+ * union member covers pre-encryption rows still awaiting backfill.
  */
 export const plans = pgTable(
   'plans',
@@ -78,7 +83,7 @@ export const plans = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    data: jsonb('data').$type<Plan>().notNull(),
+    data: jsonb('data').$type<EncryptedEnvelope | Plan>().notNull(),
     schemaVersion: integer('schema_version').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

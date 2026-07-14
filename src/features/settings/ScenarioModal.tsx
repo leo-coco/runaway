@@ -1,24 +1,11 @@
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { scenarioFormSchema, type ScenarioForm } from '@/schemas/scenarioSchema';
-import { SCENARIOS, type ScenarioKey } from '@/domain/scenario';
 import type { Plan } from '@/domain/plan';
-import { cn } from '@/lib/cn';
-
-const SCENARIO_NAME_KEY: Record<ScenarioKey, string> = {
-  conservative: 'overview.scenarioConservative',
-  expected: 'overview.scenarioExpected',
-  optimistic: 'overview.scenarioOptimistic',
-};
-const SCENARIO_DESC_KEY: Record<ScenarioKey, string> = {
-  conservative: 'modals.scenarioDescConservative',
-  expected: 'modals.scenarioDescExpected',
-  optimistic: 'modals.scenarioDescOptimistic',
-};
 
 interface Props {
   plan: Plan;
@@ -31,7 +18,6 @@ export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<ScenarioForm>({
     resolver: zodResolver(scenarioFormSchema),
@@ -41,8 +27,6 @@ export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
       optimisticAdjustmentPts: plan.scenario.optimisticAdjustmentPts,
     },
   });
-
-  const active = useWatch({ control, name: 'active' });
 
   return (
     <Modal
@@ -58,31 +42,10 @@ export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
         </>
       }
     >
-      <div className="eyebrow" style={{ fontSize: '1rem', color: 'var(--text)', fontWeight: 700 }}>
-        {t('modals.selectScenario')}
-      </div>
-
-      <div className="scenario-grid">
-        {SCENARIOS.map((key: ScenarioKey) => (
-          <button
-            key={key}
-            type="button"
-            className={cn('scenario-card', active === key && 'active')}
-            onClick={() => setValue('active', key, { shouldDirty: true })}
-          >
-            {active === key && <span className="dot" />}
-            <h4>{t(SCENARIO_NAME_KEY[key])}</h4>
-            <p>{t(SCENARIO_DESC_KEY[key])}</p>
-          </button>
-        ))}
-      </div>
-
-      <div className="divider" />
       <div className="adj-grid">
         <div className="adj">
           <span className="adj__label">{t('modals.pessimisticAdj')}</span>
           <div className="adj__row">
-            <span className="adj__sign">–</span>
             <div className="adj__box">
               <Controller
                 control={control}
@@ -95,25 +58,33 @@ export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
                     value={field.value}
                     onChange={field.onChange}
                     invalid={Boolean(errors.conservativeAdjustmentPts)}
+                    prefix="-"
+                    suffix="%"
                   />
                 )}
               />
             </div>
-            <span className="adj__unit">bp</span>
           </div>
         </div>
 
         <div className="adj">
           <span className="adj__label">{t('modals.expectedAdj')}</span>
           <div className="adj__row">
-            <span className="adj__static">0</span>
+            <div className="adj__box">
+              <Stepper
+                ariaLabel={t('modals.expectedAdj')}
+                value={0}
+                onChange={() => {}}
+                suffix="%"
+                disabled
+              />
+            </div>
           </div>
         </div>
 
         <div className="adj">
           <span className="adj__label">{t('modals.optimisticAdj')}</span>
           <div className="adj__row">
-            <span className="adj__sign">+</span>
             <div className="adj__box">
               <Controller
                 control={control}
@@ -126,11 +97,12 @@ export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
                     value={field.value}
                     onChange={field.onChange}
                     invalid={Boolean(errors.optimisticAdjustmentPts)}
+                    prefix="+"
+                    suffix="%"
                   />
                 )}
               />
             </div>
-            <span className="adj__unit">bp</span>
           </div>
         </div>
       </div>

@@ -10,6 +10,17 @@ const schema = z.object({
   DATABASE_URL: z.string().url(),
   /** Better Auth signing secret. Generate with `openssl rand -base64 32`. */
   BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 chars'),
+  /**
+   * AES-256 key for encrypting plan data at rest. base64 of exactly 32 bytes.
+   * Generate with `openssl rand -base64 32`. Must differ from BETTER_AUTH_SECRET.
+   * If lost, all stored plan data is permanently unrecoverable.
+   */
+  DATA_ENCRYPTION_KEY: z
+    .string()
+    .refine(
+      (s) => Buffer.from(s, 'base64').length === 32,
+      'DATA_ENCRYPTION_KEY must be base64 of exactly 32 bytes',
+    ),
   /** Public base URL the app is served from (used for cookies + email links). */
   BETTER_AUTH_URL: z.string().url(),
   /** Resend API key (re_…). */

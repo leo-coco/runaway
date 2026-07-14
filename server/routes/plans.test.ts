@@ -33,6 +33,16 @@ vi.mock('../entitlements.js', () => ({
   getEntitlements,
 }));
 
+// --- crypto mock: passthrough envelopes so the handler runs without a real key.
+// Encryption itself is covered in server/crypto/dataCrypto.test.ts.
+vi.mock('../crypto/dataCrypto.js', () => ({
+  encrypt: (s: string) => ({ v: 1, kid: 'test', iv: '', ct: s, tag: '' }),
+  encryptJson: (o: unknown) => ({ v: 1, kid: 'test', iv: '', ct: JSON.stringify(o), tag: '' }),
+  decrypt: (e: { ct: string }) => e.ct,
+  decryptJson: (e: { ct: string }) => JSON.parse(e.ct),
+  isEnvelope: (x: unknown) => typeof x === 'object' && x !== null && (x as { v?: unknown }).v === 1,
+}));
+
 // Imported after vi.mock so the mocks are wired in.
 const { plansRoutes } = await import('./plans.js');
 
