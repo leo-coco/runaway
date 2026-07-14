@@ -14,6 +14,7 @@ import { DEFAULT_SCENARIO_CONFIG } from '@/domain/scenario';
 import {
   accountFromPreset,
   BASE_TAXABLE_PRESET,
+  defaultFreeAccount,
   defaultTaxableAccount,
   sanitizeAccountTaxFields,
 } from '@/domain/account';
@@ -27,7 +28,12 @@ export interface PlansSlice {
   /** Replace the whole plan list. Used to hydrate from the server on sign-in. */
   hydratePlans: (plans: Plan[]) => void;
 
-  createPlan: (name?: string) => string;
+  /**
+   * Create a plan. `freeDemo` picks the free-tier default account (a single
+   * tax-free "DEMO" account) instead of the honest taxable baseline premium
+   * gets; callers decide based on the caller's own entitlements.
+   */
+  createPlan: (name?: string, freeDemo?: boolean) => string;
   duplicatePlan: (id: string) => string | null;
   deletePlan: (id: string) => void;
   renamePlan: (id: string, name: string, description: string) => void;
@@ -114,13 +120,14 @@ const touch = (plan: Plan, mutate: (p: Plan) => Plan): Plan => ({
   updatedAt: new Date().toISOString(),
 });
 
-const emptyPlan = (name: string): Plan => {
+const emptyPlan = (name: string, freeDemo = false): Plan => {
   const now = new Date().toISOString();
   const currency: CurrencyCode = 'USD';
   const residenceCountry = residenceForCurrency(currency);
-  // Start with one basic taxable account matching the residence, so assets have
-  // an envelope and tax is modelled from the start.
-  const base = defaultTaxableAccount(residenceCountry);
+  // Free plans start with a single tax-free "DEMO" account; everyone else starts
+  // with one basic taxable account matching the residence, so assets have an
+  // envelope and tax is modelled from the start.
+  const base = freeDemo ? defaultFreeAccount() : defaultTaxableAccount(residenceCountry);
   return {
     id: newId(),
     name,
@@ -146,8 +153,8 @@ export const createPlansSlice: StateCreator<PlansSlice, [], [], PlansSlice> = (s
 
   hydratePlans: (plans) => set({ plans }),
 
-  createPlan: (name = 'Untitled plan') => {
-    const plan = emptyPlan(name);
+  createPlan: (name = 'Untitled plan', freeDemo = false) => {
+    const plan = emptyPlan(name, freeDemo);
     set((s) => ({ plans: [...s.plans, plan] }));
     return plan.id;
   },

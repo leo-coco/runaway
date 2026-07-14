@@ -163,6 +163,7 @@ export const Sidebar = () => {
   const openPaywall = useAppStore((s) => s.openPaywall);
   const mcEnabled = useFeature('monteCarlo');
   const maxPlans = useLimit('maxPlans');
+  const canAccountsTax = useFeature('accountsTax');
   const { t } = useTranslation();
   const navigate = useNavigate();
   const match = useMatch('/plan/:id/*');
@@ -214,7 +215,7 @@ export const Sidebar = () => {
       openPaywall('plans');
       return;
     }
-    const newId = createPlan('My plan');
+    const newId = createPlan('My plan', !canAccountsTax);
     navigate(`/plan/${newId}/dashboard`);
   };
 

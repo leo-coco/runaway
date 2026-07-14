@@ -1279,8 +1279,7 @@ export const fr: Resources = {
     reason: {
       monteCarlo: 'L’analyse de probabilité Monte Carlo est une fonctionnalité Premium.',
       withdrawalOrdering: 'L’ordre de retrait est une fonctionnalité Premium.',
-      taxOptimization: 'Les comptes fiscalement avantagés et les réglages d’impôt sont Premium.',
-      multiAccount: 'Les comptes multiples sont une fonctionnalité Premium.',
+      accountsTax: 'Les comptes multiples et les réglages d’impôt sont une fonctionnalité Premium.',
       phasedSpending:
         'Les dépenses par phase (go-go / slow-go / no-go) sont une fonctionnalité Premium.',
       realEstate:
@@ -1316,8 +1315,7 @@ export const fr: Resources = {
     feature: {
       monteCarlo: 'Monte Carlo',
       withdrawalOrdering: 'Ordre de retrait',
-      taxOptimization: 'Optimisation fiscale',
-      multiAccount: 'Comptes multiples',
+      accountsTax: 'Comptes et impôts',
       phasedSpending: 'Dépenses par phase',
       realEstate: 'Immobilier',
     },

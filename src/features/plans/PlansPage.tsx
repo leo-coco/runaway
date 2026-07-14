@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
-import { useLimit } from '@/hooks/useEntitlements';
+import { useFeature, useLimit } from '@/hooks/useEntitlements';
 import { atLimit } from '@/domain/entitlements';
 import { Button } from '@/components/ui/Button';
 import { PlusIcon } from '@/components/icons';
@@ -18,6 +18,7 @@ export const PlansPage = () => {
   const renamePlan = useAppStore((s) => s.renamePlan);
   const openPaywall = useAppStore((s) => s.openPaywall);
   const maxPlans = useLimit('maxPlans');
+  const canAccountsTax = useFeature('accountsTax');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const editingPlan = plans.find((p) => p.id === editingId) ?? null;
@@ -30,7 +31,7 @@ export const PlansPage = () => {
       openPaywall('plans');
       return;
     }
-    const id = createPlan('My plan');
+    const id = createPlan('My plan', !canAccountsTax);
     navigate(`/plan/${id}/dashboard`);
   };
 

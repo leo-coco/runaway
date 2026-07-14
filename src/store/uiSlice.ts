@@ -22,8 +22,7 @@ export type ModalKind =
 export type PaywallReason =
   | 'monteCarlo'
   | 'withdrawalOrdering'
-  | 'taxOptimization'
-  | 'multiAccount'
+  | 'accountsTax'
   | 'phasedSpending'
   | 'realEstate'
   | 'plans'
