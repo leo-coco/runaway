@@ -16,7 +16,9 @@
       "Bash(sort -t: -k2 -n)",
       "Bash(npm view *)",
       "Bash(npm install *)",
-      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\)['scripts']\\)\")"
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\)['scripts']\\)\")",
+      "Bash(sed -i '' -e 's/GearIcon size={22}/GearIcon size={16}/' -e 's/LogOutIcon size={22}/LogOutIcon size={16}/' -e 's/InfoIcon size={22}/InfoIcon size={16}/' src/features/auth/AuthMenu.tsx)",
+      "Bash(sed -i '' -e 's/PaletteIcon size={22}/PaletteIcon size={16}/' -e 's/ResolvedIcon size={17}/ResolvedIcon size={14}/' -e 's/ChevronRightIcon size={22}/ChevronRightIcon size={16}/g' -e 's/Icon size={19}/Icon size={15}/' -e 's/GlobeIcon size={22}/GlobeIcon size={16}/' -e 's/GlobeIcon size={19}/GlobeIcon size={15}/' src/features/settings/SettingsMenu.tsx)"
     ]
   }
 }

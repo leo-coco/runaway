@@ -112,7 +112,7 @@ const AllEventsModal = ({
  * derived by {@link buildRunwayEvents}. A "see all events" link opens the full
  * sorted list.
  */
-export const RunwayTimeline = () => {
+export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
   const { plan, projection, monteCarlo } = usePlanContext();
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
@@ -129,7 +129,7 @@ export const RunwayTimeline = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <section className="runway" aria-label={t('runway.title')}>
+    <section className={cn('runway', className)} aria-label={t('runway.title')}>
       <div className="runway__head">
         <span className="runway__title">{t('runway.title')}</span>
       </div>

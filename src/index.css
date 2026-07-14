@@ -62,13 +62,15 @@
    charcoal surfaces, and a copper-gold accent for waypoints and CTAs. */
 :root,
 :root[data-theme='dark'] {
-  --bg: #0e0d0c;
+  --bg: rgb(13, 13, 13);
   --bg-elev: #151311;
   --bg-card: #1a1816;
   --bg-card-hover: #221f1c;
   --bg-input: #151311;
   --border: #2a2723;
   --border-strong: #3a362f;
+  --card-border: var(--border);
+  --table-head-bg: rgb(19, 19, 19);
 
   --text: #f6f4f0;
   --text-muted: #aca39a;
@@ -125,11 +127,13 @@
 :root[data-theme='light'] {
   --bg: rgb(242, 242, 242);
   --bg-elev: #ffffff;
-  --bg-card: #ffffff;
+  --bg-card: rgb(252, 252, 252);
   --bg-card-hover: #fbf6ec;
   --bg-input: #ffffff;
   --border: #e7ded1;
   --border-strong: #d6c9b3;
+  --card-border: rgba(13, 13, 13, 0.05);
+  --table-head-bg: #ffffff;
 
   --text: rgb(13, 13, 13);
   --text-muted: rgba(13, 13, 13, 0.6);
@@ -176,7 +180,7 @@
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   /* Soft resting + hover elevation so white cards float on the warm canvas
      (design system "Ombres"). */
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0px 8px 24px 0px rgba(0, 0, 0, 0.05);
   --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.05);
   /* Floating menus / popovers / tooltips — soft, diffuse, low-opacity. */
   --shadow-pop: 0 12px 28px rgba(31, 35, 40, 0.12);
@@ -236,11 +240,7 @@ h4 {
 .app-shell {
   display: flex;
   min-height: 100vh;
-  background: radial-gradient(
-    1200px 500px at 50% -10%,
-    var(--shell-gradient-a) 0%,
-    var(--shell-gradient-b) 60%
-  );
+  background: var(--bg);
 }
 .app-main {
   flex: 1;
@@ -700,6 +700,16 @@ h4 {
     0 18px 48px rgba(0, 0, 0, 0.18),
     0 1px 0 rgba(255, 255, 255, 0.5) inset;
 }
+/* Invisible bridge over the 8px gap to the trigger button, so the pointer
+   never leaves `.sb-settings`'s hover area while moving toward the submenu. */
+.sb-settings__submenu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 8px;
+  height: 100%;
+}
 .sb-settings__option {
   display: flex;
   align-items: center;
@@ -1021,12 +1031,12 @@ h4 {
 /* ---------- cards ---------- */
 .card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
 .card--pad {
-  padding: var(--sp-5) var(--sp-6);
+  padding: 16px;
 }
 
 /* Gentle hover lift on the dashboard summary cards (design system signature).
@@ -1043,14 +1053,16 @@ h4 {
 }
 
 .overview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 14px;
   margin-top: 6px;
 }
 .ov {
   container-type: inline-size;
   min-width: 0;
+  flex: 1 1 calc(33.333% - 10px);
   padding: 18px 20px;
   min-height: 132px;
   display: flex;
@@ -1065,7 +1077,7 @@ h4 {
 }
 .ov__title {
   font-size: var(--fs-body);
-  color: var(--text-muted);
+  color: var(--text);
   font-weight: 600;
 }
 .ov__badge {
@@ -1239,6 +1251,12 @@ h4 {
 .hero__card--risk {
   border-color: color-mix(in srgb, var(--danger, #f43f5e) 55%, var(--border));
 }
+.hero__card--warn {
+  border-color: color-mix(in srgb, var(--amber) 55%, var(--border));
+}
+.hero__card--success {
+  border-color: color-mix(in srgb, var(--success) 55%, var(--border));
+}
 @media (max-width: 720px) {
   .hero {
     grid-template-columns: 1fr;
@@ -1278,6 +1296,10 @@ h4 {
   line-height: 1;
   overflow-wrap: break-word;
 }
+.hero__big--sm {
+  font-size: 2rem;
+  font-weight: 800;
+}
 .hero__big-note {
   color: var(--text-muted);
   font-size: var(--fs-md);
@@ -1312,6 +1334,145 @@ h4 {
   color: var(--success);
   border-color: color-mix(in srgb, var(--success) 50%, var(--border));
 }
+.hero--single {
+  grid-template-columns: 1fr;
+}
+.hero--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .hero--triple {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .hero--triple {
+    grid-template-columns: 1fr;
+  }
+}
+.hero--compact .hero__card,
+.hero--compact .runway--hero {
+  padding: 14px 20px;
+}
+.hero--compact .runway__head {
+  margin-bottom: 6px;
+}
+.hero--compact .runway__scroll {
+  padding-bottom: 2px;
+}
+.hero--compact .runway__marker {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+}
+.hero--compact .runway__item::before {
+  top: 20px;
+}
+.hero--compact .runway__more {
+  margin-top: 6px;
+}
+
+/* ---------- Monte Carlo summary card (dashboard hero, left) ---------- */
+.mc-card {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.mc-card--locked {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.mc-card__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.mc-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mc-card__title {
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+}
+.mc-card__desc {
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  margin: 0;
+}
+.mc-card__note {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+}
+.mc-card__cta {
+  margin-top: 4px;
+}
+.mc-card__donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.mc-donut {
+  --mc-pct: 0;
+  --mc-color: var(--success);
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: conic-gradient(var(--mc-color) calc(var(--mc-pct) * 1%), var(--bg-input) 0);
+  display: grid;
+  place-items: center;
+}
+.mc-donut__hole {
+  width: 102px;
+  height: 102px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  display: grid;
+  place-items: center;
+}
+.mc-donut__pct {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.mc-card__donut-label {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+  max-width: 150px;
+}
+@media (max-width: 520px) {
+  .mc-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .mc-card__text {
+    align-items: center;
+  }
+  .mc-card__donut-wrap {
+    align-self: center;
+  }
+}
 
 /* ---------- plan settings header ---------- */
 .settings-head {
@@ -1322,10 +1483,10 @@ h4 {
   margin-bottom: 4px;
 }
 .settings-head__title {
-  font-size: var(--fs-xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  font-size: var(--fs-lg);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
   font-weight: 600;
 }
 .settings-head__note {
@@ -1633,12 +1794,12 @@ h4 {
   background: color-mix(in srgb, var(--danger) 15%, transparent);
 }
 .brow--head {
-  color: rgb(13, 13, 13);
+  color: var(--text-muted);
   font-size: 0.71875rem;
   font-weight: 600;
   text-transform: none;
   padding: 10px 16px;
-  background: rgb(250, 250, 250);
+  background: var(--table-head-bg);
 }
 .brow:last-child {
   border-bottom: none;
@@ -1846,7 +2007,7 @@ h4 {
 /* ---------- dashboard: trend chart + mini assets table, side by side ---------- */
 .dash-split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 30% 70%;
   gap: 18px;
   align-items: start;
   margin-bottom: 26px;
@@ -2705,14 +2866,6 @@ h4 {
   padding: 8px 12px;
   font-size: var(--fs-sm);
   outline: none;
-}
-.chart-meta {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
 }
 .axis-mode-switch {
   display: flex;
@@ -4665,15 +4818,9 @@ h4 {
   color: var(--danger);
 }
 
-@media (max-width: 1120px) {
-  .overview-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 900px) {
-  .overview-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .ov {
+    flex-basis: calc(50% - 7px);
   }
   .scenario-grid,
   .adj-grid {
@@ -4685,8 +4832,8 @@ h4 {
 }
 
 @media (max-width: 480px) {
-  .overview-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .ov {
+    flex-basis: 100%;
   }
   .hero__card {
     padding: 18px 20px;
@@ -5272,6 +5419,17 @@ h4 {
   margin-bottom: 22px;
   box-shadow: var(--shadow-card);
 }
+.runway--hero {
+  margin-bottom: 0;
+  height: 100%;
+  border-radius: var(--radius-hero);
+  padding: 26px 30px;
+  display: flex;
+  flex-direction: column;
+}
+.runway--hero .runway__scroll {
+  flex: 1;
+}
 .runway__head {
   margin-bottom: 14px;
 }
@@ -5337,8 +5495,18 @@ h4 {
   margin-bottom: 10px;
 }
 .runway__marker--today {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: transparent;
+  background: transparent;
+}
+.runway__marker--today svg {
+  display: none;
+}
+.runway__marker--today::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 .runway__marker--retirement,
 .runway__marker--benefits,

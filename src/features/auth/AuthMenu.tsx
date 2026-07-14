@@ -100,8 +100,11 @@ export const AuthMenu = () => {
           style={{ left: popPos.left, bottom: popPos.bottom }}
         >
           <div className="sb-profile-pop__head">
-            <span className="sb-user__avatar sb-user__avatar--initials" aria-hidden="true">
-              {user ? initials : '-'}
+            <span
+              className={`sb-user__avatar${user ? ' sb-user__avatar--initials' : ''}`}
+              aria-hidden="true"
+            >
+              {user ? initials : <RobotAvatar />}
             </span>
             <div className="sb-profile-pop__identity">
               <b>{user?.name || t('sidebar.notSignedIn')}</b>
