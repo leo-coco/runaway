@@ -17,6 +17,7 @@ interface StepperProps {
   hideButtons?: boolean;
   /** Shrink to content so the value sits right next to the suffix (e.g. "8%"). */
   compact?: boolean;
+  disabled?: boolean;
 }
 
 /**
@@ -35,6 +36,7 @@ export const Stepper = ({
   ariaLabel,
   hideButtons = false,
   compact = false,
+  disabled = false,
 }: StepperProps) => {
   const [draft, setDraft] = useState(String(value));
   // Sync the editable draft when the controlled value changes externally,
@@ -61,12 +63,20 @@ export const Stepper = ({
   const nudge = (dir: 1 | -1) => onChange(clamp(value + dir * step));
 
   return (
-    <div className={cn('stepper', compact && 'stepper--plain', invalid && 'is-invalid')}>
+    <div
+      className={cn(
+        'stepper',
+        compact && 'stepper--plain',
+        invalid && 'is-invalid',
+        disabled && 'is-disabled',
+      )}
+    >
       {prefix && <span className="stepper__prefix">{prefix}</span>}
       <input
         inputMode="decimal"
         aria-label={ariaLabel}
         value={draft}
+        disabled={disabled}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
@@ -74,7 +84,7 @@ export const Stepper = ({
         }}
       />
       {suffix && <span className="stepper__suffix">{suffix}</span>}
-      {!hideButtons && (
+      {!hideButtons && !disabled && (
         <>
           <button
             type="button"

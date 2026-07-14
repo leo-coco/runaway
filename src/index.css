@@ -1144,6 +1144,10 @@ h4 {
   background: var(--emphasis-bg);
   color: var(--emphasis-text);
 }
+.scenario-pill.tip-host:last-child .tip-bubble {
+  left: auto;
+  right: 0;
+}
 
 /* ---------- plan title + auto-saved ---------- */
 .plan-title {
@@ -2024,6 +2028,12 @@ h4 {
 }
 .stepper.is-invalid {
   border-color: var(--danger);
+}
+.stepper.is-disabled {
+  opacity: 0.5;
+}
+.stepper.is-disabled input {
+  cursor: not-allowed;
 }
 /* compact, button-less variant: number sits right next to the suffix */
 .stepper--plain {
@@ -4361,8 +4371,10 @@ h4 {
   color: var(--text-muted);
 }
 .adj__box {
-  width: 132px;
-  flex-shrink: 0;
+  width: 100%;
+}
+.adj__box .stepper {
+  width: 100%;
 }
 .adj__box .stepper input {
   text-align: center;
