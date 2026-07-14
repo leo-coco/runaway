@@ -93,7 +93,6 @@ export const DashboardPage = () => {
           to={`/plan/${plan.id}/projection`}
           icon={<TrendingUpIcon size={16} />}
           label={t('sidebar.projection')}
-          shortcut="P"
         />
       </div>
       <ErrorBoundary feature="plan settings">

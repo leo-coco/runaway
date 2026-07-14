@@ -7,8 +7,6 @@ interface ShortcutTooltipProps {
   icon?: ReactNode;
   /** Main label text. */
   label: string;
-  /** Keyboard-shortcut hint shown in the trailing key chip (e.g. "N"). */
-  shortcut?: string;
   /** When set, the pill renders as a router link. */
   to?: string;
   onClick?: () => void;
@@ -17,23 +15,14 @@ interface ShortcutTooltipProps {
 
 /**
  * Rich "action pill" modelled on Wealthsimple's floating "Go to Net worth"
- * control: a dark rounded pill combining a left icon, a label, and a trailing
- * keyboard-shortcut chip. Reusable — renders as a Link when `to` is provided,
- * otherwise a button.
+ * control: a dark rounded pill combining a left icon and label. Reusable —
+ * renders as a Link when `to` is provided, otherwise a button.
  */
-export const ShortcutTooltip = ({
-  icon,
-  label,
-  shortcut,
-  to,
-  onClick,
-  className,
-}: ShortcutTooltipProps) => {
+export const ShortcutTooltip = ({ icon, label, to, onClick, className }: ShortcutTooltipProps) => {
   const inner = (
     <>
       {icon ? <span className="shortcut-tip__icon">{icon}</span> : null}
       <span className="shortcut-tip__label">{label}</span>
-      {shortcut ? <kbd className="shortcut-tip__key">{shortcut}</kbd> : null}
     </>
   );
 

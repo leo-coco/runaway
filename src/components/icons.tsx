@@ -155,6 +155,49 @@ export const InfoIcon = ({ size = 16, ...p }: IconProps) => (
     <line x1="12" y1="8" x2="12.01" y2="8" />
   </svg>
 );
+export const BoltSquareIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="4" />
+    <path d="M13 4.8 8.5 12H12l-1 7.2 4.5-7.2H12Z" />
+  </svg>
+);
+export const DocumentIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+    <path d="M14 3v5h5" />
+  </svg>
+);
+export const GlobeIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path d="M12 3a13.5 13.5 0 0 1 0 18" />
+    <path d="M12 3a13.5 13.5 0 0 0 0 18" />
+  </svg>
+);
+export const LogOutIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3" />
+    <path d="M16 17l5-5-5-5" />
+    <path d="M21 12H9" />
+  </svg>
+);
+export const PaletteIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 3a9 9 0 0 0 0 18h1.5a1.8 1.8 0 0 0 1-3.3 1.3 1.3 0 0 1 .7-2.4H17a4 4 0 0 0 4-4C21 6.7 17 3 12 3Z" />
+    <circle cx="7.5" cy="10" r="0.8" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="7" r="0.8" fill="currentColor" stroke="none" />
+    <circle cx="14" cy="7.5" r="0.8" fill="currentColor" stroke="none" />
+  </svg>
+);
+export const TaxIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M14 3H8a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h8" />
+    <path d="M14 3v5h5" />
+    <path d="M17.5 11v6" />
+    <path d="M20 12.5a2.2 2.2 0 0 0-2.5-.7c-1.1.3-1.5 1.7-.4 2.3l1.8.9c1.1.6.7 2-.4 2.3a2.5 2.5 0 0 1-2.8-.8" />
+  </svg>
+);
 export const SunIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <circle cx="12" cy="12" r="4" />

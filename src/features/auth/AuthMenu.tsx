@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from '@/lib/authClient';
+import { GearIcon, InfoIcon, LogOutIcon } from '@/components/icons';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { AuthDialog } from './AuthDialog';
 
-/** Two-letter initials from a name ("John Doe" -> "JD"), else the first email
- *  character, else a neutral dash. */
 const initialsFor = (name?: string | null, email?: string | null) => {
   const source = name?.trim() || email?.trim() || '';
-  if (!source) return '—';
+  if (!source) return '-';
   if (name?.trim()) {
     const parts = name.trim().split(/\s+/);
     return (parts[0]![0]! + (parts[1]?.[0] ?? '')).toUpperCase();
@@ -16,7 +15,6 @@ const initialsFor = (name?: string | null, email?: string | null) => {
   return source[0]!.toUpperCase();
 };
 
-/** Friendly robot persona shown while signed out, in place of a real avatar. */
 const RobotAvatar = () => (
   <svg
     width="22"
@@ -36,46 +34,115 @@ const RobotAvatar = () => (
   </svg>
 );
 
-/**
- * The account row at the bottom of the sidebar. Signed out it shows a robot
- * persona avatar and an accent Sign in button; signed in it shows the account
- * initials, name/email and a Sign out action. A settings gear on the right opens
- * the theme/language menu. Reuses `.sb-user`.
- */
 export const AuthMenu = () => {
   const { t } = useTranslation();
   const { data: sessionData, isPending } = useSession();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const user = sessionData?.user;
+  const initials = initialsFor(user?.name, user?.email);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: globalThis.MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const openSignIn = () => {
+    setOpen(false);
+    setDialogOpen(true);
+  };
 
   return (
-    <div className="sb-user">
-      <span
-        className={`sb-user__avatar${user ? ' sb-user__avatar--initials' : ''}`}
-        aria-hidden="true"
+    <div className={`sb-user${open ? ' is-open' : ''}`} ref={ref}>
+      <button
+        type="button"
+        className="sb-user__trigger"
+        aria-label={user ? t('auth.account') : t('auth.signIn')}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
       >
-        {user ? initialsFor(user.name, user.email) : <RobotAvatar />}
-      </span>
-      {user ? (
-        <span className="sb-user__text">
-          <b>{user.name || t('auth.account')}</b>
-          <span title={user.email}>{user.email}</span>
-          <button type="button" className="link-btn sb-user__action" onClick={() => void signOut()}>
-            {t('auth.signOut')}
-          </button>
+        <span
+          className={`sb-user__avatar${user ? ' sb-user__avatar--initials' : ''}`}
+          aria-hidden="true"
+        >
+          {user ? initials : <RobotAvatar />}
         </span>
-      ) : (
-        !isPending && (
-          <button
-            type="button"
-            className="btn btn--accent btn--sm sb-user__signin"
-            onClick={() => setDialogOpen(true)}
-          >
-            {t('auth.signIn')}
-          </button>
-        )
+        <span className="sb-user__text">
+          <b>{user?.name || t('sidebar.notSignedIn')}</b>
+          <span>{user?.email || t('auth.signIn')}</span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="sb-profile-pop" role="menu">
+          <div className="sb-profile-pop__head">
+            <span className="sb-user__avatar sb-user__avatar--initials" aria-hidden="true">
+              {user ? initials : '-'}
+            </span>
+            <div className="sb-profile-pop__identity">
+              <b>{user?.name || t('sidebar.notSignedIn')}</b>
+              {user?.email ? <span>{user.email}</span> : null}
+            </div>
+            <span className="sb-profile-pop__badge" aria-hidden="true">
+              W
+            </span>
+          </div>
+
+          <div className="sb-profile-pop__group">
+            <SettingsMenu />
+            <button type="button" role="menuitem" className="sb-profile-pop__item">
+              <span className="sb-profile-pop__lead">
+                <GearIcon size={16} />
+                <span>{t('settings.title')}</span>
+              </span>
+            </button>
+          </div>
+
+          <div className="sb-profile-pop__group">
+            {user ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="sb-profile-pop__item"
+                onClick={() => {
+                  setOpen(false);
+                  void signOut();
+                }}
+              >
+                <span className="sb-profile-pop__lead">
+                  <LogOutIcon size={16} />
+                  <span>{t('auth.signOut')}</span>
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                className="sb-profile-pop__item"
+                disabled={isPending}
+                onClick={openSignIn}
+              >
+                <span className="sb-profile-pop__lead">
+                  <InfoIcon size={16} />
+                  <span>{t('auth.signIn')}</span>
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
-      <SettingsMenu />
+
       {dialogOpen && <AuthDialog onClose={() => setDialogOpen(false)} />}
     </div>
   );
