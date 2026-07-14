@@ -27,13 +27,15 @@ npm run dev
 
 ### Environment / API keys
 
-All keys are parsed and validated with Zod at boot in `src/config/env.ts`. **If a required key is missing or malformed, the app does not silently proceed** — it renders an actionable configuration screen (`BootError`) listing exactly what to fix.
+Provider API keys are **secrets and stay server-side** — they are parsed with Zod in `server/env.ts` and used only by the `/api/market/*` proxy (`server/routes/market.ts`). The browser reaches every keyed provider through that same-origin proxy, so no key is ever inlined into the client bundle. The one client value (`VITE_COINGECKO_BASE_URL`) is non-secret and validated at boot in `src/config/env.ts`.
 
-| Variable | Used for | Key required |
-| --- | --- | --- |
-| `VITE_ALPHA_VANTAGE_API_KEY` | US/Canadian stock & ETF quotes/search | Yes — free at [alphavantage.co](https://www.alphavantage.co/support/#api-key) |
-| `VITE_EXCHANGERATE_API_KEY` | Live FX rates | Yes — free at [exchangerate-api.com](https://www.exchangerate-api.com/) |
-| `VITE_COINGECKO_BASE_URL` | Crypto prices & search | No key (public CoinGecko API); defaulted |
+> Because market calls go through `/api`, the API dev server must be running: use `npm run dev:all`, not `npm run dev` alone.
+
+| Variable | Scope | Used for | Key required |
+| --- | --- | --- | --- |
+| `ALPHA_VANTAGE_API_KEY` | Server | US/Canadian stock & ETF quotes/search | Yes — free at [alphavantage.co](https://www.alphavantage.co/support/#api-key) |
+| `EXCHANGERATE_API_KEY` | Server | Live FX rates | Yes — free at [exchangerate-api.com](https://www.exchangerate-api.com/) |
+| `VITE_COINGECKO_BASE_URL` | Client | Crypto prices & search | No key (public CoinGecko API); defaulted |
 
 There are **zero hard-coded price fallbacks**. When a provider is unavailable, the UI shows an explicit, actionable error (per-row on the table, or a banner) and the manually-entered values continue to drive projections.
 
@@ -76,7 +78,7 @@ src/
 1. **Unidirectional data flow** — `infrastructure` validates with Zod → `services` map DTOs to domain numbers → `hooks`/`store` → UI. Components never see raw responses.
 2. **Domain / infrastructure separation** — nothing in `domain/` imports React or any library client; a `services/` module never imports a component.
 3. **`Result<T, E>` everywhere in services** — no inline `try/catch` in components. Errors are typed (`AppError` with a discriminated `kind`) and surface through the UI as `InlineError` / `BootError`.
-4. **Env validation at boot** — `src/config/env.ts` parses keys with Zod; failure renders a clear configuration screen instead of crashing.
+4. **Env validation** — `src/config/env.ts` validates non-secret client config with Zod at boot; secret provider keys are validated server-side in `server/env.ts` and reached through the `/api/market` proxy so they never enter the bundle.
 5. **Centralised money formatting** — `useCurrencyFormatter(currency)` is the only way money is rendered. No inline `toFixed()` / `Intl.NumberFormat` in components.
 6. **Per-feature error boundaries** — `plans`, `portfolio`, `projections`, etc. each wrap in `ErrorBoundary`, so one feature's crash doesn't take down the app.
 7. **Justified performance** — heavy projection reduces run in `useMemo` keyed on the inputs that affect them; price fetches are deduplicated through the TanStack Query cache.

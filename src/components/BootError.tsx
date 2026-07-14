@@ -11,24 +11,18 @@ export const BootError = ({ issues }: { issues: readonly string[] }) => (
         <AlertIcon size={22} /> Configuration required
       </h1>
       <p style={{ color: 'var(--text-muted)' }}>
-        Runway could not start because some required API keys are missing or invalid. Copy{' '}
-        <code>.env.example</code> to <code>.env</code> and provide the following:
+        Runway could not start because some client configuration is invalid. Copy{' '}
+        <code>.env.example</code> to <code>.env</code> and fix the following:
       </p>
       <ul>
         {issues.map((issue) => (
           <li key={issue}>{issue}</li>
         ))}
       </ul>
-      <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-        Get free keys from{' '}
-        <a style={{ color: 'var(--accent)' }} href="https://www.alphavantage.co/support/#api-key">
-          Alpha Vantage
-        </a>{' '}
-        (stocks) and{' '}
-        <a style={{ color: 'var(--accent)' }} href="https://www.exchangerate-api.com/">
-          ExchangeRate-API
-        </a>{' '}
-        (FX). CoinGecko (crypto) needs no key. Restart the dev server after editing{' '}
+      <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem' }}>
+        Stock (Alpha Vantage) and FX (ExchangeRate-API) keys are now server-side only — set{' '}
+        <code>ALPHA_VANTAGE_API_KEY</code> and <code>EXCHANGERATE_API_KEY</code> in the API
+        environment, not here. CoinGecko (crypto) needs no key. Restart the dev server after editing{' '}
         <code>.env</code>.
       </p>
     </div>

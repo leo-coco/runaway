@@ -58,7 +58,7 @@ export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
         </>
       }
     >
-      <div className="eyebrow" style={{ fontSize: 16, color: 'var(--text)', fontWeight: 700 }}>
+      <div className="eyebrow" style={{ fontSize: '1rem', color: 'var(--text)', fontWeight: 700 }}>
         {t('modals.selectScenario')}
       </div>
 

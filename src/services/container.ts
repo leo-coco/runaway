@@ -14,8 +14,8 @@ export interface Services {
 /** Compose infrastructure clients and services from validated env. */
 export const createServices = (env: AppEnv): Services => {
   const coinGecko = createCoinGeckoClient(env.coinGeckoBaseUrl);
-  const alphaVantage = createAlphaVantageClient(env.alphaVantageApiKey);
-  const exchangeRate = createExchangeRateClient(env.exchangeRateApiKey);
+  const alphaVantage = createAlphaVantageClient();
+  const exchangeRate = createExchangeRateClient();
 
   return {
     price: createPriceService({ coinGecko, alphaVantage, exchangeRate }),

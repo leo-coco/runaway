@@ -68,11 +68,16 @@ describe('plan pages (smoke)', () => {
   it('portfolio page shows the multi-currency breakdown and investment rows for seeded assets', () => {
     renderAt('portfolio');
     expect(screen.getByText('My Portfolio')).toBeInTheDocument();
-    expect(screen.getByText('Converted Price (USD)')).toBeInTheDocument();
+    expect(screen.getByText('Price (USD)')).toBeInTheDocument();
     expect(screen.getByText('Bitcoin')).toBeInTheDocument();
-    // The asset name is visually truncated (AssetRow.tsx), but the full name
-    // is preserved in the title attribute for a tooltip on hover.
-    expect(screen.getByTitle('NVIDIA Corporation')).toBeInTheDocument();
+    // The asset name is visually truncated (AssetRow.tsx), but the ticker plus
+    // full name is preserved in the title attribute for a tooltip on hover.
+    expect(screen.getByTitle('NVDA NVIDIA Corporation')).toBeInTheDocument();
+  });
+
+  it('portfolio page shows "Add New Asset" outside of edit mode', () => {
+    renderAt('portfolio');
+    expect(screen.getByRole('button', { name: /Add New Asset/i })).toBeInTheDocument();
   });
 
   it('projection page shows the projections panel and savings flow row', () => {
