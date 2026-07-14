@@ -2299,53 +2299,6 @@ h4 {
   max-width: 300px;
 }
 
-/* ---------- shortcut action pill ("Go to …" rich tooltip) ---------- */
-.shortcut-tip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  /* Always the dark chip treatment, per the design-system reference — a warm
-     near-black ground with light text, in both themes. */
-  background: #1f1c19;
-  color: #f6f4f0;
-  font-size: var(--fs-body);
-  font-weight: var(--fw-medium);
-  cursor: pointer;
-  box-shadow: var(--shadow-pop);
-  transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease;
-}
-.shortcut-tip:hover {
-  transform: translateY(-1px);
-}
-.shortcut-tip__icon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--brand-orange);
-}
-.shortcut-tip__label {
-  white-space: nowrap;
-}
-.shortcut-tip__key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.375rem;
-  height: 1.375rem;
-  padding: 0 0.3125rem;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #1f1c19;
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  font-family: inherit;
-  line-height: 1;
-}
-
 .acct-explain {
   margin: 8px 0 4px;
   padding: 12px 14px;
