@@ -188,6 +188,29 @@ export const fr: Resources = {
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
     depletes: '● ÉPUISÉ EN {{year}} · {{years}} ANS APRÈS LA RETRAITE',
     oddsNote: 'probabilité que votre argent dure toute la retraite à ce niveau de dépenses',
+    portfolioToday: "Portefeuille aujourd'hui",
+    portfolioAtRetirement: 'Portefeuille à la retraite',
+    depletionTitle: 'Épuisement de l’épargne',
+    neverDepletes: 'Jamais',
+    fullyFunded: 'ENTIÈREMENT FINANCÉ',
+    mc: {
+      badgeStrong: 'Votre retraite est sur les rails',
+      badgeBorderline: 'Votre retraite mérite votre attention',
+      badgeWeak: 'Votre retraite est à risque',
+      titleStrong: 'Excellente trajectoire',
+      titleBorderline: 'Trajectoire à surveiller',
+      titleWeak: 'Trajectoire à risque',
+      descStrong:
+        'Votre plan actuel a {{pct}} % de chances de financer votre retraite selon vos paramètres actuels.',
+      descBorderline:
+        'Votre plan actuel a {{pct}} % de chances de financer votre retraite. Quelques ajustements pourraient améliorer vos chances.',
+      descWeak:
+        "Votre plan actuel n'a que {{pct}} % de chances de financer votre retraite. Il serait bon de revoir vos paramètres.",
+      noData: 'Ajoutez des actifs à votre portefeuille pour lancer une simulation Monte-Carlo.',
+      simulating: 'Simulation en cours…',
+      ringLabel: 'Taux de réussite (Monte-Carlo)',
+      cta: 'Voir la simulation',
+    },
   },
   runway: {
     title: 'Votre runway',
@@ -277,13 +300,9 @@ export const fr: Resources = {
     planEndsAge: 'Fin du plan {{year}} ({{age}} ans)',
     depletion: 'Épuisement {{year}}',
     depletionAge: 'Épuisement {{year}} ({{age}} ans)',
-    metaToday: '{{value}} aujourd’hui',
-    metaDeplete: '· Épargne épuisée en {{when}}',
-    metaSurvival: '· {{years}} ans après la retraite',
     legendOpening: 'Solde d’ouverture',
     legendClosing: 'Solde de clôture',
     yearsValue: '{{years}} ans',
-    withAge: '{{year}} ({{age}} ans)',
   },
   modals: {
     planNameTitle: 'Modifier le nom du plan',

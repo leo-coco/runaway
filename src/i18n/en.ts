@@ -180,6 +180,29 @@ export const en = {
     fundedIn: 'Your plan was fully funded in {{count}} of {{total}} simulated markets.',
     depletes: '● DEPLETES {{year}} · {{years}} YRS AFTER RETIRING',
     oddsNote: 'odds your money lasts all of retirement at this spending level',
+    portfolioToday: 'Portfolio today',
+    portfolioAtRetirement: 'Portfolio at retirement',
+    depletionTitle: 'Savings depletion',
+    neverDepletes: 'Never',
+    fullyFunded: 'FULLY FUNDED',
+    mc: {
+      badgeStrong: 'Your retirement is on track',
+      badgeBorderline: 'Your retirement needs attention',
+      badgeWeak: 'Your retirement is at risk',
+      titleStrong: 'Excellent trajectory',
+      titleBorderline: 'Trajectory to watch',
+      titleWeak: 'At-risk trajectory',
+      descStrong:
+        'Your current plan has a {{pct}}% chance of funding your retirement under your current assumptions.',
+      descBorderline:
+        'Your current plan has a {{pct}}% chance of funding your retirement. A few adjustments could improve your odds.',
+      descWeak:
+        'Your current plan has only a {{pct}}% chance of funding your retirement. Consider revisiting your assumptions.',
+      noData: 'Add assets to your portfolio to run a Monte Carlo simulation.',
+      simulating: 'Running the simulation…',
+      ringLabel: 'Success rate (Monte Carlo)',
+      cta: 'View the simulation',
+    },
   },
   runway: {
     title: 'Your runway',
@@ -268,13 +291,9 @@ export const en = {
     planEndsAge: 'Plan ends {{year}} (age {{age}})',
     depletion: 'Depletion {{year}}',
     depletionAge: 'Depletion {{year}} (age {{age}})',
-    metaToday: '{{value}} today',
-    metaDeplete: '· Savings deplete in {{when}}',
-    metaSurvival: '· {{years}} years post-retirement',
     legendOpening: 'Opening balance',
     legendClosing: 'Closing balance',
     yearsValue: '{{years}} years',
-    withAge: '{{year}} (age {{age}})',
   },
   modals: {
     planNameTitle: 'Edit Plan Name',
