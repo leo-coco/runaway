@@ -41,6 +41,8 @@ export const en = {
     scenarioConservative: 'Pessimistic',
     scenarioExpected: 'Expected',
     scenarioOptimistic: 'Optimistic',
+    scenarioTooltipConservative: 'Applies a global downgrade of {{value}}% to each asset’s CAGR.',
+    scenarioTooltipOptimistic: 'Applies a global upgrade of {{value}}% to each asset’s CAGR.',
     expensesIncomes: 'Expenses & income',
     expensesIncomesCount: '{{count}} item(s)',
     expensesIncomesEmpty: 'No expenses or income added',

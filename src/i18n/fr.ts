@@ -45,6 +45,10 @@ export const fr: Resources = {
     scenarioConservative: 'Pessimiste',
     scenarioExpected: 'Attendu',
     scenarioOptimistic: 'Optimiste',
+    scenarioTooltipConservative:
+      'Applique une baisse globale de {{value}} % au CAGR de chaque actif.',
+    scenarioTooltipOptimistic:
+      'Applique une hausse globale de {{value}} % au CAGR de chaque actif.',
     expensesIncomes: 'Dépenses & entrées',
     expensesIncomesCount: '{{count}} élément(s)',
     expensesIncomesEmpty: 'Aucune dépense ni entrée ajoutée',
