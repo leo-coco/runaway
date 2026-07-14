@@ -7,6 +7,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { usePriceFetcher } from '@/hooks/usePriceFetcher';
 import { useAppStore } from '@/store';
+import { useLimit } from '@/hooks/useEntitlements';
+import { atLimit } from '@/domain/entitlements';
 import { accountEffectiveRate, type Account } from '@/domain/account';
 import { gainForHoldings, valueHoldings, type GainSummary } from '@/services/portfolioService';
 import type { HoldingValue } from '@/services/portfolioService';
@@ -37,7 +39,13 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const updateHolding = useAppStore((s) => s.updateHolding);
   const removeHolding = useAppStore((s) => s.removeHolding);
   const openModal = useAppStore((s) => s.openModal);
+  const openPaywall = useAppStore((s) => s.openPaywall);
+  const maxAssets = useLimit('maxAssets');
   const { statuses, isFetchingAll, fetchPrice, fetchAll } = usePriceFetcher(plan.id);
+
+  // Free tier caps assets; adding past the cap opens the paywall instead.
+  const onAddAsset = () =>
+    atLimit(plan.holdings.length, maxAssets) ? openPaywall('assets') : openModal('addAsset');
 
   // Read-only by default; clicking a row's edit icon turns that row's cells
   // into inputs. Only one row is editable at a time.
@@ -120,7 +128,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           >
             {isFetchingAll ? <Spinner /> : <RefreshIcon size={15} />} {t('portfolio.fetchPrices')}
           </Button>
-          <Button variant="accent" data-tour="addasset-btn" onClick={() => openModal('addAsset')}>
+          <Button variant="accent" data-tour="addasset-btn" onClick={onAddAsset}>
             <PlusIcon /> {t('portfolio.addAsset')}
           </Button>
         </div>

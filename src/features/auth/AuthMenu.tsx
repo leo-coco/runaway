@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from '@/lib/authClient';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
@@ -60,6 +61,11 @@ export const AuthMenu = () => {
         <span className="sb-user__text">
           <b>{user.name || t('auth.account')}</b>
           <span title={user.email}>{user.email}</span>
+          {(user as { role?: string }).role === 'admin' && (
+            <Link to="/admin" className="link-btn sb-user__action">
+              {t('admin.title')}
+            </Link>
+          )}
           <button type="button" className="link-btn sb-user__action" onClick={() => void signOut()}>
             {t('auth.signOut')}
           </button>

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from '@/lib/authClient';
 import { useAppStore } from '@/store';
 import type { Plan } from '@/domain/plan';
-import { fetchPlans, putPlan, deletePlan } from './plansApi';
+import { fetchPlans, putPlan, deletePlan, PlanLimitError } from './plansApi';
+import type { PaywallReason } from '@/store/uiSlice';
 import { ImportLocalPlansDialog } from './ImportLocalPlansDialog';
 
 /** planId -> updatedAt of the last state we know the server has. */
@@ -71,7 +72,17 @@ export const PlanSyncManager = (): React.ReactElement | null => {
       void Promise.all([
         ...puts.map((p) => putPlan(p)),
         ...deletes.map((id) => deletePlan(id)),
-      ]).catch((e: unknown) => console.error('Plan sync: push failed', e));
+      ]).catch((e: unknown) => {
+        // A rejected over-limit push (client gating bypassed) surfaces the paywall
+        // rather than failing silently. The over-limit local edit stays in the store.
+        if (e instanceof PlanLimitError) {
+          const reason: PaywallReason =
+            e.limit === 'assets' ? 'assets' : e.limit === 'accounts' ? 'multiAccount' : 'plans';
+          useAppStore.getState().openPaywall(reason);
+        } else {
+          console.error('Plan sync: push failed', e);
+        }
+      });
     };
 
     const unsub = useAppStore.subscribe((state, prevState) => {
