@@ -121,7 +121,7 @@
    canvas (#F8F6F2), crisp white cards, near-black ink (#1F2328), and a copper
    accent (#B88A44) with a darker copper (#9A6F2F) for hover/emphasis. */
 :root[data-theme='light'] {
-  --bg: #f8f6f2;
+  --bg: rgb(242, 242, 242);
   --bg-elev: #ffffff;
   --bg-card: #ffffff;
   --bg-card-hover: #fbf6ec;
@@ -129,8 +129,8 @@
   --border: #e7ded1;
   --border-strong: #d6c9b3;
 
-  --text: #1f2328;
-  --text-muted: #667085;
+  --text: rgb(13, 13, 13);
+  --text-muted: rgba(13, 13, 13, 0.6);
   --text-dim: #98a0ab;
 
   /* Champagne/copper accent — badges, premium chips, active-icon fills. */
@@ -1475,7 +1475,8 @@ h4 {
 /* ---------- breakdown table ---------- */
 .breakdown {
   overflow-x: auto;
-  --row-cols: 1.5fr 1fr 0.9fr 0.9fr 0.7fr 0.75fr 1fr 1.2fr 36px;
+  --row-cols: minmax(160px, 1.5fr) minmax(90px, 1fr) minmax(90px, 0.9fr) minmax(90px, 0.9fr)
+    minmax(64px, 0.7fr) minmax(90px, 0.75fr) minmax(110px, 1fr) minmax(70px, 1.2fr) 64px;
 }
 .brow {
   display: grid;
@@ -1484,7 +1485,13 @@ h4 {
   align-items: center;
   padding: 8px 16px;
   border-bottom: 1px solid var(--border);
-  min-width: 1160px;
+  /* Must match the row's true minimum content width (sum of the --row-cols
+     minmax() floors + gaps + padding), so the row's own box — and therefore
+     its background — never falls short of what actually overflows into the
+     .breakdown scroll area. Without this, the box stays clamped to the
+     viewport while grid tracks paint past it, leaving unstyled blank space
+     to the right once scrolled. */
+  min-width: 940px;
 }
 .brow > * {
   text-align: center;
@@ -1558,12 +1565,12 @@ h4 {
   background: color-mix(in srgb, var(--danger) 15%, transparent);
 }
 .brow--head {
-  color: var(--text-dim);
+  color: rgb(13, 13, 13);
   font-size: 0.71875rem;
   font-weight: 600;
   text-transform: none;
   padding: 10px 16px;
-  background: var(--bg);
+  background: rgb(250, 250, 250);
 }
 .brow:last-child {
   border-bottom: none;
@@ -1581,7 +1588,7 @@ h4 {
   border-top: 1px solid var(--border-strong);
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  min-width: 1160px;
+  min-width: 940px;
 }
 .acct-section__main {
   grid-column: 1 / 6;
@@ -1756,7 +1763,7 @@ h4 {
   justify-content: flex-end;
   gap: 16px;
   align-items: baseline;
-  padding: 16px 20px;
+  padding: 8px 16px;
   border-top: 1px solid var(--border-strong);
 }
 .total-row .label {
@@ -1764,7 +1771,7 @@ h4 {
   font-size: var(--fs-sm);
 }
 .total-row .value {
-  font-size: 1.375rem;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
@@ -3592,11 +3599,26 @@ h4 {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+/* Actions column: per-row edit icon, plus the trash button once editing. */
+.asset-row__actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fetch-btn.is-active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.fetch-btn.is-active:hover {
+  color: var(--bg);
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
 /* "Confirm before removing an asset" — a small popover floating to the LEFT of
    the trash button, so the row layout never shifts. */
-.asset-row__remove {
-  position: relative;
-}
 .asset-row__confirm {
   position: absolute;
   top: 50%;

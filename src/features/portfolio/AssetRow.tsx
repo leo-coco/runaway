@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Stepper } from '@/components/ui/Stepper';
 import { Button } from '@/components/ui/Button';
-import { DragHandleIcon, RefreshIcon, TrashIcon } from '@/components/icons';
+import { DragHandleIcon, PencilIcon, RefreshIcon, TrashIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/Spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { colorForSymbol } from '@/lib/assetColors';
@@ -22,6 +22,7 @@ interface AssetRowProps {
   index: number;
   /** When false the editable cells render as plain read-only values. */
   editing: boolean;
+  onToggleEdit: () => void;
   rates: RatesTable | undefined;
   fetchState: PriceFetchState | undefined;
   onFetchPrice: (h: Holding) => void;
@@ -42,6 +43,7 @@ export const AssetRow = ({
   holding,
   index,
   editing,
+  onToggleEdit,
   rates,
   fetchState,
   onFetchPrice,
@@ -204,7 +206,6 @@ export const AssetRow = ({
             </span>
           )}
         </div>
-        {!isSameCurrency && <div className="cagr-note">{`${native} → ${plan.currency}`}</div>}
       </div>
 
       {/* Cost basis (native currency) — drives dynamic capital-gains tracking */}
@@ -288,38 +289,51 @@ export const AssetRow = ({
         )}
       </div>
 
-      {editing && (
-        <div className="asset-row__remove" ref={removeRef}>
-          <Button
-            variant="danger"
-            size="sm"
-            aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
-            aria-haspopup="dialog"
-            aria-expanded={confirmingRemove}
-            onClick={() => setConfirmingRemove((v) => !v)}
-          >
-            <TrashIcon size={16} />
-          </Button>
-          {confirmingRemove && (
-            <div className="asset-row__confirm" role="dialog" aria-label="Confirm removal">
-              <span className="asset-row__confirm-text">{t('common.removeQuestion')}</span>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  setConfirmingRemove(false);
-                  onRemove(holding.id);
-                }}
-              >
-                {t('common.remove')}
-              </Button>
-              <Button size="sm" onClick={() => setConfirmingRemove(false)}>
-                {t('common.cancel')}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="asset-row__actions" ref={removeRef}>
+        <button
+          type="button"
+          className={`fetch-btn ${editing ? 'is-active' : ''}`}
+          onClick={onToggleEdit}
+          aria-label={t(editing ? 'portfolio.doneAria' : 'portfolio.editAria', {
+            symbol: holding.instrument.symbol,
+          })}
+          title={editing ? t('portfolio.done') : t('portfolio.edit')}
+        >
+          <PencilIcon size={14} />
+        </button>
+        {editing && (
+          <>
+            <Button
+              variant="danger"
+              size="sm"
+              aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
+              aria-haspopup="dialog"
+              aria-expanded={confirmingRemove}
+              onClick={() => setConfirmingRemove((v) => !v)}
+            >
+              <TrashIcon size={16} />
+            </Button>
+            {confirmingRemove && (
+              <div className="asset-row__confirm" role="dialog" aria-label="Confirm removal">
+                <span className="asset-row__confirm-text">{t('common.removeQuestion')}</span>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    setConfirmingRemove(false);
+                    onRemove(holding.id);
+                  }}
+                >
+                  {t('common.remove')}
+                </Button>
+                <Button size="sm" onClick={() => setConfirmingRemove(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
