@@ -2,7 +2,7 @@ import { useMemo, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { PencilIcon, PlusIcon, RefreshIcon } from '@/components/icons';
+import { PlusIcon, RefreshIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/Spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { usePriceFetcher } from '@/hooks/usePriceFetcher';
@@ -39,8 +39,11 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const openModal = useAppStore((s) => s.openModal);
   const { statuses, isFetchingAll, fetchPrice, fetchAll } = usePriceFetcher(plan.id);
 
-  // Read-only by default; the Edit toggle turns the row cells into inputs.
-  const [editing, setEditing] = useState(false);
+  // Read-only by default; clicking a row's edit icon turns that row's cells
+  // into inputs. Only one row is editable at a time.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const toggleEditing = (holdingId: string) =>
+    setEditingId((cur) => (cur === holdingId ? null : holdingId));
 
   // Drag-and-drop: move an asset to another account by dragging its handle.
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -120,19 +123,6 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           <Button variant="accent" data-tour="addasset-btn" onClick={() => openModal('addAsset')}>
             <PlusIcon /> {t('portfolio.addAsset')}
           </Button>
-          <Button
-            variant={editing ? 'accent' : 'default'}
-            onClick={() => setEditing((v) => !v)}
-            aria-pressed={editing}
-          >
-            {editing ? (
-              t('portfolio.done')
-            ) : (
-              <>
-                <PencilIcon size={15} /> {t('portfolio.edit')}
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -141,12 +131,12 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           <span>{t('portfolio.colAsset')}</span>
           <span>{t('portfolio.colPrice')}</span>
           <span>{t('portfolio.colConverted', { currency: plan.currency })}</span>
-          <span>{t('portfolio.colValue', { currency: plan.currency })}</span>
           <span>{t('portfolio.colCostBasis')}</span>
-          <span>{t('portfolio.colRoi')}</span>
           <span>{t('portfolio.colQuantity')}</span>
+          <span>{t('portfolio.colValue')}</span>
+          <span>{t('portfolio.colRoi')}</span>
           <span>{t('portfolio.colCagr')}</span>
-          <span />
+          <span>{t('portfolio.colActions')}</span>
         </div>
 
         {plan.holdings.length === 0 ? (
@@ -179,10 +169,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                         : ''}
                     </span>
                   </div>
-                  <div className="acct-section__right">
-                    <GainLine gain={g.gain} fmt={fmt} />
-                    <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
-                  </div>
+                  <GainLine gain={g.gain} fmt={fmt} className="acct-section__gain" />
+                  <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
                 </div>
 
                 {g.holdings.map((h) => (
@@ -191,7 +179,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                     plan={plan}
                     holding={h}
                     index={rowIndex++}
-                    editing={editing}
+                    editing={editingId === h.id}
+                    onToggleEdit={() => toggleEditing(h.id)}
                     rates={rates}
                     fetchState={statuses[h.id]}
                     onFetchPrice={fetchPrice}
