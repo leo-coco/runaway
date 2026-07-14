@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from '@/lib/authClient';
-import { GearIcon, InfoIcon, LogOutIcon, UserIcon } from '@/components/icons';
+import { InfoIcon, LogOutIcon, UserIcon } from '@/components/icons';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { AuthDialog } from './AuthDialog';
 
@@ -40,6 +40,7 @@ export const AuthMenu = () => {
   const { data: sessionData, isPending } = useSession();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
+  const [popPos, setPopPos] = useState<{ left: number; bottom: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const user = sessionData?.user;
   const initials = initialsFor(user?.name, user?.email);
@@ -63,6 +64,17 @@ export const AuthMenu = () => {
     setDialogOpen(true);
   };
 
+  const toggleOpen = () => {
+    setOpen((current) => {
+      const next = !current;
+      if (next && ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setPopPos({ left: rect.left, bottom: window.innerHeight - rect.top + 8 });
+      }
+      return next;
+    });
+  };
+
   return (
     <div className={`sb-user${open ? ' is-open' : ''}`} ref={ref}>
       <button
@@ -71,7 +83,7 @@ export const AuthMenu = () => {
         aria-label={user ? t('auth.account') : t('auth.signIn')}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleOpen}
       >
         <span
           className={`sb-user__avatar${user ? ' sb-user__avatar--initials' : ''}`}
@@ -81,8 +93,12 @@ export const AuthMenu = () => {
         </span>
       </button>
 
-      {open && (
-        <div className="sb-profile-pop" role="menu">
+      {open && popPos && (
+        <div
+          className="sb-profile-pop"
+          role="menu"
+          style={{ left: popPos.left, bottom: popPos.bottom }}
+        >
           <div className="sb-profile-pop__head">
             <span className="sb-user__avatar sb-user__avatar--initials" aria-hidden="true">
               {user ? initials : '-'}
@@ -108,12 +124,6 @@ export const AuthMenu = () => {
               </Link>
             )}
             <SettingsMenu />
-            <button type="button" role="menuitem" className="sb-profile-pop__item">
-              <span className="sb-profile-pop__lead">
-                <GearIcon size={16} />
-                <span>{t('settings.title')}</span>
-              </span>
-            </button>
           </div>
 
           <div className="sb-profile-pop__group">

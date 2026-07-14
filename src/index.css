@@ -555,9 +555,11 @@ h4 {
   background: var(--overlay-hover);
 }
 .sb-profile-pop {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 8px);
+  /* `left`/`bottom` are set inline from the trigger's measured position (see
+     AuthMenu.tsx). Fixed positioning is required so the popover isn't clipped
+     by `.sidebar`'s `overflow-y: auto` (which forces `overflow-x: auto` too;
+     see the identical rationale on `.sb-tip-fixed` above). */
+  position: fixed;
   z-index: 1000;
   width: min(280px, calc(100vw - 32px));
   display: flex;
