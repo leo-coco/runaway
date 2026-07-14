@@ -126,17 +126,12 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   const survivalData = useMemo(() => buildSurvivalData(projection.byScenario), [projection]);
 
   const depletion = projection.active.depletionYear;
-  const tip = (v: number | string) => fmt.compact(Number(v));
   const axisTick = { fill: 'var(--text-dim)', fontSize: 11 };
 
   // Age annotations (when the user's current age is set).
   const currentAge = plan.settings.currentAge;
   const ageAt = (year: number): number | null =>
     currentAge > 0 ? currentAge + (year - projection.startYear) : null;
-  const withAge = (year: number): string => {
-    const age = ageAt(year);
-    return age !== null ? t('projChart.withAge', { year, age }) : `${year}`;
-  };
   const retirementAge = ageAt(plan.settings.retirementYear);
   const depletionAge = depletion !== null ? ageAt(depletion) : null;
   // The planning horizon — the year the user reaches their life-expectancy age.
@@ -535,21 +530,6 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
 
       {canShowAge && view !== 'allocation' && view !== 'postRetirement' && (
         <AxisModeSwitch mode={xAxisMode} onChange={setXAxisMode} />
-      )}
-
-      {(view === 'composition' ||
-        view === 'growth' ||
-        view === 'openingClosing' ||
-        view === 'netChange') && (
-        <div className="chart-meta">
-          {t('projChart.metaToday', { value: tip(growthData[0]?.total ?? 0) })}
-          {depletion !== null && (
-            <span>{t('projChart.metaDeplete', { when: withAge(depletion) })}</span>
-          )}
-          {projection.active.yearsOfSurvival !== null && (
-            <span>{t('projChart.metaSurvival', { years: projection.active.yearsOfSurvival })}</span>
-          )}
-        </div>
       )}
 
       {view === 'openingClosing' && (

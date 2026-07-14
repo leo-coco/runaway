@@ -367,6 +367,12 @@ export const FlagIcon = ({ size = 16, ...p }: IconProps) => (
     <path d="M5 21V4M5 4h11l-2 3.5L16 11H5" />
   </svg>
 );
+export const ShieldIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5Z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
 
 /** Named icons a runway event can carry (see src/services/runwayEvents.ts). */
 export type RunwayIconName =

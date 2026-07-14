@@ -5,6 +5,7 @@ import { InfoPanel } from '@/components/ui/InfoPanel';
 import { ProjectionsPanel } from '@/features/projections/ProjectionsPanel';
 import { YearlyJourneyTable } from '@/features/projections/YearlyJourneyTable';
 import { CalculationDetailsContent } from '@/features/projections/CalculationDetails';
+import { PortfolioValueCard } from './PortfolioValueCard';
 import { usePlanContext } from './PlanLayout';
 
 export const ProjectionPage = () => {
@@ -12,6 +13,9 @@ export const ProjectionPage = () => {
   const { t } = useTranslation();
   return (
     <ErrorBoundary feature="projections">
+      <ErrorBoundary feature="portfolio value">
+        <PortfolioValueCard />
+      </ErrorBoundary>
       <ProjectionsPanel plan={plan} projection={projection} />
       <YearlyJourneyTable plan={plan} projection={projection.active} />
       <div data-tour="calc-details">
