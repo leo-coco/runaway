@@ -10,6 +10,7 @@ import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { usePortfolioValue } from '@/hooks/usePortfolioValue';
 import { useProjection, type ProjectionResult } from '@/hooks/useProjection';
 import { useMonteCarlo, type UseMonteCarloResult } from '@/hooks/useMonteCarlo';
+import { useFeature } from '@/hooks/useEntitlements';
 import { convertOr, type RatesTable } from '@/services/currencyService';
 import { PlanModals } from '@/features/settings/PlanModals';
 import type { Plan } from '@/domain/plan';
@@ -37,7 +38,15 @@ export const PlanLayout = () => {
   const rates = fx.data;
   const totalValue = usePortfolioValue(plan, rates);
   const projection = useProjection(plan, rates);
-  const monteCarlo = useMonteCarlo(plan, rates, Boolean(plan && plan.holdings.length > 0));
+  // Monte Carlo is a premium capability: free users don't compute it (so the
+  // Dashboard success card + sidebar % show a locked state, not a number). The
+  // deterministic projection above is unaffected and identical across tiers.
+  const mcEnabled = useFeature('monteCarlo');
+  const monteCarlo = useMonteCarlo(
+    plan,
+    rates,
+    mcEnabled && Boolean(plan && plan.holdings.length > 0),
+  );
 
   // Publish the success rate this page actually computed so the sidebar shows the
   // SAME figure as the Monte Carlo lens (rather than a separate estimate).

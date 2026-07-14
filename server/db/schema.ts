@@ -1,5 +1,6 @@
 import { pgTable, text, boolean, timestamp, jsonb, integer, index } from 'drizzle-orm/pg-core';
 import type { Plan } from '../../src/domain/plan';
+import type { TierConfig } from '../../src/domain/entitlements';
 
 /**
  * Better Auth core tables. Column shapes match what Better Auth 1.6 expects (see
@@ -12,6 +13,13 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  // Freemium fields (exposed to Better Auth via user.additionalFields in auth.ts).
+  // `role` gates the admin surface; `tier` + `premiumUntil` drive entitlements. In
+  // phase 1 these are set manually from the admin panel; phase 2 a Stripe webhook
+  // writes them.
+  role: text('role').notNull().default('user'),
+  tier: text('tier').notNull().default('free'),
+  premiumUntil: timestamp('premium_until'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -97,6 +105,19 @@ export const apiCache = pgTable(
   (t) => [index('api_cache_expires_at_idx').on(t.expiresAt)],
 );
 
+/**
+ * Admin-editable freemium configuration (tier limits, feature flags, pricing).
+ * A single row keyed `'default'`; `data` is the domain `TierConfig` stored as JSONB
+ * so the shape can evolve with no SQL change. Read by both the entitlement resolver
+ * and the admin editor; falls back to DEFAULT_TIER_CONFIG when absent.
+ */
+export const tierConfig = pgTable('tier_config', {
+  id: text('id').primaryKey(),
+  data: jsonb('data').$type<TierConfig>().notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export const authSchema = { user, session, account, verification };
 export type PlanRow = typeof plans.$inferSelect;
 export type ApiCacheRow = typeof apiCache.$inferSelect;
+export type TierConfigRow = typeof tierConfig.$inferSelect;

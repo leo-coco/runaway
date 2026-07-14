@@ -15,6 +15,16 @@ export const auth = betterAuth({
   baseURL: serverEnv().BETTER_AUTH_URL,
   trustedOrigins: [serverEnv().BETTER_AUTH_URL],
   database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }),
+  user: {
+    // Surface the freemium columns on the session user so the client can read
+    // `session.user.tier` / `role`. Not user-writable: only the admin routes (and,
+    // in phase 2, the Stripe webhook) mutate them, via direct Drizzle writes.
+    additionalFields: {
+      role: { type: 'string', required: false, defaultValue: 'user', input: false },
+      tier: { type: 'string', required: false, defaultValue: 'free', input: false },
+      premiumUntil: { type: 'date', required: false, input: false },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

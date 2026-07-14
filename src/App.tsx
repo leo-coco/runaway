@@ -13,6 +13,8 @@ import { MonteCarloPage } from '@/features/portfolio/MonteCarloPage';
 import { MethodologyPage } from '@/features/methodology/MethodologyPage';
 import { PlanSyncManager } from '@/features/auth/PlanSyncManager';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
+import { PaywallDialog } from '@/features/billing/PaywallDialog';
+import { AdminPage } from '@/features/admin/AdminPage';
 
 const RootRedirect = () => {
   const firstId = useAppStore((s) => s.plans[0]?.id);
@@ -23,6 +25,7 @@ export const App = () => (
   <BrowserRouter>
     <TourProvider>
       <PlanSyncManager />
+      <PaywallDialog />
       <div className="app-shell">
         <Sidebar />
         <main className="app-main">
@@ -30,6 +33,7 @@ export const App = () => (
             <Routes>
               <Route path="/" element={<RootRedirect />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/plans" element={<PlansPage />} />
               <Route path="/plan/:id" element={<PlanLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />

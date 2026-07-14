@@ -8,6 +8,8 @@ import { SCENARIOS, type ScenarioKey } from '@/domain/scenario';
 import { homeEquitySeries } from '@/domain/home';
 import type { Plan } from '@/domain/plan';
 import { useAppStore } from '@/store';
+import { useFeature } from '@/hooks/useEntitlements';
+import { ProBadge } from '@/features/billing/ProBadge';
 import { totalMonthlyContribution, valueHoldings } from '@/services/portfolioService';
 import type { RatesTable } from '@/services/currencyService';
 import { cn } from '@/lib/cn';
@@ -37,7 +39,17 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
   const openModal = useAppStore((s) => s.openModal);
+  const openPaywall = useAppStore((s) => s.openPaywall);
   const updateScenario = useAppStore((s) => s.updateScenario);
+  // Accounts/tax editing and withdrawal ordering are premium: free can view the
+  // resulting numbers but not customize the inputs.
+  const canTax = useFeature('taxOptimization');
+  const canMultiAccount = useFeature('multiAccount');
+  const accountsLocked = !canTax && !canMultiAccount;
+  const withdrawalLocked = !useFeature('withdrawalOrdering');
+  // Real estate (Home) is premium: free keeps any existing equity number visible
+  // but cannot open the editor.
+  const homeLocked = !useFeature('realEstate');
 
   const monthlyContribution = useMemo(
     () => totalMonthlyContribution(valueHoldings(plan.holdings, plan.currency, rates)),
@@ -195,9 +207,15 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
       <Card className="ov">
         <div className="ov__head">
           <span className="ov__title">{t('overview.home')}</span>
-          <span className="ov__link" onClick={() => openModal('home')}>
-            {plan.home ? t('common.edit') : t('common.add')}
-          </span>
+          {homeLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('realEstate')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('home')}>
+              {plan.home ? t('common.edit') : t('common.add')}
+            </span>
+          )}
         </div>
         <div className="ov__body">
           <span className="ov__icon">
@@ -242,9 +260,15 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
       <Card className="ov" data-tour="accounts-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.accountsTax')}</span>
-          <span className="ov__link" onClick={() => openModal('accounts')}>
-            {t('common.edit')}
-          </span>
+          {accountsLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('taxOptimization')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('accounts')}>
+              {t('common.edit')}
+            </span>
+          )}
         </div>
         <div className="ov__body">
           <span className="ov__icon">
@@ -263,9 +287,15 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
       <Card className="ov" data-tour="withdrawal-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.withdrawalStrategy')}</span>
-          <span className="ov__link" onClick={() => openModal('withdrawalOrder')}>
-            {t('common.edit')}
-          </span>
+          {withdrawalLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('withdrawalOrdering')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('withdrawalOrder')}>
+              {t('common.edit')}
+            </span>
+          )}
         </div>
         <div className="ov__body">
           <span className="ov__icon">

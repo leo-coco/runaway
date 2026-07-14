@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
+import { useLimit } from '@/hooks/useEntitlements';
+import { atLimit } from '@/domain/entitlements';
 import { Button } from '@/components/ui/Button';
 import { PlusIcon } from '@/components/icons';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -14,13 +16,30 @@ export const PlansPage = () => {
   const duplicatePlan = useAppStore((s) => s.duplicatePlan);
   const deletePlan = useAppStore((s) => s.deletePlan);
   const renamePlan = useAppStore((s) => s.renamePlan);
+  const openPaywall = useAppStore((s) => s.openPaywall);
+  const maxPlans = useLimit('maxPlans');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const editingPlan = plans.find((p) => p.id === editingId) ?? null;
 
+  // Both create and duplicate add a plan, so both respect the tier cap.
+  const atPlanLimit = atLimit(plans.length, maxPlans);
+
   const onCreate = () => {
+    if (atPlanLimit) {
+      openPaywall('plans');
+      return;
+    }
     const id = createPlan('My plan');
     navigate(`/plan/${id}/dashboard`);
+  };
+
+  const onDuplicate = (id: string) => {
+    if (atPlanLimit) {
+      openPaywall('plans');
+      return;
+    }
+    duplicatePlan(id);
   };
 
   return (
@@ -47,7 +66,7 @@ export const PlansPage = () => {
                 key={p.id}
                 plan={p}
                 onEdit={(id) => setEditingId(id)}
-                onDuplicate={(id) => duplicatePlan(id)}
+                onDuplicate={onDuplicate}
                 onDelete={(id) => deletePlan(id)}
               />
             ))}
