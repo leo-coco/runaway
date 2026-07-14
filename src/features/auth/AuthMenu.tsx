@@ -79,10 +79,6 @@ export const AuthMenu = () => {
         >
           {user ? initials : <RobotAvatar />}
         </span>
-        <span className="sb-user__text">
-          <b>{user?.name || t('sidebar.notSignedIn')}</b>
-          <span>{user?.email || t('auth.signIn')}</span>
-        </span>
       </button>
 
       {open && (
@@ -95,9 +91,6 @@ export const AuthMenu = () => {
               <b>{user?.name || t('sidebar.notSignedIn')}</b>
               {user?.email ? <span>{user.email}</span> : null}
             </div>
-            <span className="sb-profile-pop__badge" aria-hidden="true">
-              W
-            </span>
           </div>
 
           <div className="sb-profile-pop__group">
