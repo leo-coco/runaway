@@ -43,7 +43,7 @@ export const Modal = ({
   }, [onClose]);
 
   return createPortal(
-    <div className="overlay" onMouseDown={onClose} role="presentation">
+    <div className="overlay" role="presentation">
       <div
         className={cn(
           'modal',

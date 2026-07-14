@@ -127,9 +127,10 @@ export function createTour(deps: TourDeps): TourInstance {
         prevBtnText: deps.translate('tour.prev'),
         onNextClick: () => void show(i + 1, 1),
         onPrevClick: () => void show(i - 1, -1),
-        // Close button, Esc and overlay click use driver's default teardown; we
-        // react to it in `onDestroyed` (below) rather than intercepting destroy —
-        // intercepting and re-calling destroy() corrupts a re-created instance.
+        // Close button and Esc use driver's default teardown (overlay click is
+        // neutralized via overlayClickBehavior above); we react to it in
+        // `onDestroyed` (below) rather than intercepting destroy — intercepting
+        // and re-calling destroy() corrupts a re-created instance.
       },
     });
 
@@ -153,6 +154,10 @@ export function createTour(deps: TourDeps): TourInstance {
       window.addEventListener('keydown', onKeyDown);
       d = driver({
         allowClose: true,
+        // driver.js gates the close button and Esc handling behind `allowClose`,
+        // so we can't use that to disable overlay-click-to-close alone. Overriding
+        // the overlay click behavior with a no-op does that instead.
+        overlayClickBehavior: () => {},
         overlayColor: '#000',
         overlayOpacity: 0.72,
         stagePadding: 6,

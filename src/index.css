@@ -997,11 +997,13 @@ h4 {
 
 .overview-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 6px;
 }
 .ov {
+  container-type: inline-size;
+  min-width: 0;
   padding: 18px 20px;
   min-height: 132px;
   display: flex;
@@ -1068,9 +1070,13 @@ h4 {
   min-width: 0;
 }
 .ov__big {
-  font-size: 1.875rem;
+  font-size: clamp(1.125rem, 10cqw, 1.875rem);
   font-weight: 700;
   line-height: 1;
+  overflow-wrap: break-word;
+}
+.ov__big--lg {
+  font-size: clamp(1.375rem, 13cqw, 2.5rem);
 }
 .ov__sub {
   color: var(--text-muted);
@@ -1148,6 +1154,14 @@ h4 {
   left: auto;
   right: 0;
 }
+@container (max-width: 260px) {
+  .scenario-pills--stretch {
+    flex-wrap: wrap;
+  }
+  .scenario-pill {
+    flex: 1 1 100%;
+  }
+}
 
 /* ---------- plan title + auto-saved ---------- */
 .plan-title {
@@ -1159,7 +1173,7 @@ h4 {
 /* ---------- hero (two lenses summary) ---------- */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
   margin: 18px 0 26px;
@@ -1212,9 +1226,10 @@ h4 {
   gap: 18px;
 }
 .hero__big {
-  font-size: 3.75rem;
+  font-size: clamp(1.5rem, 6vw, 3.75rem);
   font-weight: 800;
   line-height: 1;
+  overflow-wrap: break-word;
 }
 .hero__big-note {
   color: var(--text-muted);
@@ -4643,13 +4658,13 @@ h4 {
 
 @media (max-width: 1120px) {
   .overview-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 900px) {
   .overview-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .scenario-grid,
   .adj-grid {
@@ -4657,6 +4672,15 @@ h4 {
   }
   .page-head {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero__card {
+    padding: 18px 20px;
   }
 }
 
