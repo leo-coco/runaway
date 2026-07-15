@@ -2,7 +2,7 @@ import type { Side, Alignment } from 'driver.js';
 import type { ModalKind } from '@/store/uiSlice';
 import type { TierFeatures } from '@/domain/entitlements';
 
-export type TourPage = 'dashboard' | 'projection' | 'monte-carlo';
+export type TourPage = 'dashboard' | 'projection' | 'monte-carlo' | 'portfolio';
 
 export interface TourStep {
   /** Stable id — also the i18n sub-key under `tour.steps`. */
