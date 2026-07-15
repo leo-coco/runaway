@@ -60,13 +60,55 @@ vi.mock('@/store', () => ({
   useAppStore: (selector: (s: unknown) => unknown) => selector({ openModal, openPaywall }),
 }));
 
-import { RunwayTimeline } from './RunwayTimeline';
+import { RUNWAY_ITEM_WIDTH, RunwayTimeline, selectVisibleRunwayEvents } from './RunwayTimeline';
 
 beforeEach(async () => {
   await i18n.changeLanguage('en');
 });
 
 describe('RunwayTimeline', () => {
+  it('keeps today and the terminal point, with the latest milestones after an ellipsis', () => {
+    const events: RunwayEvent[] = [
+      { id: 'today', kind: 'today', year: 2026, labelKey: 'runway.today', icon: 'dot' },
+      {
+        id: 'm1',
+        kind: 'wealth-milestone',
+        year: 2027,
+        labelKey: 'runway.milestone',
+        icon: 'trophy',
+      },
+      {
+        id: 'm2',
+        kind: 'wealth-milestone',
+        year: 2028,
+        labelKey: 'runway.milestone',
+        icon: 'trophy',
+      },
+      {
+        id: 'm3',
+        kind: 'wealth-milestone',
+        year: 2029,
+        labelKey: 'runway.milestone',
+        icon: 'trophy',
+      },
+      {
+        id: 'death',
+        kind: 'projection-end',
+        year: 2060,
+        labelKey: 'runway.projectionEnd',
+        icon: 'star',
+      },
+    ];
+
+    const compact = selectVisibleRunwayEvents(events, RUNWAY_ITEM_WIDTH * 4);
+    expect(compact.collapsed).toBe(true);
+    expect(compact.visible.map((event) => event.id)).toEqual(['today', 'm3', 'death']);
+
+    const expanded = selectVisibleRunwayEvents(events, RUNWAY_ITEM_WIDTH * 5);
+    expect(expanded.collapsed).toBe(false);
+    expect(expanded.visible.map((event) => event.id)).toEqual(events.map((event) => event.id));
+  });
+
   it('renders a marker per event, including today', () => {
     render(<RunwayTimeline />);
     expect(screen.getByText('Today')).toBeInTheDocument();

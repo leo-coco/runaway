@@ -125,6 +125,19 @@ export const AuthMenu = () => {
           </div>
 
           <div className="sb-profile-pop__group">
+            {user && (
+              <Link
+                to="/account"
+                role="menuitem"
+                className="sb-profile-pop__item"
+                onClick={() => setOpen(false)}
+              >
+                <span className="sb-profile-pop__lead">
+                  <UserIcon size={16} />
+                  <span>{t('account.menu')}</span>
+                </span>
+              </Link>
+            )}
             {(user as { role?: string } | undefined)?.role === 'admin' && (
               <Link
                 to="/admin"

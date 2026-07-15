@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "tax_residence" text DEFAULT 'US' NOT NULL;

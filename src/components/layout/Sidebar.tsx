@@ -17,11 +17,13 @@ import {
 } from '@/components/icons';
 import { PlanNameModal } from '@/features/settings/PlanNameModal';
 import { AuthMenu } from '@/features/auth/AuthMenu';
+import { useSession } from '@/lib/authClient';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { TourGuideModal } from '@/features/tour/TourGuideModal';
 import runawayLogo from '@/assets/runaway-logo.png';
 import type { Plan } from '@/domain/plan';
+import type { Country } from '@/domain/country';
 
 const DOTS = ['#6aa3e0', '#c084fc', '#5dcaa5', '#e0a85d', '#f0768b'];
 const COLLAPSE_KEY = 'runaway/sidebar-collapsed';
@@ -165,6 +167,7 @@ export const Sidebar = () => {
   const mcEnabled = useFeature('monteCarlo');
   const maxPlans = useLimit('maxPlans');
   const canAccountsTax = useFeature('accountsTax');
+  const { data: sessionData } = useSession();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const match = useMatch('/plan/:id/*');
@@ -216,7 +219,8 @@ export const Sidebar = () => {
       openPaywall('plans');
       return;
     }
-    const newId = createPlan('My plan', !canAccountsTax);
+    const taxResidence = sessionData?.user?.taxResidence as Country | undefined;
+    const newId = createPlan('My plan', !canAccountsTax, taxResidence);
     navigate(`/plan/${newId}/dashboard`);
   };
 

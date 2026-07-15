@@ -286,4 +286,24 @@ describe('buildRunwayEvents — ordering', () => {
     const yearsOut = events.map((e) => e.year);
     expect(yearsOut).toEqual([...yearsOut].sort((a, b) => a - b));
   });
+
+  it('always starts at today and ends at the terminal projection point', () => {
+    const years = [2025, 2030, 2060].map((y) => mkYear(y, 100_000, [], y >= 2030));
+    const plan = mkPlan({
+      settings: {
+        expensesIncomes: [
+          { id: 'past', name: 'Past', amount: 1000, year: 2024, kind: 'expense' },
+          { id: 'at-end', name: 'At end', amount: 1000, year: 2060, kind: 'expense' },
+          { id: 'after', name: 'After', amount: 1000, year: 2070, kind: 'expense' },
+        ],
+      },
+    });
+    const events = buildRunwayEvents(plan, mkProjection(years, null), null);
+
+    expect(events[0]?.kind).toBe('today');
+    expect(events.at(-1)?.kind).toBe('projection-end');
+    expect(events.some((event) => event.id === 'flow:past' || event.id === 'flow:after')).toBe(
+      false,
+    );
+  });
 });

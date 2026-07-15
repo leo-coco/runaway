@@ -17,6 +17,9 @@ export const user = pgTable('user', {
   // The preferred UI and transactional-email language. Kept on the user rather
   // than only in localStorage so it follows the account across devices.
   language: text('language').notNull().default('en'),
+  // Applied to every plan from the account page, so tax calculations use the
+  // account holder's current tax residence.
+  taxResidence: text('tax_residence').notNull().default('US'),
   // Freemium fields (exposed to Better Auth via user.additionalFields in auth.ts).
   // `role` gates the admin surface; `tier` + `premiumUntil` drive entitlements. In
   // phase 1 these are set manually from the admin panel; phase 2 a Stripe webhook

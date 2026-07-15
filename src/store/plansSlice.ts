@@ -33,7 +33,7 @@ export interface PlansSlice {
    * tax-free "My account" sandbox) instead of the honest taxable baseline
    * premium gets; callers decide based on the caller's own entitlements.
    */
-  createPlan: (name?: string, freeDemo?: boolean) => string;
+  createPlan: (name?: string, freeDemo?: boolean, residenceCountry?: Country) => string;
   duplicatePlan: (id: string) => string | null;
   deletePlan: (id: string) => void;
   renamePlan: (id: string, name: string, description: string) => void;
@@ -79,6 +79,8 @@ export interface PlansSlice {
   removeAccount: (planId: string, accountId: string) => void;
   setWithdrawalOrder: (planId: string, order: string[]) => void;
   setResidenceCountry: (planId: string, country: Country) => void;
+  /** Apply the account tax residence to every saved plan. */
+  setAllResidenceCountries: (country: Country) => void;
   /** Canadian province for the combined bracket schedule (CA residence only). */
   setResidenceProvince: (planId: string, province: Province) => void;
   /** Override the Monte Carlo correlation between two holdings (−1…1, symmetric). */
@@ -120,10 +122,10 @@ const touch = (plan: Plan, mutate: (p: Plan) => Plan): Plan => ({
   updatedAt: new Date().toISOString(),
 });
 
-const emptyPlan = (name: string, freeDemo = false): Plan => {
+const emptyPlan = (name: string, freeDemo = false, preferredResidence?: Country): Plan => {
   const now = new Date().toISOString();
   const currency: CurrencyCode = 'USD';
-  const residenceCountry = residenceForCurrency(currency);
+  const residenceCountry = preferredResidence ?? residenceForCurrency(currency);
   // Free plans start with a single tax-free "My account" sandbox; everyone else starts
   // with one basic taxable account matching the residence, so assets have an
   // envelope and tax is modelled from the start.
@@ -153,8 +155,8 @@ export const createPlansSlice: StateCreator<PlansSlice, [], [], PlansSlice> = (s
 
   hydratePlans: (plans) => set({ plans }),
 
-  createPlan: (name = 'Untitled plan', freeDemo = false) => {
-    const plan = emptyPlan(name, freeDemo);
+  createPlan: (name = 'Untitled plan', freeDemo = false, residenceCountry) => {
+    const plan = emptyPlan(name, freeDemo, residenceCountry);
     set((s) => ({ plans: [...s.plans, plan] }));
     return plan.id;
   },
@@ -310,6 +312,18 @@ export const createPlansSlice: StateCreator<PlansSlice, [], [], PlansSlice> = (s
                 country === 'CA' ? (x.residenceProvince ?? DEFAULT_PROVINCE) : x.residenceProvince,
             }))
           : p,
+      ),
+    })),
+
+  setAllResidenceCountries: (country) =>
+    set((s) => ({
+      plans: s.plans.map((p) =>
+        touch(p, (x) => ({
+          ...x,
+          residenceCountry: country,
+          residenceProvince:
+            country === 'CA' ? (x.residenceProvince ?? DEFAULT_PROVINCE) : x.residenceProvince,
+        })),
       ),
     })),
 

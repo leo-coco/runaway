@@ -86,12 +86,49 @@ const RunwayMarker = ({
 
 /** Rendered width of a `.runway__item` (see index.css) — the ellipsis marker
  *  occupies a full item slot too, so spacing stays even either side of it. */
-const ITEM_WIDTH = 96;
+export const RUNWAY_ITEM_WIDTH = 90;
+
+export interface VisibleRunwayEvents {
+  readonly visible: readonly RunwayEvent[];
+  readonly collapsed: boolean;
+  readonly showEllipsis: boolean;
+}
 
 /**
- * Picks which events fit across `containerWidth` without wrapping/scrolling,
- * always keeping the first and last event and collapsing the rest behind an
- * ellipsis when there isn't room for all of them.
+ * Selects the markers that fit in the card while preserving the two anchors:
+ * today at the start and the plan's terminal point (death or portfolio dry) at
+ * the end. When space is tight, the ellipsis represents older middle events
+ * and the markers immediately before the terminal point remain visible.
+ */
+export const selectVisibleRunwayEvents = (
+  events: readonly RunwayEvent[],
+  containerWidth: number,
+): VisibleRunwayEvents => {
+  if (events.length <= 2 || containerWidth === 0) {
+    return { visible: events, collapsed: false, showEllipsis: false };
+  }
+
+  const slots = Math.max(2, Math.floor(containerWidth / RUNWAY_ITEM_WIDTH));
+  if (events.length <= slots) return { visible: events, collapsed: false, showEllipsis: false };
+
+  // `buildRunwayEvents` keeps these as the chronological anchors. Looking them
+  // up by kind keeps this component correct even if a same-year event is added.
+  const today = events.find((event) => event.kind === 'today') ?? events[0]!;
+  const terminal =
+    events.find((event) => event.kind === 'portfolio-dry') ??
+    events.find((event) => event.kind === 'projection-end') ??
+    events[events.length - 1]!;
+  const between = events.filter((event) => event !== today && event !== terminal);
+
+  // One slot is the ellipsis. Fill the remaining slots from the end so the
+  // final milestone before the terminal point is never lost.
+  const trailingCount = Math.min(between.length + 1, slots - 2);
+  const trailing = [...between, terminal].slice(-trailingCount);
+  return { visible: [today, ...trailing], collapsed: true, showEllipsis: slots > 2 };
+};
+
+/**
+ * Recalculates the marker selection whenever the available card width changes.
  */
 const useVisibleRunwayEvents = (events: readonly RunwayEvent[]) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,21 +144,12 @@ const useVisibleRunwayEvents = (events: readonly RunwayEvent[]) => {
     return () => observer.disconnect();
   }, []);
 
-  const { visible, collapsed } = useMemo(() => {
-    if (events.length <= 2 || containerWidth === 0) return { visible: events, collapsed: false };
+  const { visible, showEllipsis } = useMemo(
+    () => selectVisibleRunwayEvents(events, containerWidth),
+    [events, containerWidth],
+  );
 
-    const totalWidth = events.length * ITEM_WIDTH;
-    if (totalWidth <= containerWidth) return { visible: events, collapsed: false };
-
-    const budget = containerWidth - ITEM_WIDTH * 3; // first + last + ellipsis
-    const middleCount = Math.max(0, Math.min(events.length - 2, Math.floor(budget / ITEM_WIDTH)));
-    const first = events[0]!;
-    const last = events[events.length - 1]!;
-    const middle = events.slice(1, 1 + middleCount);
-    return { visible: [first, ...middle, last], collapsed: true };
-  }, [events, containerWidth]);
-
-  return { containerRef, visible, collapsed };
+  return { containerRef, visible, showEllipsis };
 };
 
 const AllEventsModal = ({
@@ -182,7 +210,7 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
     () => buildRunwayEvents(plan, projection.active, monteCarlo.result ?? null),
     [plan, projection.active, monteCarlo.result],
   );
-  const { containerRef, visible, collapsed } = useVisibleRunwayEvents(events);
+  const { containerRef, visible, showEllipsis } = useVisibleRunwayEvents(events);
 
   if (plan.holdings.length === 0) {
     const onAddAsset = () =>
@@ -220,7 +248,7 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
               fmt={fmt}
               label={label(e)}
               isPast={e.year < currentYear}
-              ellipsisBefore={collapsed && i === visible.length - 1}
+              ellipsisBefore={showEllipsis && i === visible.length - 1}
             />
           ))}
         </ul>
