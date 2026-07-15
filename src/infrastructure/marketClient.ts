@@ -1,4 +1,5 @@
 import {
+  MAX_EQUITY_BATCH_SYMBOLS,
   marketQuoteSchema,
   marketQuotesSchema,
   marketSearchSchema,
@@ -26,8 +27,18 @@ export const createMarketClient = (): MarketClient => ({
     getJson(`${BASE}/search?keywords=${encodeURIComponent(query)}`, marketSearchSchema, { signal }),
   quote: (symbol, signal) =>
     getJson(`${BASE}/quote?symbol=${encodeURIComponent(symbol)}`, marketQuoteSchema, { signal }),
-  quotes: (symbols, signal) =>
-    getJson(`${BASE}/quotes?symbols=${encodeURIComponent(symbols.join(','))}`, marketQuotesSchema, {
-      signal,
-    }),
+  quotes: async (symbols, signal) => {
+    const quotes: MarketQuote[] = [];
+    for (let offset = 0; offset < symbols.length; offset += MAX_EQUITY_BATCH_SYMBOLS) {
+      const batch = symbols.slice(offset, offset + MAX_EQUITY_BATCH_SYMBOLS);
+      const result = await getJson(
+        `${BASE}/quotes?symbols=${encodeURIComponent(batch.join(','))}`,
+        marketQuotesSchema,
+        { signal },
+      );
+      if (!result.ok) return result;
+      quotes.push(...result.value.quotes);
+    }
+    return { ok: true, value: { quotes } };
+  },
 });

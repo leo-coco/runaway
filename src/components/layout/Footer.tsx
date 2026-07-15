@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ContactModal } from '@/features/contact/ContactModal';
+import { useAppMode } from '@/providers/AppModeContext';
 
 /**
  * Global app footer: copyright, the standard hypothetical-projections disclaimer,
@@ -8,6 +9,7 @@ import { ContactModal } from '@/features/contact/ContactModal';
  */
 export const Footer = () => {
   const { t } = useTranslation();
+  const { sandbox } = useAppMode();
   const year = new Date().getFullYear();
   const [contactOpen, setContactOpen] = useState(false);
 
@@ -21,18 +23,20 @@ export const Footer = () => {
           <span className="app-footer__copyright">
             {t('footer.copyright', { year, title: t('appTitle') })}
           </span>
-          <div className="app-footer__links">
-            <button
-              type="button"
-              className="app-footer__link app-footer__link--button"
-              onClick={() => setContactOpen(true)}
-            >
-              {t('footer.contactLink')}
-            </button>
-          </div>
+          {!sandbox && (
+            <div className="app-footer__links">
+              <button
+                type="button"
+                className="app-footer__link app-footer__link--button"
+                onClick={() => setContactOpen(true)}
+              >
+                {t('footer.contactLink')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
-      {contactOpen && <ContactModal onClose={() => setContactOpen(false)} />}
+      {!sandbox && contactOpen && <ContactModal onClose={() => setContactOpen(false)} />}
     </footer>
   );
 };

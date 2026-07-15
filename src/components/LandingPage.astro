@@ -1,0 +1,160 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+
+interface Copy {
+  lang: 'fr' | 'en';
+  seoTitle: string;
+  seoDescription: string;
+  nav: { product: string; method: string; faq: string; login: string };
+  hero: { eyebrow: string; title: string; lead: string; primary: string; secondary: string; cue: string };
+  strip: string[];
+  problem: { eyebrow: string; title: string; body: string; quote: string };
+  solution: { eyebrow: string; title: string; lead: string; features: { n: string; title: string; body: string }[] };
+  proof: { eyebrow: string; title: string; body: string; stats: { value: string; label: string }[] };
+  compare: { title: string; headers: string[]; rows: string[][] };
+  faqTitle: string;
+  faq: { question: string; answer: string }[];
+  final: { eyebrow: string; title: string; body: string; primary: string; secondary: string };
+  footer: { line: string; legal: string; privacy: string };
+}
+
+const { copy } = Astro.props as { copy: Copy };
+const isFr = copy.lang === 'fr';
+const appBase = `/${copy.lang}/app`;
+---
+
+<MarketingLayout
+  lang={copy.lang}
+  title={copy.seoTitle}
+  description={copy.seoDescription}
+  canonicalPath={isFr ? '/' : '/en'}
+  faq={copy.faq}
+>
+  <header class="site-header">
+    <a class="brand" href={isFr ? '/' : '/en'} aria-label="Runaway — home">
+      <img src="/favicon.png" alt="" width="36" height="36" />
+      <span>Runaway</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#product">{copy.nav.product}</a>
+      <a href="#method">{copy.nav.method}</a>
+      <a href="#faq">{copy.nav.faq}</a>
+    </nav>
+    <div class="header-actions">
+      <a class="lang-link" href={isFr ? '/en' : '/'} hreflang={isFr ? 'en' : 'fr'}>{isFr ? 'EN' : 'FR'}</a>
+      <a class="text-link" href={`${appBase}/signin`}>{copy.nav.login}</a>
+      <a class="button button--small" href={`${appBase}/signup`}>{copy.hero.primary}</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero section-shell" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span>{copy.hero.eyebrow}</p>
+        <h1 id="hero-title">{copy.hero.title}</h1>
+        <p class="hero-lead">{copy.hero.lead}</p>
+        <div class="cta-row">
+          <a class="button" href={`${appBase}/signup`}>{copy.hero.primary}<span aria-hidden="true">↗</span></a>
+          <a class="button button--ghost" href={`${appBase}/sandbox`}>{copy.hero.secondary}<span aria-hidden="true">→</span></a>
+        </div>
+        <p class="cta-cue"><span aria-hidden="true">✓</span>{copy.hero.cue}</p>
+      </div>
+
+      <div class="product-window" aria-label={isFr ? "Aperçu de l'application Runaway" : 'Runaway app preview'}>
+        <div class="window-top"><i></i><i></i><i></i><span>runaway.money/app</span></div>
+        <img
+          class="product-screenshot"
+          src="/runaway-dashboard.png"
+          alt={isFr ? "Tableau de bord réel de l'application Runaway" : 'Real Runaway application dashboard'}
+          width="1800"
+          height="1542"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
+        />
+      </div>
+    </section>
+
+    <section class="trust-strip" aria-label={isFr ? 'Principes de confiance' : 'Trust principles'}>
+      {copy.strip.map((item, index) => <div><span>{['◎', '◇', '↗', '⌁'][index]}</span>{item}</div>)}
+    </section>
+
+    <section class="problem section-shell split-section">
+      <div>
+        <p class="eyebrow"><span></span>{copy.problem.eyebrow}</p>
+        <h2>{copy.problem.title}</h2>
+      </div>
+      <div class="problem-copy">
+        <p>{copy.problem.body}</p>
+        <blockquote>“{copy.problem.quote}”</blockquote>
+      </div>
+    </section>
+
+    <section class="solution section-shell" id="product">
+      <div class="section-intro">
+        <p class="eyebrow"><span></span>{copy.solution.eyebrow}</p>
+        <h2>{copy.solution.title}</h2>
+        <p>{copy.solution.lead}</p>
+      </div>
+      <div class="feature-grid">
+        {copy.solution.features.map((feature) => (
+          <article>
+            <span class="feature-number">{feature.n}</span>
+            <div class:list={["feature-art", `feature-art--${feature.n}`]} aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <h3>{feature.title}</h3>
+            <p>{feature.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="proof" id="method">
+      <div class="section-shell proof-inner">
+        <div class="proof-copy">
+          <p class="eyebrow eyebrow--light"><span></span>{copy.proof.eyebrow}</p>
+          <h2>{copy.proof.title}</h2>
+          <p>{copy.proof.body}</p>
+          <a href={`${appBase}/sandbox`} class="inline-arrow">{copy.hero.secondary} <span>→</span></a>
+        </div>
+        <div class="proof-stats">
+          {copy.proof.stats.map((stat) => <div><strong>{stat.value}</strong><span>{stat.label}</span></div>)}
+        </div>
+      </div>
+    </section>
+
+    <section class="comparison section-shell">
+      <div class="section-intro"><h2>{copy.compare.title}</h2></div>
+      <div class="comparison-wrap">
+        <table>
+          <thead><tr>{copy.compare.headers.map((header, i) => <th class:list={{ runaway: i === 1 }}>{header}</th>)}</tr></thead>
+          <tbody>{copy.compare.rows.map((row) => <tr>{row.map((cell, i) => <td class:list={{ runaway: i === 1 }}>{i > 0 && <span aria-hidden="true">{i === 1 ? '✓' : '—'}</span>}{cell}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="faq section-shell" id="faq">
+      <div class="section-intro"><p class="eyebrow"><span></span>FAQ</p><h2>{copy.faqTitle}</h2></div>
+      <div class="faq-list">{copy.faq.map((item) => <details><summary>{item.question}<span>+</span></summary><p>{item.answer}</p></details>)}</div>
+    </section>
+
+    <section class="final-cta section-shell">
+      <div>
+        <p class="eyebrow eyebrow--light"><span></span>{copy.final.eyebrow}</p>
+        <h2>{copy.final.title}</h2>
+        <p>{copy.final.body}</p>
+      </div>
+      <div class="final-actions">
+        <a class="button" href={`${appBase}/signup`}>{copy.final.primary}<span>↗</span></a>
+        <a class="inline-arrow" href={`${appBase}/sandbox`}>{copy.final.secondary} <span>→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand" href={isFr ? '/' : '/en'}><img src="/favicon.png" alt="" width="32" height="32" /><span>Runaway</span></a>
+    <p>{copy.footer.line}</p>
+    <div><span>© {new Date().getFullYear()} Runaway</span><span>{copy.footer.legal}</span><span>{copy.footer.privacy}</span></div>
+  </footer>
+</MarketingLayout>

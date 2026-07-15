@@ -26,6 +26,8 @@ interface AssetRowProps {
   rates: RatesTable | undefined;
   fetchState: PriceFetchState | undefined;
   onFetchPrice: (h: Holding) => void;
+  /** Live market-data calls are disabled in the isolated Sandbox. */
+  canFetchPrice?: boolean;
   onUpdate: (
     holdingId: string,
     patch: Partial<
@@ -47,6 +49,7 @@ export const AssetRow = ({
   rates,
   fetchState,
   onFetchPrice,
+  canFetchPrice = true,
   onUpdate,
   onRemove,
   onDragStart,
@@ -164,27 +167,29 @@ export const AssetRow = ({
           ) : (
             <span className="read-value">{nativeFmt.price(holding.pricePerUnit)}</span>
           )}
-          <button
-            type="button"
-            className={`fetch-btn ${status === 'error' ? 'is-error' : ''} ${
-              status === 'success' ? 'is-success' : ''
-            }`}
-            onClick={() => onFetchPrice(holding)}
-            aria-label={t('portfolio.fetchAria', { symbol: holding.instrument.symbol })}
-            title={
-              status === 'error'
-                ? (fetchState?.error?.message ?? t('portfolio.fetchError'))
-                : status === 'success'
-                  ? t('portfolio.fetchSuccess', {
-                      price: nativeFmt.price(holding.pricePerUnit),
-                    })
-                  : t('portfolio.fetchIdle')
-            }
-          >
-            {status === 'loading' ? <Spinner /> : <RefreshIcon size={14} />}
-          </button>
+          {canFetchPrice && (
+            <button
+              type="button"
+              className={`fetch-btn ${status === 'error' ? 'is-error' : ''} ${
+                status === 'success' ? 'is-success' : ''
+              }`}
+              onClick={() => onFetchPrice(holding)}
+              aria-label={t('portfolio.fetchAria', { symbol: holding.instrument.symbol })}
+              title={
+                status === 'error'
+                  ? (fetchState?.error?.message ?? t('portfolio.fetchError'))
+                  : status === 'success'
+                    ? t('portfolio.fetchSuccess', {
+                        price: nativeFmt.price(holding.pricePerUnit),
+                      })
+                    : t('portfolio.fetchIdle')
+              }
+            >
+              {status === 'loading' ? <Spinner /> : <RefreshIcon size={14} />}
+            </button>
+          )}
         </div>
-        {status === 'error' && (
+        {canFetchPrice && status === 'error' && (
           <div className="fetch-error" role="alert">
             {fetchState?.error?.message ?? t('portfolio.fetchError')}
           </div>

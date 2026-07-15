@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import authBrand from '@/assets/auth-brand.png';
+import authBrand from '@/assets/auth-brand.png?url';
 import { Button } from '@/components/ui/Button';
 import { authClient } from '@/lib/authClient';
 

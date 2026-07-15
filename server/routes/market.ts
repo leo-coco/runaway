@@ -2,9 +2,11 @@ import { Hono } from 'hono';
 import type { z } from 'zod';
 import YahooFinance from 'yahoo-finance2';
 import type { SearchResult } from 'yahoo-finance2/modules/search';
+import { auth } from '../auth.js';
 import { serverEnv } from '../env.js';
 import { getCached, type CacheStatus } from '../lib/cachedFetch.js';
 import { exchangeRateLatestSchema } from '../../src/schemas/api/exchangeRate.schema.js';
+import { MAX_EQUITY_BATCH_SYMBOLS } from '../../src/schemas/api/market.schema.js';
 import type { MarketQuote, MarketSearch } from '../../src/schemas/api/market.schema.js';
 
 /**
@@ -131,6 +133,14 @@ const fetchQuotes = async (symbols: readonly string[]): Promise<Map<string, Mark
 
 export const marketRoutes = new Hono();
 
+// Equity data is available only to signed-in users. FX remains public because
+// it is used while rendering plans and has its own daily, shared cache.
+marketRoutes.use('/equities/*', async (c, next) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session?.user) return c.json({ error: 'Unauthorized' }, 401);
+  await next();
+});
+
 // Symbol search across equities/ETFs.
 marketRoutes.get('/equities/search', async (c) => {
   const keywords = (c.req.query('keywords') ?? '').trim();
@@ -217,6 +227,14 @@ marketRoutes.get('/equities/quotes', async (c) => {
     ),
   ];
   if (symbols.length === 0) return c.json({ quotes: [] }, 200, cacheHeader('hit'));
+  if (symbols.length > MAX_EQUITY_BATCH_SYMBOLS) {
+    return c.json(
+      {
+        error: `A maximum of ${MAX_EQUITY_BATCH_SYMBOLS} unique symbols is allowed`,
+      },
+      400,
+    );
+  }
 
   let batch: Promise<Map<string, MarketQuote>> | null = null;
   const loadBatch = () => (batch ??= fetchQuotes(symbols));

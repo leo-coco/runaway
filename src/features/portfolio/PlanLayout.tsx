@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet, useOutletContext, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { InlineError } from '@/components/InlineError';
@@ -14,6 +14,7 @@ import { useFeature } from '@/hooks/useEntitlements';
 import { convertOr, type RatesTable } from '@/services/currencyService';
 import { PlanModals } from '@/features/settings/PlanModals';
 import type { Plan } from '@/domain/plan';
+import { useAppMode } from '@/providers/AppModeContext';
 
 export interface PlanContext {
   plan: Plan;
@@ -29,6 +30,7 @@ export const usePlanContext = () => useOutletContext<PlanContext>();
 export const PlanLayout = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
+  const { sandbox } = useAppMode();
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
   const updateSettings = useAppStore((s) => s.updateSettings);
@@ -61,6 +63,7 @@ export const PlanLayout = () => {
   }, [planId, noHoldings, liveSuccess, setPlanSuccess]);
 
   if (!plan) {
+    if (sandbox) return <Navigate to="/" replace />;
     return (
       <div className="container">
         <div className="state-box">{t('plan.notFound')}</div>

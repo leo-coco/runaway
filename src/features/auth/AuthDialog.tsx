@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { authClient, signIn, signUp } from '@/lib/authClient';
-import authBrand from '@/assets/auth-brand.png';
+import authBrand from '@/assets/auth-brand.png?url';
 
 export type AuthMode = 'signin' | 'signup' | 'forgot';
 
@@ -12,6 +12,7 @@ type AuthFormProps = {
   onModeChange?: (mode: AuthMode) => void;
   onVerificationSent?: (email: string) => void;
   showTitle?: boolean;
+  initialMode?: AuthMode;
 };
 
 type VerificationSentPanelProps = {
@@ -45,9 +46,10 @@ export const AuthForm = ({
   onModeChange,
   onVerificationSent,
   showTitle = false,
+  initialMode = 'signin',
 }: AuthFormProps) => {
   const { t, i18n } = useTranslation();
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,9 +90,10 @@ export const AuthForm = ({
         if (onVerificationSent) onVerificationSent(normalizedEmail);
         else setVerificationEmail(normalizedEmail);
       } else {
+        const language = i18n.resolvedLanguage === 'fr' ? 'fr' : 'en';
         const { error } = await authClient.requestPasswordReset({
           email,
-          redirectTo: `${window.location.origin}/${i18n.resolvedLanguage === 'fr' ? 'fr' : 'en'}/reset-password`,
+          redirectTo: `${window.location.origin}/${language}/app/reset-password`,
         });
         if (error) throw new Error(error.message ?? t('auth.requestFailed'));
         setNotice(t('auth.resetLinkSent'));
@@ -180,7 +183,13 @@ export const AuthForm = ({
   );
 };
 
-export const AuthDialog = ({ onClose }: { onClose: () => void }) => {
+export const AuthDialog = ({
+  onClose,
+  onSignedIn = onClose,
+}: {
+  onClose: () => void;
+  onSignedIn?: () => void;
+}) => {
   const { t } = useTranslation();
   return (
     <Modal title={t('auth.account')} onClose={onClose} wide className="auth-dialog">
@@ -188,7 +197,7 @@ export const AuthDialog = ({ onClose }: { onClose: () => void }) => {
         <div className="auth-dialog__visual" aria-hidden="true">
           <img src={authBrand} alt="" />
         </div>
-        <AuthForm onSignedIn={onClose} showTitle />
+        <AuthForm onSignedIn={onSignedIn} showTitle />
       </div>
     </Modal>
   );

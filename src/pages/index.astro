@@ -1,0 +1,75 @@
+---
+import LandingPage from '../components/LandingPage.astro';
+
+const copy = {
+  lang: 'fr' as const,
+  seoTitle: 'Simulateur de retraite et indépendance financière | Runaway',
+  seoDescription: 'Découvrez quand le travail peut devenir un choix et si votre portefeuille peut financer le train de vie que vous souhaitez pendant toute votre retraite.',
+  nav: { product: 'Produit', method: 'Méthode', faq: 'Questions', login: 'Se connecter' },
+  hero: {
+    eyebrow: 'PLANIFICATEUR DE RETRAITE ET D’INDÉPENDANCE FINANCIÈRE',
+    title: 'Votre patrimoine peut-il financer la vie que vous voulez ?',
+    lead: 'Runaway vous montre quand le travail peut devenir un choix — et si votre portefeuille peut soutenir le train de vie prévu pendant toute votre retraite.',
+    primary: 'Créer mon plan gratuitement',
+    secondary: 'Essayer sans email',
+    cue: 'Gratuit pour commencer · Aucune carte bancaire',
+  },
+  strip: ['Vos données restent privées', 'Hypothèses modifiables', 'Fiscalité intégrée', 'Résultats expliqués'],
+  problem: {
+    eyebrow: 'LE VRAI PROBLÈME',
+    title: 'Un patrimoine ne dit pas s’il financera votre train de vie jusqu’au bout.',
+    body: 'Entre les rendements, l’inflation, les impôts, les revenus futurs et les dépenses qui évoluent, un simple montant ne suffit pas. L’essentiel est de savoir si votre plan tient dans le temps, dans quels scénarios et quelles décisions peuvent l’améliorer.',
+    quote: 'Quand puis-je lever le pied — sans risquer d’épuiser mon argent trop tôt ?',
+  },
+  solution: {
+    eyebrow: 'UNE RÉPONSE, PAS UN TABLEUR',
+    title: 'Voyez la trajectoire complète de votre argent.',
+    lead: 'Construisez votre scénario en quelques minutes, puis mesurez à la fois votre date d’indépendance et la capacité de votre portefeuille à financer votre retraite.',
+    features: [
+      { n: '01', title: 'Rassemblez votre patrimoine', body: 'Actions, ETF, crypto, comptes et résidence principale : visualisez tout au même endroit, même dans plusieurs devises.' },
+      { n: '02', title: 'Projetez votre vie réelle', body: 'Ajoutez votre épargne, vos revenus, vos dépenses et vos grands projets. Voyez si le train de vie souhaité reste financé dans le temps.' },
+      { n: '03', title: 'Mesurez la solidité du plan', body: 'Changez une hypothèse et observez son effet. Avec Monte-Carlo (Premium), testez votre plan sur jusqu’à 5 000 futurs de marché.' },
+    ],
+  },
+  proof: {
+    eyebrow: 'UNE MÉTHODE TRANSPARENTE',
+    title: 'Une trajectoire claire. Une incertitude mesurée.',
+    body: 'La projection annuelle montre comment votre plan évolue. La simulation Monte-Carlo (Premium) mesure ensuite sa résistance à des milliers de futurs de marché. Les hypothèses restent visibles et modifiables : les résultats sont des projections, jamais des promesses.',
+    stats: [
+      { value: '1', label: 'trajectoire annuelle claire, de maintenant à la retraite' },
+      { value: '5 000', label: 'futurs testés par simulation Monte-Carlo Premium' },
+      { value: '4', label: 'devises prises en charge : USD, CAD, EUR et GBP' },
+      { value: '100%', label: 'des hypothèses accessibles et ajustables' },
+    ],
+  },
+  compare: {
+    title: 'Les réponses que votre patrimoine seul ne donne pas.',
+    headers: ['Votre question', 'Ce que Runaway vous montre'],
+    rows: [
+      ['Quand le travail peut-il devenir un choix ?', 'Une date d’indépendance recalculée selon vos hypothèses'],
+      ['Mon portefeuille financera-t-il mon train de vie ?', 'Une projection annuelle jusqu’à l’âge que vous avez prévu'],
+      ['Que se passe-t-il si les marchés évoluent autrement ?', 'Jusqu’à 5 000 trajectoires Monte-Carlo (Premium)'],
+      ['Quelle décision améliore réellement mon plan ?', 'L’effet immédiat de chaque changement sur votre trajectoire'],
+    ],
+  },
+  faqTitle: 'Avant de construire votre plan',
+  faq: [
+    { question: 'Puis-je essayer Runaway sans créer de compte ?', answer: 'Oui. Le mode sandbox s’ouvre sans email et sauvegarde votre essai localement dans votre navigateur.' },
+    { question: 'Runaway remplace-t-il un conseiller financier ?', answer: 'Non. Runaway est un outil de projection et d’aide à la décision. Il ne fournit pas de conseil financier, fiscal ou juridique personnalisé.' },
+    { question: 'Mes données financières sont-elles privées ?', answer: 'Le mode sandbox conserve vos données uniquement dans votre navigateur. Avec un compte, vos plans synchronisés sont chiffrés avant leur stockage et restent accessibles uniquement depuis votre compte.' },
+    { question: 'À quoi sert la simulation Monte-Carlo ?', answer: 'Une projection classique montre une trajectoire centrale. Monte-Carlo (Premium) soumet votre plan à jusqu’à 5 000 futurs de marché afin d’estimer la probabilité que votre portefeuille finance votre train de vie jusqu’à l’âge prévu.' },
+    { question: 'Puis-je modifier les hypothèses de rendement et d’inflation ?', answer: 'Oui. Les hypothèses clés du scénario peuvent être ajustées afin de tester des trajectoires prudentes, centrales ou ambitieuses.' },
+    { question: 'Quelles devises puis-je utiliser ?', answer: 'Runaway prend en charge les plans en USD, CAD et EUR et peut consolider des actifs libellés dans différentes devises.' },
+  ],
+  final: {
+    eyebrow: 'VOTRE RETRAITE MÉRITE MIEUX QU’UNE INTUITION',
+    title: 'Voyez si votre plan peut financer la vie que vous voulez.',
+    body: 'Découvrez quand le travail peut devenir un choix et éprouvez la solidité de votre plan. Commencez gratuitement, ou explorez Runaway sans compte et sans email.',
+    primary: 'Créer mon plan gratuitement',
+    secondary: 'Ouvrir le mode sandbox',
+  },
+  footer: { line: 'Know when you’re free.', legal: 'Mentions légales', privacy: 'Confidentialité' },
+};
+---
+
+<LandingPage {copy} />

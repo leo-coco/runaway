@@ -20,6 +20,8 @@ const STORAGE_KEY = 'runaway/lang';
 
 const initialLang = (): Lang => {
   try {
+    const requested = new URLSearchParams(window.location.search).get('lang');
+    if (requested === 'en' || requested === 'fr') return requested;
     const languageInUrl = languageFromPathname(window.location.pathname);
     if (languageInUrl) return languageInUrl;
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -49,6 +51,7 @@ const setDocumentTitle = (lng: string) => {
 };
 
 setDocumentTitle(i18n.language);
+document.documentElement.lang = i18n.language;
 
 i18n.on('languageChanged', (lng) => {
   try {

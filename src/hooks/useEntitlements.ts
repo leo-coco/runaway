@@ -9,6 +9,7 @@ import {
   type TierLimits,
 } from '@/domain/entitlements';
 import { fetchEntitlements } from '@/features/billing/entitlementsApi';
+import { useAppMode } from '@/providers/AppModeContext';
 
 /** Free defaults, used while loading and for guests. */
 const GUEST_FALLBACK: Entitlements = resolveEntitlements(null, null, DEFAULT_TIER_CONFIG);
@@ -20,13 +21,15 @@ const GUEST_FALLBACK: Entitlements = resolveEntitlements(null, null, DEFAULT_TIE
  */
 export const useEntitlements = (): Entitlements => {
   const { data: session } = useSession();
-  const userId = session?.user?.id ?? 'guest';
+  const { sandbox } = useAppMode();
+  const userId = sandbox ? 'sandbox' : (session?.user?.id ?? 'guest');
   const { data } = useQuery({
     queryKey: queryKeys.entitlements(userId),
     queryFn: fetchEntitlements,
+    enabled: !sandbox,
     staleTime: 5 * 60_000,
   });
-  return data ?? GUEST_FALLBACK;
+  return sandbox ? GUEST_FALLBACK : (data ?? GUEST_FALLBACK);
 };
 
 /** Convenience: is a given premium feature available to the current user? */
@@ -43,11 +46,13 @@ export const useLimit = (limit: keyof TierLimits): number | null => useEntitleme
  */
 export const useEntitlementsReady = (): boolean => {
   const { data: session } = useSession();
-  const userId = session?.user?.id ?? 'guest';
+  const { sandbox } = useAppMode();
+  const userId = sandbox ? 'sandbox' : (session?.user?.id ?? 'guest');
   const { isSuccess } = useQuery({
     queryKey: queryKeys.entitlements(userId),
     queryFn: fetchEntitlements,
+    enabled: !sandbox,
     staleTime: 5 * 60_000,
   });
-  return isSuccess;
+  return sandbox || isSuccess;
 };

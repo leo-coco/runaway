@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Maximum number of unique equity symbols accepted by one batch request. */
+export const MAX_EQUITY_BATCH_SYMBOLS = 20;
+
 /**
  * Provider-neutral market DTOs. The upstream vendor (see server/routes/market.ts)
  * is mapped into these shapes server-side, so no provider-specific field naming
