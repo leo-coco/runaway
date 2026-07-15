@@ -12,8 +12,8 @@ export const queryKeys = {
 
 /** staleTime budgets per data category (ms), per the architecture spec. */
 export const STALE_TIME = {
-  cryptoPrice: 30_000, // 30s
-  stockPrice: 60_000, // 60s
-  fx: 5 * 60_000, // 5min
+  cryptoPrice: 30_000,
+  stockPrice: 60_000,
+  fx: 5 * 60_000,
   search: 60_000,
 } as const;

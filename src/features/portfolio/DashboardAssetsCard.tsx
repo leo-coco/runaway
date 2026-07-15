@@ -77,13 +77,13 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
   let rowIndex = 0;
 
   return (
-    <Card padded>
+    <Card padded className="dash-assets-card">
       <div className="mini-assets-scroll">
         <div className="mini-assets">
           <div className="mini-row mini-row--head">
             <span className="mini-row__asset">{t('dashboard.colAsset')}</span>
             <span className="mini-row__value">{t('dashboard.colValue')}</span>
-            <span className="mini-row__gain">{t('portfolio.colRoi')}</span>
+            <span className="mini-row__gain">{t('dashboard.colRoi')}</span>
             <span className="mini-alloc mini-alloc--head">{t('dashboard.allocation')}</span>
           </div>
 
@@ -100,7 +100,6 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
                   </div>
                   <div className="mini-acct__right">
                     <GainLine gain={g.gain} fmt={fmt} />
-                    <span className="mini-acct__total">{fmt.compact(g.subtotal)}</span>
                   </div>
                 </div>
 

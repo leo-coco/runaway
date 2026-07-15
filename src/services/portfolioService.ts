@@ -72,8 +72,12 @@ export interface GainSummary {
  * Aggregate unrealised gain/loss across holdings, in the plan currency. Mirrors
  * the per-row math in AssetRow: a holding's basis is its explicit cost basis when
  * the user set one, otherwise the account's static cost-basis share (`costBasisPct`)
- * of the holding's value. Holdings with no basis contribute 0 basis, so `pct` is
- * null only when the whole set has no basis at all.
+ * of the holding's value. `value` totals every holding (used for subtotal display),
+ * but a holding with no determinable basis (no explicit cost basis and no account
+ * `costBasisPct`) is excluded from `basis`/`gain` entirely — including its full
+ * value in the numerator while contributing nothing to the denominator would
+ * inflate the aggregate `pct`. `pct` is null only when no holding in the set has
+ * a determinable basis.
  */
 export const gainForHoldings = (
   values: readonly HoldingValue[],
@@ -81,13 +85,18 @@ export const gainForHoldings = (
 ): GainSummary => {
   const pctByAccount = new Map(accounts.map((a) => [a.id, a.costBasisPct ?? 0]));
   let value = 0;
+  let valueWithBasis = 0;
   let basis = 0;
   for (const v of values) {
     value += v.value;
-    const defaultBasis = v.value * ((v.accountId ? (pctByAccount.get(v.accountId) ?? 0) : 0) / 100);
+    const accountPct = v.accountId ? pctByAccount.get(v.accountId) : undefined;
+    const hasBasis = v.costBasis !== undefined || !!accountPct;
+    if (!hasBasis) continue;
+    const defaultBasis = v.value * ((accountPct ?? 0) / 100);
+    valueWithBasis += v.value;
     basis += v.costBasis ?? defaultBasis;
   }
-  const gain = value - basis;
+  const gain = valueWithBasis - basis;
   return { value, basis, gain, pct: basis > 0 ? (gain / basis) * 100 : null };
 };
 

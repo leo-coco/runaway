@@ -137,6 +137,19 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   // The planning horizon — the year the user reaches their life-expectancy age.
   const horizonYear = projection.startYear + (plan.settings.lifeExpectancyAge - currentAge);
   const horizonAge = ageAt(horizonYear);
+  // A centered label overflows the chart when its reference line sits near an
+  // edge of the plotted range — anchor it to the line instead so the text
+  // grows inward.
+  const depletionFraction =
+    depletion !== null && horizonYear > projection.startYear
+      ? (depletion - projection.startYear) / (horizonYear - projection.startYear)
+      : null;
+  const depletionLabelPosition =
+    depletionFraction !== null && depletionFraction > 0.85
+      ? 'insideTopRight'
+      : depletionFraction !== null && depletionFraction < 0.15
+        ? 'insideTopLeft'
+        : 'top';
 
   // Whether the year/age switch on the X axis is shown at all: it's meaningless
   // without a valid current age to convert from.
@@ -210,7 +223,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                       : t('projChart.depletion', { year: depletion }),
                   fill: 'var(--danger)',
                   fontSize: 11,
-                  position: 'top',
+                  position: depletionLabelPosition,
                 }
               : undefined
           }

@@ -70,17 +70,17 @@ const iconForFlow = (item: ExpenseIncome): RunwayIconName => {
   return item.kind === 'income' ? 'gift' : 'wallet';
 };
 
-/**
- * Net-worth thresholds to watch, scaled to the plan's peak balance so we never
- * show "100K" to someone who peaks at 10M (or "1M" to someone who peaks at 200K).
- */
-const milestoneThresholds = (peak: number): number[] => {
-  if (peak < 250_000) return [100_000];
-  if (peak < 1_000_000) return [100_000, 250_000, 500_000];
-  if (peak < 5_000_000) return [500_000, 1_000_000, 2_000_000];
-  if (peak < 25_000_000) return [1_000_000, 5_000_000, 10_000_000];
-  return [5_000_000, 10_000_000, 25_000_000, 50_000_000];
-};
+/** Net-worth thresholds to watch, from $5K up to $10M. */
+const MILESTONE_THRESHOLDS = [
+  5_000, 10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000, 100_000, 200_000,
+  300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000, 1_000_000, 1_500_000, 2_000_000,
+  3_000_000, 4_000_000, 5_000_000, 6_000_000, 7_000_000, 8_000_000, 9_000_000, 10_000_000,
+];
+
+/** Thresholds above the portfolio's starting value — no point flagging a
+ *  milestone the plan has already cleared before day one. */
+const milestoneThresholds = (initialValue: number): number[] =>
+  MILESTONE_THRESHOLDS.filter((t) => t > initialValue);
 
 /** First percentile-series year whose value is at or below `threshold`, else null. */
 const firstYearAtOrBelow = (
@@ -207,10 +207,10 @@ export const buildRunwayEvents = (
   }
 
   // --- Family 3: wealth milestones (upward crossings) ---
-  const peak = years.reduce((m, y) => Math.max(m, y.closingBalance), 0);
+  const initialValue = firstYear ? firstYear.openingBalance : 0;
   const seenYears = new Set<number>();
   // Highest threshold first so a year with several crossings keeps the biggest.
-  for (const threshold of [...milestoneThresholds(peak)].reverse()) {
+  for (const threshold of [...milestoneThresholds(initialValue)].reverse()) {
     for (const [i, y] of years.entries()) {
       const prev = i === 0 ? y.openingBalance : years[i - 1]!.closingBalance;
       const cur = y.closingBalance;
@@ -294,8 +294,15 @@ export const buildRunwayEvents = (
     });
   }
 
+  // Once the portfolio runs dry, it's the terminal waypoint — nothing after it matters.
+  const depletionYear = projection.depletionYear;
+  const visible =
+    depletionYear !== null
+      ? events.filter((e) => e.kind === 'portfolio-dry' || e.year <= depletionYear)
+      : events;
+
   // Stable sort by year (Array.prototype.sort is stable in modern engines).
-  return events.sort((a, b) => a.year - b.year);
+  return visible.sort((a, b) => a.year - b.year);
 };
 
 /** Convenience for renderers: the icon component for an event. */

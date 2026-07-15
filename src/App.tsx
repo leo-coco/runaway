@@ -29,23 +29,25 @@ export const App = () => (
       <div className="app-shell">
         <Sidebar />
         <main className="app-main">
-          <ErrorBoundary feature="app">
-            <Routes>
-              <Route path="/" element={<RootRedirect />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/plans" element={<PlansPage />} />
-              <Route path="/plan/:id" element={<PlanLayout />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="portfolio" element={<PortfolioPage />} />
-                <Route path="projection" element={<ProjectionPage />} />
-                <Route path="monte-carlo" element={<MonteCarloPage />} />
-                <Route path="methodology" element={<MethodologyPage />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </ErrorBoundary>
+          <div className="app-content">
+            <ErrorBoundary feature="app">
+              <Routes>
+                <Route path="/" element={<RootRedirect />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/plans" element={<PlansPage />} />
+                <Route path="/plan/:id" element={<PlanLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="portfolio" element={<PortfolioPage />} />
+                  <Route path="projection" element={<ProjectionPage />} />
+                  <Route path="monte-carlo" element={<MonteCarloPage />} />
+                  <Route path="methodology" element={<MethodologyPage />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </ErrorBoundary>
+          </div>
           <Footer />
         </main>
       </div>

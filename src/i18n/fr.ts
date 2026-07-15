@@ -24,7 +24,7 @@ export const fr: Resources = {
   overview: {
     retirementTimeline: 'Calendrier de retraite',
     savingsCapacity: 'Capacité d’épargne',
-    lifestyleSpending: 'Train de vie à la retraite',
+    lifestyleSpending: 'Revenu de retraite cible',
     lifestyleSpendingHint:
       'C’est le montant net que vous souhaitez avoir par mois à votre retraite.',
     projectionScenario: 'Scénario de projection',
@@ -41,7 +41,7 @@ export const fr: Resources = {
     accountsSub: 'Enveloppes fiscales pour les retraits',
     withdrawalNotSet: 'Non défini',
     withdrawalReady: 'Prêt',
-    withdrawalSub: 'Ordre de ponction des comptes',
+    withdrawalSub: 'Ordre de prélèvements des comptes',
     scenarioConservative: 'Pessimiste',
     scenarioExpected: 'Attendu',
     scenarioOptimistic: 'Optimiste',
@@ -49,16 +49,16 @@ export const fr: Resources = {
       'Applique une baisse globale de {{value}} % au CAGR de chaque actif.',
     scenarioTooltipOptimistic:
       'Applique une hausse globale de {{value}} % au CAGR de chaque actif.',
-    expensesIncomes: 'Dépenses & entrées',
+    expensesIncomes: 'Revenus & Dépenses',
     expensesIncomesCount: '{{count}} élément(s)',
     expensesIncomesEmpty: 'Aucune dépense ni entrée ajoutée',
     expensesIncomesNext: 'Prochaine : {{amount}} en {{year}}',
-    home: 'Maison / Immobilier',
+    home: 'Immobilier',
     homeSub: "L'équité est suivie séparément de votre portefeuille disponible",
     homeEmpty: 'Aucune maison ajoutée',
   },
   home: {
-    title: 'Maison / Immobilier',
+    title: 'Immobilier',
     desc: "Une résidence principale n'est jamais liquidée pour financer les dépenses. Son achat, son hypothèque, ses coûts de possession et sa vente sont modélisés comme des flux; son équité est suivie séparément.",
     name: 'Nom',
     namePlaceholder: 'ex. Maison familiale',
@@ -146,6 +146,13 @@ export const fr: Resources = {
     signInFailed: 'Échec de la connexion',
     signUpFailed: 'Échec de la création du compte',
     requestFailed: 'Échec de la demande',
+    errorUserExists: 'Un compte existe déjà avec cette adresse email. Essayez de vous connecter.',
+    errorInvalidCredentials: 'Email ou mot de passe incorrect.',
+    errorEmailNotVerified:
+      'Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez votre boîte mail.',
+    errorInvalidEmail: 'Cette adresse email ne semble pas valide.',
+    errorPasswordTooShort: 'Le mot de passe est trop court.',
+    errorPasswordTooLong: 'Le mot de passe est trop long.',
     resetTitle: 'Choisissez un nouveau mot de passe',
     resetCta: 'Réinitialiser le mot de passe',
     resetSaving: 'Enregistrement…',
@@ -169,7 +176,7 @@ export const fr: Resources = {
     notFound: 'Ce plan est introuvable. Il a peut-être été supprimé.',
     disclaimerLabel: 'Avertissement :',
     disclaimer:
-      'Projections hypothétiques basées sur vos saisies. À but éducatif uniquement. Ne constitue pas un conseil financier, d’investissement, fiscal ou juridique. Aucune garantie de résultat.',
+      'Cet outil est destiné à des fins strictement informatives et éducatives. Les résultats présentés sont des projections hypothétiques basées sur vos saisies et ne constituent pas un conseil financier, fiscal ou juridique. Aucune garantie de performance n’est offerte. Consultez un professionnel qualifié avant toute décision.',
   },
   footer: {
     copyright: '© {{year}} Runway',
@@ -182,17 +189,17 @@ export const fr: Resources = {
     trendTitle: 'Évolution de la valeur totale',
     colAsset: 'Actif',
     colValue: 'Valeur',
+    colRoi: 'Rendement',
     allocation: 'Répartition',
     simulating: 'Simulation…',
     fundedIn:
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
-    depletes: '● ÉPUISÉ EN {{year}} · {{years}} ANS APRÈS LA RETRAITE',
     oddsNote: 'probabilité que votre argent dure toute la retraite à ce niveau de dépenses',
     portfolioToday: "Portefeuille aujourd'hui",
     portfolioAtRetirement: 'Portefeuille à la retraite',
     depletionTitle: 'Épuisement de l’épargne',
+    depletionAgeNote: 'Âge {{age}}',
     neverDepletes: 'Jamais',
-    fullyFunded: 'ENTIÈREMENT FINANCÉ',
     mc: {
       badgeStrong: 'Votre retraite est sur les rails',
       badgeBorderline: 'Votre retraite mérite votre attention',
@@ -233,34 +240,41 @@ export const fr: Resources = {
     colYear: 'Année',
     colEvent: 'Événement',
     colAmount: 'Montant',
+    addAssetPrompt: 'Ajoutez un actif pour voir votre runway.',
+    addAsset: 'Ajouter un actif',
   },
   calc: {
     title: 'Comment ces chiffres sont calculés',
-    p1Intro:
-      'Chaque actif capitalise chaque année à son propre CAGR effectif, défini comme son CAGR attendu de base plus l’ajustement du scénario actif. Le scénario actuel est',
-    p1NoAdj: ' (aucun ajustement des taux de croissance des actifs).',
-    p1Adj: ' ({{sign}}{{adj}} points de pourcentage appliqués à chaque actif).',
-    p1Holds_one:
-      ' Le portefeuille détient {{count}} actif avec un CAGR de base moyen de {{avg}} %.',
-    p1Holds_other:
-      ' Le portefeuille détient {{count}} actifs avec un CAGR de base moyen de {{avg}} %.',
-    applied: 'appliquée',
-    notApplied: 'non appliquée',
-    p2Intro:
-      'L’inflation est {{state}} à {{pct}} % par an. Les dépenses de {{amount}} {{currency}} sont saisies en valeur d’aujourd’hui et ',
-    p2Inflated:
-      'indexées sur l’inflation à partir de {{year}}, conservant ainsi leur valeur réelle ; les retraits commencent en {{retYear}}.',
-    p2Constant: 'maintenues constantes ; les retraits commencent en {{retYear}}.',
-    p2WithTax:
-      ' Chaque retrait annuel est majoré pour couvrir l’impôt dû (selon votre résidence fiscale et le type de chaque compte), puis ponctionné de vos comptes dans l’ordre de retrait configuré, au prorata des positions de chaque compte.',
-    p2NoTax:
-      ' Chaque retrait annuel est ponctionné de vos comptes dans l’ordre de retrait configuré, au prorata des positions de chaque compte.',
-    p3Intro:
-      'Les prix des actifs sont cotés dans la devise native de chaque instrument et convertis dans la devise du plan ({{currency}}) au taux de change en direct ; tous les soldes sont affichés dans la devise du plan. ',
-    p3NoDeplete: 'L’épargne ne s’épuise pas dans la fenêtre de projection.',
-    p3Deplete: 'À ce niveau de dépenses, l’épargne devrait s’épuiser en {{year}}',
-    p3DepleteEnd: '.',
-    p3DepleteYears: ', {{years}} ans après la retraite.',
+    sectionGrowth: '📈 Croissance & Scénario',
+    growthReturn:
+      'Rendement des actifs : chaque actif fructifie selon son propre CAGR effectif (CAGR de base + ajustement du scénario).',
+    growthScenarioNoAdj: 'Scénario actif : « {{scenario}} » (aucun ajustement appliqué).',
+    growthScenarioAdj:
+      'Scénario actif : « {{scenario}} » ({{sign}}{{adj}} points appliqués à chaque actif).',
+    growthPortfolio_one:
+      'Portefeuille actuel : {{count}} actif avec un CAGR de base moyen de {{avg}} %.',
+    growthPortfolio_other:
+      'Portefeuille actuel : {{count}} actifs avec un CAGR de base moyen de {{avg}} %.',
+    sectionSpending: '💸 Dépenses, Inflation & Fiscalité',
+    inflationApplied: 'Inflation : {{pct}} % par an.',
+    inflationNotApplied:
+      'Inflation : non appliquée — les dépenses restent constantes en dollars d’aujourd’hui.',
+    spendingIndexed:
+      'Dépenses : {{amount}} {{currency}} (saisies en valeur d’aujourd’hui, indexées dès {{year}} pour préserver votre pouvoir d’achat).',
+    spendingConstant:
+      'Dépenses : {{amount}} {{currency}} (saisies en valeur d’aujourd’hui, maintenues constantes jusqu’à la retraite).',
+    withdrawalsWithTax:
+      'Retraits (dès {{retYear}}) : chaque retrait annuel est majoré pour couvrir l’impôt (selon votre résidence fiscale et le type de compte), puis prélevé sur vos comptes selon l’ordre configuré et au prorata de vos positions.',
+    withdrawalsNoTax:
+      'Retraits (dès {{retYear}}) : chaque retrait annuel est prélevé sur vos comptes selon l’ordre configuré et au prorata de vos positions.',
+    sectionCurrency: '🌐 Devises & Diagnostic de fin',
+    currencies:
+      'Devises : les prix sont convertis en direct de leur devise d’origine vers la devise du plan ({{currency}}). Tous les soldes sont affichés en {{currency}}.',
+    diagnosticNoDeplete: 'Diagnostic : l’épargne ne s’épuise pas dans la fenêtre de projection.',
+    diagnosticDeplete:
+      'Diagnostic : à ce niveau de dépenses, l’épargne devrait s’épuiser en {{year}}.',
+    diagnosticDepleteYears:
+      'Diagnostic : à ce niveau de dépenses, l’épargne devrait s’épuiser en {{year}}, {{years}} ans après la retraite.',
   },
   projChart: {
     title: 'Projections du portefeuille',
@@ -417,13 +431,13 @@ export const fr: Resources = {
     perYr: '{{amount}}/an',
   },
   spending: {
-    title: 'Modifier le train de vie à la retraite',
-    lifestyleSpending: 'Train de vie à la retraite',
+    title: 'Modifier le revenu de retraite cible',
+    lifestyleSpending: 'Revenu de retraite cible',
     netMonthlyHint: 'C’est le montant net que vous souhaitez avoir par mois à votre retraite.',
     monthly: 'Mensuel',
     yearly: 'Annuel',
     ariaMonthly: 'Dépenses mensuelles',
-    ariaYearly: 'Train de vie à la retraite',
+    ariaYearly: 'Revenu de retraite cible',
     currentSwr: 'Taux de retrait actuel :',
     swrTipAria: 'Comment le taux de retrait est calculé',
     swrTipTitle: 'Taux de retrait (la « règle des 4 % »)',
@@ -464,10 +478,9 @@ export const fr: Resources = {
     resetPhases: 'Réinitialiser',
   },
   expensesIncomes: {
-    title: 'Dépenses & entrées',
+    title: 'Revenus & Dépenses',
     desc: 'Flux de trésorerie liés à une ou plusieurs années — achat ou vente immobilière, frais d’études, héritage reçu. Un flux ponctuel tombe sur une seule année ; un flux périodique se répète chaque année sur une plage. Les dépenses sortent du portefeuille, les entrées s’y ajoutent.',
-    empty:
-      'Aucune dépense ni entrée ajoutée. Ajoutez un achat immobilier, des frais de scolarité ou un héritage.',
+    empty: 'Aucune dépense ni entrée ajoutée pour le moment',
     add: 'Ajouter une entrée',
     addTitle: 'Ajouter une entrée',
     editTitle: 'Modifier l’entrée',
@@ -1166,7 +1179,7 @@ export const fr: Resources = {
         body: 'Ce que vous ajoutez chaque mois jusqu’à la retraite. Répartissez un total entre les actifs ou fixez une contribution par actif.',
       },
       spendingButton: {
-        title: 'Train de vie à la retraite',
+        title: 'Revenu de retraite cible',
         body: 'Cliquez sur Éditer sur cette carte pour définir combien vous prévoyez de dépenser chaque année à la retraite.',
       },
       spending: {

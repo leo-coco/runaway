@@ -23,7 +23,7 @@ import { TourGuideModal } from '@/features/tour/TourGuideModal';
 import type { Plan } from '@/domain/plan';
 
 const DOTS = ['#6aa3e0', '#c084fc', '#5dcaa5', '#e0a85d', '#f0768b'];
-const COLLAPSE_KEY = 'retire-on-model/sidebar-collapsed';
+const COLLAPSE_KEY = 'runaway/sidebar-collapsed';
 
 type ShowTip = (label: string) => (e: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>) => void;
 

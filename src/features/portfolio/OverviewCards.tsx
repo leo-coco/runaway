@@ -12,16 +12,6 @@ import { useFeature } from '@/hooks/useEntitlements';
 import { ProBadge } from '@/features/billing/ProBadge';
 import { totalMonthlyContribution, valueHoldings } from '@/services/portfolioService';
 import type { RatesTable } from '@/services/currencyService';
-import { cn } from '@/lib/cn';
-import {
-  CalendarIcon,
-  TrendingUpIcon,
-  WalletIcon,
-  CartIcon,
-  HomeIcon,
-  PieChartIcon,
-  LayersIcon,
-} from '@/components/icons';
 
 interface OverviewCardsProps {
   plan: Plan;
@@ -94,9 +84,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           </span>
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <CalendarIcon size={26} />
-          </span>
           <div className="ov__content">
             <span className="ov__big ov__big--lg">{plan.settings.retirementYear}</span>
             <span className="ov__sub">
@@ -120,9 +107,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           </span>
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <TrendingUpIcon size={26} />
-          </span>
           <div className="ov__content">
             <span className="ov__big">
               {fmt.compact(monthlyContribution)}
@@ -149,9 +133,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           </span>
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <WalletIcon size={26} />
-          </span>
           <div className="ov__content">
             <span className="ov__big">
               {fmt.compact(plan.settings.annualSpending)}
@@ -181,9 +162,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           </span>
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <CartIcon size={26} />
-          </span>
           <div className="ov__content">
             <span className="ov__big">
               {flowCount === 0 ? '—' : t('overview.expensesIncomesCount', { count: flowCount })}
@@ -214,9 +192,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           )}
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <HomeIcon size={26} />
-          </span>
           <div className="ov__content">
             <span className="ov__big">
               {homeEquityNow !== undefined ? fmt.compact(homeEquityNow) : '—'}
@@ -235,46 +210,25 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             {t('common.edit')}
           </span>
         </div>
-        <div
-          className="scenario-pills scenario-pills--stretch"
-          role="group"
+        <select
+          className="select"
           aria-label={t('overview.projectionScenario')}
+          value={plan.scenario.active}
+          onChange={(e) =>
+            updateScenario(plan.id, { ...plan.scenario, active: e.target.value as ScenarioKey })
+          }
         >
           {SCENARIOS.map((key) => {
             const adjPts = scenarioAdjustmentPts(plan.scenario, key);
             const sign = adjPts > 0 ? '+' : '';
-            const title =
-              key === 'conservative'
-                ? t('overview.scenarioTooltipConservative', {
-                    value: plan.scenario.conservativeAdjustmentPts,
-                  })
-                : key === 'optimistic'
-                  ? t('overview.scenarioTooltipOptimistic', {
-                      value: plan.scenario.optimisticAdjustmentPts,
-                    })
-                  : undefined;
             return (
-              <button
-                key={key}
-                type="button"
-                className={cn(
-                  'scenario-pill',
-                  title && 'tip-host',
-                  plan.scenario.active === key && 'is-active',
-                )}
-                onClick={() => updateScenario(plan.id, { ...plan.scenario, active: key })}
-              >
+              <option key={key} value={key}>
                 {t(SCENARIO_PILL_KEY[key])} {sign}
                 {adjPts}%
-                {title && (
-                  <span className="tip-bubble" role="tooltip">
-                    {title}
-                  </span>
-                )}
-              </button>
+              </option>
             );
           })}
-        </div>
+        </select>
       </Card>
 
       <Card className="ov" data-tour="accounts-card">
@@ -291,9 +245,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           )}
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <PieChartIcon size={26} />
-          </span>
           <div className="ov__content">
             <span className="ov__big">
               {plan.accounts.length}{' '}
@@ -318,9 +269,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           )}
         </div>
         <div className="ov__body">
-          <span className="ov__icon">
-            <LayersIcon size={26} />
-          </span>
           <div className="ov__content">
             <span
               className="ov__big"

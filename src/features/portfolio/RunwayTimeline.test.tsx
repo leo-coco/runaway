@@ -4,6 +4,15 @@ import i18n from '@/i18n';
 import type * as RunwayEventsModule from '@/services/runwayEvents';
 import type { RunwayEvent } from '@/services/runwayEvents';
 
+// jsdom has no ResizeObserver; the component only uses it to react to layout
+// changes, which the tests don't need to exercise.
+class MockResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = MockResizeObserver;
+
 // The component derives events from context + service; mock both so the test
 // drives a fixed event list and never needs the store/network.
 const EVENTS: RunwayEvent[] = [
@@ -33,12 +42,22 @@ vi.mock('@/services/runwayEvents', async (importOriginal) => {
   return { ...actual, buildRunwayEvents: vi.fn(() => EVENTS) };
 });
 
+const PLAN = { currency: 'CAD', holdings: [{ id: 'h1' }] };
+
 vi.mock('./PlanLayout', () => ({
   usePlanContext: () => ({
-    plan: { currency: 'CAD' },
+    plan: PLAN,
     projection: { active: {} },
     monteCarlo: { result: { successRate: 0.5 } },
   }),
+}));
+
+vi.mock('@/hooks/useEntitlements', () => ({ useLimit: () => null }));
+
+const openModal = vi.fn();
+const openPaywall = vi.fn();
+vi.mock('@/store', () => ({
+  useAppStore: (selector: (s: unknown) => unknown) => selector({ openModal, openPaywall }),
 }));
 
 import { RunwayTimeline } from './RunwayTimeline';
@@ -53,7 +72,6 @@ describe('RunwayTimeline', () => {
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText('New car')).toBeInTheDocument();
     expect(screen.getByText('Portfolio runs dry')).toBeInTheDocument();
-    // Year labels present.
     expect(screen.getByText('2029')).toBeInTheDocument();
   });
 
@@ -86,5 +104,14 @@ describe('RunwayTimeline', () => {
     render(<RunwayTimeline />);
     expect(screen.getByText("Aujourd'hui")).toBeInTheDocument();
     expect(screen.getByText('Portefeuille à sec')).toBeInTheDocument();
+  });
+
+  it('shows an add-asset prompt instead of the timeline when there are no holdings', () => {
+    PLAN.holdings = [];
+    render(<RunwayTimeline />);
+    expect(screen.queryByText('Today')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Add an asset'));
+    expect(openModal).toHaveBeenCalledWith('addAsset');
+    PLAN.holdings = [{ id: 'h1' }];
   });
 });

@@ -125,4 +125,17 @@ describe('portfolioService.gainForHoldings', () => {
     expect(Math.round(g.basis)).toBe(1600 + Math.round((100 * 10) / 1.35));
     expect(g.gain).toBeGreaterThan(0);
   });
+
+  it('excludes holdings with no determinable basis from gain/pct, not just from basis', () => {
+    // a: has an explicit basis (value 2000, basis 1600, gain 400).
+    // b: no cost basis, unassigned (no account) → no determinable basis at all.
+    // Its full 1000 value must not leak into the gain numerator.
+    const a: Holding = { ...usdCrypto, id: 'x', accountId: 'a1', costBasis: 800 };
+    const b: Holding = { ...cadEquity, id: 'y', accountId: null };
+    const g = gainForHoldings(valueHoldings([a, b], 'USD', rates), [brokerage]);
+    expect(Math.round(g.value)).toBe(3000); // full portfolio value, for subtotal display
+    expect(g.basis).toBe(1600); // only a's basis
+    expect(g.gain).toBe(400); // only a's gain, not inflated by b's value
+    expect(g.pct).toBeCloseTo(25);
+  });
 });

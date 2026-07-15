@@ -82,7 +82,6 @@ export interface ProjectionInput {
   readonly phasedSpending?: PhasedSpendingConfig;
   /** The user's age at `startYear`; required to map ages for the phased model. */
   readonly currentAge?: number;
-  /** Non-portfolio income (pension, salary…) reducing withdrawals and stacking in brackets. */
   /** Cashflows tied to specific year(s) — one-off or recurring. */
   readonly expensesIncomes?: readonly ExpenseIncome[];
   /** Scheduled tax-deferred → tax-free conversions / meltdown. */

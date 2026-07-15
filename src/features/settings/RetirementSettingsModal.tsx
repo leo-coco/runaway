@@ -229,7 +229,6 @@ export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose
         </>
       }
     >
-      {/* Mode tabs */}
       <div className="seg-tabs" role="tablist" aria-label={t('spending.modeLabel')}>
         <button
           type="button"

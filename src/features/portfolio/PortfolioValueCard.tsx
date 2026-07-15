@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { cn } from '@/lib/cn';
 import { usePlanContext } from './PlanLayout';
 
 /**
@@ -19,9 +18,12 @@ export const PortfolioValueCard = () => {
     0;
 
   const depletionYear = projection.active.depletionYear;
-  const yearsAfterRetiring =
-    depletionYear !== null ? depletionYear - plan.settings.retirementYear : null;
   const depletes = depletionYear !== null;
+  const currentAge = plan.settings.currentAge;
+  const depletionAge =
+    depletes && currentAge > 0
+      ? currentAge + (depletionYear - projection.active.years[0]!.year)
+      : null;
 
   return (
     <div className="hero hero--triple">
@@ -41,18 +43,18 @@ export const PortfolioValueCard = () => {
         <span className="hero__big-note">{t('projChart.legendClosing')}</span>
       </div>
 
-      <div className={cn('hero__card', depletes ? 'hero__card--warn' : 'hero__card--success')}>
+      <div className="hero__card">
         <div className="hero__row">
           <span className="hero__label">{t('dashboard.depletionTitle')}</span>
         </div>
         <span className="hero__big hero__big--sm">
           {depletes ? depletionYear : t('dashboard.neverDepletes')}
         </span>
-        <span className={cn('hero__badge', depletes ? 'hero__badge--warn' : 'hero__badge--ok')}>
-          {depletes
-            ? t('dashboard.depletes', { year: depletionYear, years: yearsAfterRetiring })
-            : t('dashboard.fullyFunded')}
-        </span>
+        {depletionAge !== null && (
+          <span className="hero__big-note">
+            {t('dashboard.depletionAgeNote', { age: depletionAge })}
+          </span>
+        )}
       </div>
     </div>
   );

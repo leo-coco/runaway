@@ -178,8 +178,9 @@ describe('buildRunwayEvents — wealth milestones', () => {
     expect(milestones[0]?.amount).toBe(100_000);
   });
 
-  it('scales thresholds up for a large plan and keeps at most one per year', () => {
-    // Peak 1.5M => watch [500k, 1M, 2M]; both 500k and 1M cross in the same year.
+  it('keeps at most one milestone per year, the highest threshold crossed', () => {
+    // Opening 100k jumps straight to 1.5M in one year — crosses everything from
+    // 200k up to 1.5M, but only the highest (1.5M) should be reported.
     const years = [
       mkYear(2025, 1_500_000, [], false, 100_000),
       mkYear(2026, 1_600_000, [], false, 1_500_000),
@@ -188,7 +189,17 @@ describe('buildRunwayEvents — wealth milestones', () => {
     const events = buildRunwayEvents(plan, mkProjection(years, null), null);
     const milestones = find(events, 'wealth-milestone');
     expect(milestones).toHaveLength(1); // one per year, higher threshold wins
-    expect(milestones[0]?.amount).toBe(1_000_000);
+    expect(milestones[0]?.amount).toBe(1_500_000);
+  });
+
+  it('never reports a threshold at or below the starting value', () => {
+    // Opening 500k => the 100k-500k thresholds are already cleared before day one.
+    const years = [mkYear(2025, 600_000, [], false, 500_000)];
+    const plan = mkPlan({});
+    const events = buildRunwayEvents(plan, mkProjection(years, null), null);
+    const milestones = find(events, 'wealth-milestone');
+    expect(milestones).toHaveLength(1);
+    expect(milestones[0]?.amount).toBe(600_000);
   });
 });
 

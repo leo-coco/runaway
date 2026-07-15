@@ -19,10 +19,11 @@ const PAGE_PATH: Record<TourPage, string> = {
   dashboard: 'dashboard',
   projection: 'projection',
   'monte-carlo': 'monte-carlo',
+  portfolio: 'portfolio',
 };
 
 const routeName = (path: string): TourPage | null => {
-  const m = path.match(/\/plan\/[^/]+\/(dashboard|projection|monte-carlo)/);
+  const m = path.match(/\/plan\/[^/]+\/(dashboard|projection|monte-carlo|portfolio)/);
   return (m?.[1] as TourPage | undefined) ?? null;
 };
 

@@ -119,6 +119,14 @@
   /* Floating menus / popovers / tooltips — soft, diffuse, low-opacity. */
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
+
+  /* Explanation-bubble tooltips flip to a white bubble with black text here
+     so they still pop against the dark canvas (the light-theme dark bubble
+     would otherwise blend in). */
+  --tip-bg: #ffffff;
+  --tip-fg: #0d0d0d;
+  --tip-fg-muted: rgb(13 13 13 / 72%);
+  --tip-border: rgb(13 13 13 / 12%);
 }
 
 /* Light theme — Runway "Copper Champagne" (Design System v1): a warm paper
@@ -185,6 +193,14 @@
   /* Floating menus / popovers / tooltips — soft, diffuse, low-opacity. */
   --shadow-pop: 0 12px 28px rgba(31, 35, 40, 0.12);
   color-scheme: light;
+
+  /* Explanation-bubble tooltips (info icons, badges, collapsed-sidebar
+     labels) — unchanged dark bubble, kept for contrast against the light
+     canvas. */
+  --tip-bg: #1f1c19;
+  --tip-fg: #f6f4f0;
+  --tip-fg-muted: rgb(246 244 240 / 72%);
+  --tip-border: rgb(255 255 255 / 12%);
 }
 
 * {
@@ -245,7 +261,13 @@ h4 {
 .app-main {
   flex: 1;
   min-width: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   padding-bottom: 40px;
+}
+.app-content {
+  flex: 1;
 }
 
 /* ---------- app footer ---------- */
@@ -1053,16 +1075,15 @@ h4 {
 }
 
 .overview-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-top: 6px;
+  margin-bottom: 18px;
 }
 .ov {
   container-type: inline-size;
   min-width: 0;
-  flex: 1 1 calc(33.333% - 10px);
   padding: 18px 20px;
   min-height: 132px;
   display: flex;
@@ -1110,17 +1131,7 @@ h4 {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  margin-top: 10px;
-}
-.ov__icon {
-  flex: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  margin-top: 5px;
 }
 .ov__content {
   display: flex;
@@ -1182,10 +1193,6 @@ h4 {
   padding: 4px;
   margin: 14px 0 10px;
 }
-.scenario-pills--stretch {
-  display: flex;
-  width: 100%;
-}
 .scenario-pill {
   flex: 1 1 0;
   min-width: 0;
@@ -1213,15 +1220,6 @@ h4 {
   left: auto;
   right: 0;
 }
-@container (max-width: 260px) {
-  .scenario-pills--stretch {
-    flex-wrap: wrap;
-  }
-  .scenario-pill {
-    flex: 1 1 100%;
-  }
-}
-
 /* ---------- plan title + auto-saved ---------- */
 .plan-title {
   display: flex;
@@ -1235,7 +1233,7 @@ h4 {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
-  margin: 18px 0 26px;
+  margin: 18px 0 18px;
 }
 .hero__card {
   display: flex;
@@ -1250,12 +1248,6 @@ h4 {
 }
 .hero__card--risk {
   border-color: color-mix(in srgb, var(--danger, #f43f5e) 55%, var(--border));
-}
-.hero__card--warn {
-  border-color: color-mix(in srgb, var(--amber) 55%, var(--border));
-}
-.hero__card--success {
-  border-color: color-mix(in srgb, var(--success) 55%, var(--border));
 }
 @media (max-width: 720px) {
   .hero {
@@ -1316,23 +1308,6 @@ h4 {
   display: block;
   height: 100%;
   border-radius: 999px;
-}
-.hero__badge {
-  align-self: flex-start;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 7px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-.hero__badge--warn {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 50%, var(--border));
-}
-.hero__badge--ok {
-  color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 50%, var(--border));
 }
 .hero--single {
   grid-template-columns: 1fr;
@@ -1696,6 +1671,30 @@ h4 {
   font-size: var(--fs-sm);
   margin-top: 2px;
 }
+.calc-section {
+  margin-bottom: 16px;
+}
+.calc-section:last-child {
+  margin-bottom: 0;
+}
+.calc-section__title {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.calc-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.calc-list li::marker {
+  color: var(--text-dim);
+}
 .section__actions {
   display: flex;
   gap: 10px;
@@ -1762,7 +1761,7 @@ h4 {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 8px;
   line-height: 1.2;
   white-space: nowrap;
@@ -1844,21 +1843,6 @@ h4 {
   font-size: var(--fs-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-.gain-badge {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.gain-badge.is-pos {
-  color: var(--success, #34d399);
-}
-.gain-badge.is-neg {
-  color: var(--danger, #f43f5e);
-}
-.gain-badge--lg {
-  font-size: var(--fs-body);
 }
 .move-select {
   margin-top: 6px;
@@ -2004,23 +1988,43 @@ h4 {
   font-weight: 700;
 }
 
-/* ---------- dashboard: trend chart + mini assets table, side by side ---------- */
+/* ---------- dashboard: trend chart + mini assets table, side by side ----------
+   Same 4-column grid + gap as `.overview-grid` (the Plan Settings cards) so the
+   two panels below land on the same column edges — each spans 2 of the 4
+   columns for an even 50/50 split that still lines up with the cards above. */
 .dash-split {
   display: grid;
-  grid-template-columns: 30% 70%;
-  gap: 18px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
   align-items: start;
   margin-bottom: 26px;
 }
 .dash-split > * {
   min-width: 0;
+  grid-column: span 2;
 }
 @media (max-width: 900px) {
   .dash-split {
     grid-template-columns: 1fr;
   }
+  .dash-split > * {
+    grid-column: span 1;
+  }
 }
 
+/* Caps the assets table at the trend chart card's height (its fixed 200px
+   chart + head + padding) so the two dashboard cards line up, scrolling
+   internally instead of stretching the row past the chart. */
+.dash-assets-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 262px;
+}
+.dash-assets-card .mini-assets-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 .mini-assets-scroll {
   overflow-x: auto;
 }
@@ -2029,16 +2033,20 @@ h4 {
   flex-direction: column;
   min-width: 360px;
 }
-/* Every row (header + data) shares this exact column template so the Value,
-   Gain and Répartition columns line up pixel-for-pixel down the whole table.
-   Only the asset column flexes; the rest are fixed widths. */
+/* Every row (header, account subtotal and data) shares this exact column
+   template so Value, Rendement and Répartition line up pixel-for-pixel down
+   the whole table. Asset only needs room for the badge + symbol, so it's
+   capped narrow; Rendement is the widest field (amount + % pill) so it
+   absorbs any remaining width, and Répartition keeps a fixed width sized
+   for its bar + percentage. */
 .mini-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px 86px 96px;
+  grid-template-columns: minmax(0, 120px) 64px 1fr 96px;
   column-gap: 8px;
   align-items: center;
   min-height: 40px;
-  padding: 9px 0;
+  padding: 9px 8px;
+  border-left: 3px solid transparent;
   border-bottom: 1px solid var(--border);
 }
 .mini-row--head {
@@ -2048,7 +2056,7 @@ h4 {
   text-transform: uppercase;
   letter-spacing: 0.02em;
   min-height: 0;
-  padding: 0 0 8px;
+  padding: 0 8px 8px;
   border-bottom: 1px solid var(--border-strong);
 }
 /* All cells centre their content, both axes — the grid's align-items:center
@@ -2073,10 +2081,20 @@ h4 {
 .mini-alloc__pct.muted {
   color: var(--text-dim);
 }
-.mini-row__gain .gain-badge {
-  display: inline-block;
+.mini-row__gain .ret-cell,
+.mini-acct__right .ret-cell {
+  justify-content: center;
+  gap: 4px;
+}
+.mini-row__gain .ret-amt,
+.mini-row__gain .ret-pill,
+.mini-acct__right .ret-amt,
+.mini-acct__right .ret-pill {
   font-size: 0.65625rem;
-  white-space: normal;
+}
+.mini-row__gain .ret-pill,
+.mini-acct__right .ret-pill {
+  padding: 1px 6px;
 }
 .mini-row__asset {
   display: flex;
@@ -2105,19 +2123,20 @@ h4 {
   flex-shrink: 0;
 }
 
-/* account header inside the mini table — right side lines up with the
-   Répartition column's right edge, same as the data rows below it. */
+/* account header inside the mini table — shares the row's grid template so
+   its Rendement figure lands in the exact same column as the data rows'. */
 .mini-acct {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 120px) 64px 1fr 96px;
+  column-gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 0 9px 8px;
+  padding: 4px 8px 4px 8px;
   border-left: 3px solid var(--accent);
   border-bottom: 1px solid var(--border);
   background: var(--bg);
 }
 .mini-acct__main {
+  grid-column: 1 / 3;
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -2136,10 +2155,8 @@ h4 {
   white-space: nowrap;
 }
 .mini-acct__right {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-shrink: 0;
+  grid-column: 3;
+  min-width: 0;
 }
 .mini-acct__total {
   font-weight: 700;
@@ -2181,6 +2198,9 @@ h4 {
   text-align: center;
 }
 
+.mini-assets__group:has(+ .mini-total) .mini-row:last-child {
+  border-bottom: none;
+}
 .mini-total {
   display: flex;
   justify-content: flex-end;
@@ -2196,7 +2216,7 @@ h4 {
   margin-right: auto;
 }
 .mini-total__value {
-  font-size: 1.125rem;
+  font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -2448,9 +2468,15 @@ h4 {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+/* Data-table headers carrying a native `title` tooltip get a help cursor so the
+   affordance is visible on hover. */
+th[title] {
+  cursor: help;
+}
 /* Instant hover tooltip (badges / pills explaining tax treatment). */
 .tip-host {
   position: relative;
+  cursor: help;
 }
 .tip-bubble {
   position: absolute;
@@ -2507,12 +2533,12 @@ h4 {
   max-width: 300px;
 }
 
-/* ---------- shared dark tooltip palette ---------- */
+/* ---------- shared tooltip palette ----------
+   Explanation bubbles (info icons, badges, collapsed-sidebar labels) always
+   use a dark bubble in light theme (contrast against the light canvas), and
+   flip to a white bubble with black text in dark theme (contrast against the
+   dark canvas) — see the theme blocks near the top of this file. */
 :root {
-  --tip-bg: #1f1c19;
-  --tip-fg: #f6f4f0;
-  --tip-fg-muted: rgb(246 244 240 / 72%);
-  --tip-border: rgb(255 255 255 / 12%);
   --tip-radius: var(--radius-pill);
 }
 
@@ -2901,7 +2927,8 @@ h4 {
 .jtable {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
+  font-weight: 400;
   min-width: 760px;
 }
 .jtable th,
@@ -2917,21 +2944,23 @@ h4 {
 }
 .jtable thead th {
   color: var(--text);
-  font-weight: 700;
+  font-weight: 500;
 }
 .jtable td.rowlabel,
 .jtable th.rowlabel {
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 500;
 }
 .jtable .num {
   font-variant-numeric: tabular-nums;
 }
 .jtable .asset-detail td {
   color: var(--text-muted);
+}
+.jtable .asset-detail td:first-child {
   padding-left: 30px;
 }
-.jtable .spend {
+.jtable .asset-detail td.spend {
   color: var(--text-muted);
 }
 .jtable .contrib {
@@ -3499,7 +3528,8 @@ h4 {
 .mc-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.78125rem;
+  font-size: var(--fs-xs);
+  font-weight: 400;
   white-space: nowrap;
 }
 .mc-table th,
@@ -3517,13 +3547,13 @@ h4 {
   top: 0;
   background: var(--bg-card);
   color: var(--text-dim);
-  font-weight: 600;
+  font-weight: 500;
   z-index: 1;
 }
 .mc-table tbody th {
   text-align: left;
   color: var(--text-dim);
-  font-weight: 600;
+  font-weight: 500;
 }
 .mc-table tbody tr:hover td {
   background: var(--bg-card-hover);
@@ -4100,7 +4130,8 @@ h4 {
 .trial-explorer__table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.78125rem;
+  font-size: var(--fs-xs);
+  font-weight: 400;
 }
 .trial-explorer__table th,
 .trial-explorer__table td {
@@ -4114,8 +4145,8 @@ h4 {
   top: 0;
   background: var(--bg-elev);
   color: var(--text-dim);
-  font-weight: 600;
-  font-size: var(--fs-2xs);
+  font-weight: 500;
+  font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -4819,8 +4850,8 @@ h4 {
 }
 
 @media (max-width: 900px) {
-  .ov {
-    flex-basis: calc(50% - 7px);
+  .overview-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   .scenario-grid,
   .adj-grid {
@@ -4832,8 +4863,8 @@ h4 {
 }
 
 @media (max-width: 480px) {
-  .ov {
-    flex-basis: 100%;
+  .overview-grid {
+    grid-template-columns: 1fr;
   }
   .hero__card {
     padding: 18px 20px;
@@ -5430,6 +5461,16 @@ h4 {
 .runway--hero .runway__scroll {
   flex: 1;
 }
+.runway__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.runway--hero .runway__empty {
+  flex: 1;
+}
 .runway__head {
   margin-bottom: 14px;
 }
@@ -5441,17 +5482,18 @@ h4 {
   color: var(--text-muted);
 }
 .runway__scroll {
-  overflow-x: auto;
+  overflow: hidden;
   padding-bottom: 6px;
 }
 .runway__track {
   display: flex;
   align-items: flex-start;
+  justify-content: center;
   gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
-  min-width: min-content;
+  width: 100%;
 }
 .runway__item {
   position: relative;
@@ -5459,7 +5501,8 @@ h4 {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-width: 96px;
+  width: 96px;
+  flex: 0 0 auto;
   padding: 0 6px;
 }
 /* Connector line between markers. */
@@ -5532,6 +5575,14 @@ h4 {
   border-color: var(--danger);
   color: var(--danger);
 }
+.runway__marker--ellipsis {
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
 .runway__year {
   font-size: var(--fs-sm);
   font-weight: 700;
@@ -5560,7 +5611,8 @@ h4 {
 .runway-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-body);
+  font-size: var(--fs-xs);
+  font-weight: 400;
 }
 .runway-table th,
 .runway-table td {
@@ -5569,7 +5621,8 @@ h4 {
   border-bottom: 1px solid var(--border);
 }
 .runway-table th {
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
