@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from '@/lib/authClient';
 import { InfoIcon, LogOutIcon, UserIcon } from '@/components/icons';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
+import { AccessibilityMenu } from '@/features/settings/AccessibilityMenu';
 import { AuthDialog } from './AuthDialog';
+import { useAppStore } from '@/store';
 
 const initialsFor = (name?: string | null, email?: string | null) => {
   const source = name?.trim() || email?.trim() || '';
@@ -38,6 +40,7 @@ const RobotAvatar = () => (
 export const AuthMenu = () => {
   const { t } = useTranslation();
   const { data: sessionData, isPending } = useSession();
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [popPos, setPopPos] = useState<{ left: number; bottom: number } | null>(null);
@@ -73,6 +76,15 @@ export const AuthMenu = () => {
       }
       return next;
     });
+  };
+
+  const handleSignOut = async () => {
+    setOpen(false);
+    await signOut();
+    // Emptying the Zustand store persists an empty plan list, so financial data
+    // cannot reappear on refresh or through a manually entered plan URL.
+    useAppStore.getState().hydratePlans([]);
+    navigate('/signin', { replace: true });
   };
 
   return (
@@ -127,6 +139,7 @@ export const AuthMenu = () => {
               </Link>
             )}
             <SettingsMenu />
+            <AccessibilityMenu />
           </div>
 
           <div className="sb-profile-pop__group">
@@ -136,8 +149,7 @@ export const AuthMenu = () => {
                 role="menuitem"
                 className="sb-profile-pop__item"
                 onClick={() => {
-                  setOpen(false);
-                  void signOut();
+                  void handleSignOut();
                 }}
               >
                 <span className="sb-profile-pop__lead">

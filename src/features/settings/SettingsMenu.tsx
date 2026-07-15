@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { authClient, useSession } from '@/lib/authClient';
 import { SUPPORTED_LANGS, LANG_LABEL, type Lang } from '@/i18n';
 import { useThemeStore, resolveTheme, type Theme } from '@/store/themeStore';
 import {
@@ -26,12 +27,22 @@ const APPEARANCE_OPTIONS: AppearanceOption[] = [
 
 export const SettingsMenu = () => {
   const { t, i18n } = useTranslation();
+  const { data: sessionData } = useSession();
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
   const [submenu, setSubmenu] = useState<'appearance' | 'language' | null>(null);
 
   const resolvedLanguage = (i18n.resolvedLanguage ?? 'en') as Lang;
   const ResolvedIcon = resolveTheme(theme) === 'dark' ? MoonIcon : SunIcon;
+
+  const selectLanguage = async (language: Lang) => {
+    if (sessionData?.user) {
+      const { error } = await authClient.updateUser({ language });
+      if (error) console.error('[language] failed to save user preference', error);
+    }
+    const localizedPath = window.location.pathname.replace(/^\/(?:en|fr)(?=\/|$)/, `/${language}`);
+    window.location.replace(`${localizedPath}${window.location.search}${window.location.hash}`);
+  };
 
   return (
     <div className="sb-settings" onMouseLeave={() => setSubmenu(null)}>
@@ -110,7 +121,7 @@ export const SettingsMenu = () => {
                 role="menuitemradio"
                 aria-checked={resolvedLanguage === lang}
                 className="sb-settings__option"
-                onClick={() => void i18n.changeLanguage(lang)}
+                onClick={() => void selectLanguage(lang)}
               >
                 <GlobeIcon size={15} />
                 <span className="sb-settings__option-label">{LANG_LABEL[lang]}</span>

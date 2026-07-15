@@ -5,6 +5,13 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export type Theme = 'dark' | 'light' | 'system';
 /** The concrete theme actually applied to <html data-theme>. */
 export type ResolvedTheme = 'dark' | 'light';
+export type FontScale = 'normal' | 'large' | 'larger';
+
+export const FONT_SCALE_VALUES: Record<FontScale, number> = {
+  normal: 1,
+  large: 1.125,
+  larger: 1.25,
+};
 
 const darkMql = () =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -19,7 +26,11 @@ export const resolveTheme = (theme: Theme): ResolvedTheme =>
 
 interface ThemeStore {
   theme: Theme;
+  highContrast: boolean;
+  fontScale: FontScale;
   setTheme: (theme: Theme) => void;
+  setHighContrast: (highContrast: boolean) => void;
+  setFontScale: (fontScale: FontScale) => void;
   toggleTheme: () => void;
 }
 
@@ -28,7 +39,11 @@ export const useThemeStore = create<ThemeStore>()(
     (set) => ({
       // Default to following the OS so first-run matches the user's environment.
       theme: 'system',
+      highContrast: false,
+      fontScale: 'normal',
       setTheme: (theme) => set({ theme }),
+      setHighContrast: (highContrast) => set({ highContrast }),
+      setFontScale: (fontScale) => set({ fontScale }),
       // Cycle only between the explicit modes (used by the compact toggle).
       toggleTheme: () =>
         set((s) => ({ theme: resolveTheme(s.theme) === 'dark' ? 'light' : 'dark' })),
@@ -40,16 +55,25 @@ export const useThemeStore = create<ThemeStore>()(
   ),
 );
 
-const applyTheme = (theme: Theme) => {
+const applyTheme = ({
+  theme,
+  highContrast,
+  fontScale,
+}: Pick<ThemeStore, 'theme' | 'highContrast' | 'fontScale'>) => {
   document.documentElement.setAttribute('data-theme', resolveTheme(theme));
+  document.documentElement.toggleAttribute('data-high-contrast', highContrast);
+  document.documentElement.style.setProperty(
+    '--user-font-scale',
+    String(FONT_SCALE_VALUES[fontScale]),
+  );
 };
 
 // Apply immediately (before React renders) so there's no flash of the wrong
 // theme, then keep <html data-theme> in sync with every future change.
-applyTheme(useThemeStore.getState().theme);
-useThemeStore.subscribe((state) => applyTheme(state.theme));
+applyTheme(useThemeStore.getState());
+useThemeStore.subscribe((state) => applyTheme(state));
 
 // When the choice is 'system', re-apply whenever the OS scheme flips live.
 darkMql()?.addEventListener('change', () => {
-  if (useThemeStore.getState().theme === 'system') applyTheme('system');
+  if (useThemeStore.getState().theme === 'system') applyTheme(useThemeStore.getState());
 });

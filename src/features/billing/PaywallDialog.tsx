@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import premiumMountain from '@/assets/premium-mountain.png';
 import { useAppStore } from '@/store';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';
@@ -22,24 +23,36 @@ export const PaywallDialog = () => {
 
   return (
     <Modal
-      title={t('billing.paywallTitle')}
-      description={t(`billing.reason.${reason}`, { max: limits.maxAccounts })}
+      title={t('billing.premium')}
       onClose={close}
+      className="modal--paywall"
       footer={
         <>
-          <Button onClick={close}>{t('common.cancel')}</Button>
+          <Button variant="ghost" onClick={close}>
+            {t('billing.notNow')}
+          </Button>
           <Button variant="primary" onClick={close}>
             {t('billing.priceCta', { price, currency: pricing.currency })}
           </Button>
         </>
       }
     >
-      <ul className="paywall__benefits">
-        <li>{t('billing.benefit.monteCarlo')}</li>
-        <li>{t('billing.benefit.accounts')}</li>
-        <li>{t('billing.benefit.withdrawal')}</li>
-        <li>{t('billing.benefit.plans')}</li>
-      </ul>
+      <div className="paywall__banner" aria-hidden="true">
+        <img src={premiumMountain} alt="" />
+      </div>
+      <div className="paywall__content">
+        <p className="paywall__eyebrow">{t('billing.unlock')}</p>
+        <h3 className="paywall__heading">{t('billing.paywallTitle')}</h3>
+        <p className="paywall__reason">
+          {t(`billing.reason.${reason}`, { max: limits.maxAccounts })}
+        </p>
+        <ul className="paywall__benefits">
+          <li>{t('billing.benefit.monteCarlo')}</li>
+          <li>{t('billing.benefit.accounts')}</li>
+          <li>{t('billing.benefit.withdrawal')}</li>
+          <li>{t('billing.benefit.plans')}</li>
+        </ul>
+      </div>
       <p className="paywall__note">{t('billing.comingSoon')}</p>
     </Modal>
   );

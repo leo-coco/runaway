@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Stepper } from '@/components/ui/Stepper';
-import { ExpandIcon, InfoIcon, RefreshIcon } from '@/components/icons';
+import { GridIcon, InfoIcon, RefreshIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
 import {
@@ -251,14 +251,21 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
       ) : (
         <>
           <div className="hero hero--triple">
-            <div className="hero__card" style={{ borderColor: ZONE_COLOR[sx.zone] }}>
+            <div
+              className="hero__card prob-success-card"
+              style={{ borderColor: ZONE_COLOR[sx.zone] }}
+            >
               <div className="hero__row">
                 <span className="hero__label">{t('mc.probabilityOfSuccess')}</span>
               </div>
-              <span className="hero__big hero__big--sm" style={{ color: ZONE_COLOR[sx.zone] }}>
-                {sx.pct.toFixed(0)}%
-              </span>
-              <span className="hero__big-note">{t('dashboard.oddsNote')}</span>
+              <div className="hero__big-row prob-success-card__value">
+                <span className="hero__big hero__big--sm" style={{ color: ZONE_COLOR[sx.zone] }}>
+                  {sx.pct.toFixed(0)}%
+                </span>
+                <span className="hero__big-note prob-success-card__note">
+                  {t('dashboard.oddsNote', { age: lifeExpectancyAge })}
+                </span>
+              </div>
               {sx.pct < 80 && (
                 <button
                   type="button"
@@ -276,7 +283,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
               </div>
               <span className="hero__big hero__big--sm">{fmt.compact(endPctl?.p50 ?? 0)}</span>
               <span className="hero__big-note">
-                {t('mc.medianValueNote', { year: horizonEndYear })}
+                {t('mc.medianValueNote', { age: lifeExpectancyAge })}
               </span>
             </div>
 
@@ -295,7 +302,13 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
             </div>
           </div>
 
-          <div className={cn('mc-central', status === 'running' && 'is-updating')}>
+          <div
+            className={cn(
+              'mc-central',
+              'mc-central--stacked',
+              status === 'running' && 'is-updating',
+            )}
+          >
             <div className="mc-cards-row">
               <div className="mc-body-card">
                 <div className="prob-chart-head">
@@ -434,294 +447,262 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                     </span>
                   </div>
                 </div>
+                {hasAssets && (
+                  <div className="mc-chart-action">
+                    <Button
+                      size="sm"
+                      data-tour="mc-visualize"
+                      onClick={() => {
+                        setTrialFilterCategory(null);
+                        setShowTrialExplorer(true);
+                      }}
+                    >
+                      <GridIcon size={12} /> {t('mc.visualizeSimulation')}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="mc-body-card">
-                <div className="mc-split">
-                  <div>
-                    <div className="wo-section-label">
-                      {t('mc.outcomeBreakdown')}
-                      {status === 'running' && (
-                        <span className="mc-updating">{t('mc.recalculating')}</span>
-                      )}
-                    </div>
-                    <div className="outcome-breakdown">
-                      {(
-                        [
-                          [
-                            'largeSurplus',
-                            'var(--success)',
-                            t('mc.outcomeLargeSurplus'),
-                            result.outcomeBreakdown.largeSurplus,
-                            t('mc.tipLargeSurplus'),
-                          ],
-                          [
-                            'comfortable',
-                            'var(--accent)',
-                            t('mc.outcomeComfortable'),
-                            result.outcomeBreakdown.comfortable,
-                            t('mc.tipComfortable'),
-                          ],
-                          [
-                            'almostMadeIt',
-                            'var(--amber)',
-                            t('mc.outcomeAlmostMadeIt'),
-                            result.outcomeBreakdown.almostMadeIt,
-                            t('mc.tipAlmostMadeIt'),
-                          ],
-                          [
-                            'failedInMiddle',
-                            'var(--danger)',
-                            t('mc.outcomeFailedMiddle'),
-                            result.outcomeBreakdown.failedInMiddle,
-                            t('mc.tipFailedMiddle'),
-                          ],
-                        ] as const
-                      ).map(([category, color, label, count, tip]) => (
-                        <button
-                          type="button"
-                          className="outcome-row"
-                          key={category}
-                          disabled={count === 0}
-                          title={count === 0 ? undefined : t('mc.outcomeFilterHint')}
-                          onClick={() => {
-                            setTrialFilterCategory(category);
-                            setShowTrialExplorer(true);
-                          }}
-                        >
-                          <span className="outcome-row__label">
-                            <i className="outcome-row__dot" style={{ background: color }} />
-                            {label}
-                            <InfoTip title={label} body={tip} />
-                          </span>
-                          <span className="outcome-row__stats">
-                            <b className="outcome-row__pct">
-                              {((count / result.iterations) * 100).toFixed(1)}%
-                            </b>
-                            <span className="outcome-row__count">
-                              {t('mc.outcomeTrials', { count })}
-                            </span>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="wo-section-label">
-                      {t('mc.netWorthTitle', { year: horizonEndYear })}
-                    </div>
-                    <div className="hero-networth-list">
-                      {(
-                        [
-                          ['#4ade80', t('mc.top25'), endPctl?.p75],
-                          [FAN_ORANGE, t('mc.median'), endPctl?.p50],
-                          ['#fb7185', t('mc.bottom25'), endPctl?.p25],
-                          ['#f43f5e', t('mc.bottom10'), endPctl?.p10],
-                        ] as const
-                      ).map(([color, label, value]) => (
-                        <div className="hero-networth-list__row" key={label}>
-                          <span>
-                            <i style={{ background: color }} /> {label}
-                          </span>
-                          <b style={{ color }}>{fmt.compact(value ?? 0)}</b>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="wo-section-label">
+                  {t('mc.outcomeBreakdown')}
+                  {status === 'running' && (
+                    <span className="mc-updating">{t('mc.recalculating')}</span>
+                  )}
+                </div>
+                <div className="outcome-breakdown">
+                  {(
+                    [
+                      [
+                        'largeSurplus',
+                        'var(--success)',
+                        t('mc.outcomeLargeSurplus'),
+                        result.outcomeBreakdown.largeSurplus,
+                        t('mc.tipLargeSurplus'),
+                      ],
+                      [
+                        'comfortable',
+                        'var(--accent)',
+                        t('mc.outcomeComfortable'),
+                        result.outcomeBreakdown.comfortable,
+                        t('mc.tipComfortable'),
+                      ],
+                      [
+                        'almostMadeIt',
+                        'var(--amber)',
+                        t('mc.outcomeAlmostMadeIt'),
+                        result.outcomeBreakdown.almostMadeIt,
+                        t('mc.tipAlmostMadeIt'),
+                      ],
+                      [
+                        'failedInMiddle',
+                        'var(--danger)',
+                        t('mc.outcomeFailedMiddle'),
+                        result.outcomeBreakdown.failedInMiddle,
+                        t('mc.tipFailedMiddle'),
+                      ],
+                    ] as const
+                  ).map(([category, color, label, count, tip]) => (
+                    <button
+                      type="button"
+                      className="outcome-row"
+                      key={category}
+                      disabled={count === 0}
+                      title={count === 0 ? undefined : t('mc.outcomeFilterHint')}
+                      onClick={() => {
+                        setTrialFilterCategory(category);
+                        setShowTrialExplorer(true);
+                      }}
+                    >
+                      <span className="outcome-row__label">
+                        <i className="outcome-row__dot" style={{ background: color }} />
+                        {label}
+                        <InfoTip title={label} body={tip} />
+                      </span>
+                      <span className="outcome-row__stats">
+                        <b className="outcome-row__pct">
+                          {((count / result.iterations) * 100).toFixed(1)}%
+                        </b>
+                        <span className="outcome-row__count">
+                          {t('mc.outcomeTrials', { count })}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="mc-body-card">
-              <div className="wo-section-label">{t('mc.parametersTitle')}</div>
-              <div className="model-picker" data-tour="mc-model">
-                <label htmlFor="mc-model-select" className="model-picker__label">
-                  {t('mc.selectModel')}
-                </label>
-                <select
-                  id="mc-model-select"
-                  className="select"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value as MonteCarloModel)}
-                >
-                  <optgroup label={t('mc.groupStandard')}>
-                    {(['normal', 'crash-aware', 'bootstrap'] as const).map((m) => (
-                      <option key={m} value={m}>
-                        {t(`modelName.${m}`)}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label={t('mc.groupAdvanced')}>
-                    {(
-                      [
-                        'fat-tails',
-                        'bootstrap-uncentered',
-                        'historical-real-centered',
-                        'historical-real',
-                      ] as const
-                    ).map((m) => (
-                      <option key={m} value={m}>
-                        {t(`modelName.${m}`)}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-                <button
-                  type="button"
-                  className="mc-model-info-btn"
-                  data-tour="mc-model-info"
-                  onClick={() => setShowModelInfo(true)}
-                  aria-label={t('mc.aboutModel', { model: t(`modelName.${model}`) })}
-                >
-                  <InfoIcon size={16} />
-                </button>
+            <div className="mc-cards-row">
+              <div className="mc-body-card">
+                <div className="wo-section-label">
+                  {t('mc.netWorthTitle', { year: horizonEndYear })}
+                </div>
+                <div className="hero-networth-list">
+                  {(
+                    [
+                      ['#4ade80', t('mc.top25'), endPctl?.p75],
+                      [FAN_ORANGE, t('mc.median'), endPctl?.p50],
+                      ['#fb7185', t('mc.bottom25'), endPctl?.p25],
+                      ['#f43f5e', t('mc.bottom10'), endPctl?.p10],
+                    ] as const
+                  ).map(([color, label, value]) => (
+                    <div className="hero-networth-list__row" key={label}>
+                      <span>
+                        <i style={{ background: color }} /> {label}
+                      </span>
+                      <b style={{ color }}>{fmt.compact(value ?? 0)}</b>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {(model === 'historical-real' || model === 'historical-real-centered') && (
-                <div className="hist-year-picker" data-tour="mc-hist-start-year">
-                  <div className="hist-year-picker__row">
-                    <span className="model-picker__label">{t('mc.histStartYear')}</span>
+              <div className="mc-body-card">
+                <div className="wo-section-label">{t('mc.parametersTitle')}</div>
+                <div className="model-picker" data-tour="mc-model">
+                  <label htmlFor="mc-model-select" className="model-picker__label">
+                    {t('mc.selectModel')}
+                  </label>
+                  <select
+                    id="mc-model-select"
+                    className="select"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value as MonteCarloModel)}
+                  >
+                    <optgroup label={t('mc.groupStandard')}>
+                      {(['normal', 'crash-aware', 'bootstrap'] as const).map((m) => (
+                        <option key={m} value={m}>
+                          {t(`modelName.${m}`)}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label={t('mc.groupAdvanced')}>
+                      {(
+                        [
+                          'fat-tails',
+                          'bootstrap-uncentered',
+                          'historical-real-centered',
+                          'historical-real',
+                        ] as const
+                      ).map((m) => (
+                        <option key={m} value={m}>
+                          {t(`modelName.${m}`)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <button
+                    type="button"
+                    className="mc-model-info-btn"
+                    data-tour="mc-model-info"
+                    onClick={() => setShowModelInfo(true)}
+                    aria-label={t('mc.aboutModel', { model: t(`modelName.${model}`) })}
+                  >
+                    <InfoIcon size={16} />
+                  </button>
+                </div>
+
+                {(model === 'historical-real' || model === 'historical-real-centered') && (
+                  <div className="hist-year-picker" data-tour="mc-hist-start-year">
+                    <div className="hist-year-picker__row">
+                      <span className="model-picker__label">{t('mc.histStartYear')}</span>
+                      <label className="mc-switch">
+                        <input
+                          type="checkbox"
+                          checked={histStartYear === undefined}
+                          onChange={(e) =>
+                            setHistStartYear(e.target.checked ? undefined : HIST_REAL_END_YEAR)
+                          }
+                        />
+                        <span>{t('mc.histStartYearRandomToggle')}</span>
+                      </label>
+                    </div>
+                    {histStartYear !== undefined && (
+                      <select
+                        id="mc-hist-start-year-select"
+                        className="select"
+                        aria-label={t('mc.histStartYear')}
+                        value={histStartYear}
+                        onChange={(e) => setHistStartYear(Number(e.target.value))}
+                      >
+                        {Array.from(
+                          { length: HIST_REAL_END_YEAR - HIST_REAL_START_YEAR + 1 },
+                          (_, i) => HIST_REAL_END_YEAR - i,
+                        ).map((y) => (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+                {(model === 'historical-real' || model === 'historical-real-centered') && (
+                  <p className="field__hint" style={{ marginTop: 0 }}>
+                    {histStartYear === undefined
+                      ? t('mc.histStartYearHintRandom')
+                      : t('mc.histStartYearHintFixed', { year: histStartYear })}
+                  </p>
+                )}
+
+                <div className="mc-option-row">
+                  <div className="mc-option">
+                    <label className={cn('mc-switch', !hasBtc && 'is-disabled')}>
+                      <span className="mc-switch__control">
+                        <input
+                          type="checkbox"
+                          checked={btcCycleOn && hasBtc}
+                          disabled={!hasBtc}
+                          onChange={(e) => setBtcCycle(e.target.checked)}
+                        />
+                        <span>{t('mc.overlayBtc')}</span>
+                      </span>
+                      <span className="mc-tip mc-tip--below" role="tooltip">
+                        {t(hasBtc ? 'mc.btcHintOn' : 'mc.btcHintOff')}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="mc-option">
                     <label className="mc-switch">
                       <input
                         type="checkbox"
-                        checked={histStartYear === undefined}
-                        onChange={(e) =>
-                          setHistStartYear(e.target.checked ? undefined : HIST_REAL_END_YEAR)
-                        }
+                        checked={fadeCfg.enabled}
+                        onChange={(e) => setFade(e.target.checked)}
                       />
-                      <span>{t('mc.histStartYearRandomToggle')}</span>
+                      <span>{t('mc.fadeToggle')}</span>
+                      <span className="mc-tip mc-tip--right" role="tooltip">
+                        {t('mc.fadeHint', {
+                          target: fadeCfg.targetPct,
+                          years: fadeCfg.years,
+                        })}
+                      </span>
                     </label>
                   </div>
-                  {histStartYear !== undefined && (
-                    <select
-                      id="mc-hist-start-year-select"
-                      className="select"
-                      aria-label={t('mc.histStartYear')}
-                      value={histStartYear}
-                      onChange={(e) => setHistStartYear(Number(e.target.value))}
-                    >
-                      {Array.from(
-                        { length: HIST_REAL_END_YEAR - HIST_REAL_START_YEAR + 1 },
-                        (_, i) => HIST_REAL_END_YEAR - i,
-                      ).map((y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
-              )}
-              {(model === 'historical-real' || model === 'historical-real-centered') && (
-                <p className="field__hint" style={{ marginTop: 0 }}>
-                  {histStartYear === undefined
-                    ? t('mc.histStartYearHintRandom')
-                    : t('mc.histStartYearHintFixed', { year: histStartYear })}
-                </p>
-              )}
 
-              <div className="wo-section-label" style={{ marginTop: 16 }}>
-                {t('mc.btcCycle')}
-                <span
-                  className="mc-info"
-                  role="img"
-                  aria-label="About the Bitcoin halving cycle overlay"
-                >
-                  <InfoIcon size={13} />
-                  <span className="mc-tip" role="tooltip">
-                    <b>4-year halving cycle</b>
-                    Replaces BTC&apos;s flat drift with the halving rhythm: an explosive
-                    post-halving year, then a bear year, repeating every 4 years. Anchored to your
-                    CAGR (the cycle averages out to it) with a diminishing amplitude each cycle.
-                    Combines with the return model above. A heuristic from past cycles, not a
-                    forecast.
-                  </span>
-                </span>
+                <div className="mc-params-actions">
+                  <Button onClick={() => monteCarlo.rerun()} disabled={status === 'running'}>
+                    <RefreshIcon size={14} />{' '}
+                    {status === 'running' ? t('mc.running2') : t('mc.runNew')}
+                  </Button>
+                  <Button data-tour="mc-viewdata" onClick={() => setShowData(true)}>
+                    {t('mc.viewData')}
+                  </Button>
+                </div>
               </div>
-              <label className={cn('mc-switch', !hasBtc && 'is-disabled')}>
-                <span className="mc-switch__control">
-                  <input
-                    type="checkbox"
-                    checked={btcCycleOn && hasBtc}
-                    disabled={!hasBtc}
-                    onChange={(e) => setBtcCycle(e.target.checked)}
-                  />
-                  <span>{t('mc.overlayBtc')}</span>
-                </span>
-                {hasBtc && (
-                  <span className="mc-info" role="img" aria-label={t('mc.btcHintOn')}>
-                    <InfoIcon size={13} />
-                    <span className="mc-tip" role="tooltip">
-                      {t('mc.btcHintOn')}
-                    </span>
-                  </span>
-                )}
-                {!hasBtc && (
-                  <span className="mc-tip mc-tip--below" role="tooltip">
-                    {t('mc.btcHintOff')}
-                  </span>
-                )}
-              </label>
 
-              <div className="wo-section-label" style={{ marginTop: 16 }}>
-                {t('mc.growthFade')}
-                <span className="mc-info" role="img" aria-label="About the growth fade">
-                  <InfoIcon size={13} />
-                  <span className="mc-tip" role="tooltip">
-                    <b>Fading CAGR</b>
-                    No single name compounds at a hyper-growth rate forever. With this on, any asset
-                    whose CAGR is above {fadeCfg.targetPct}% glides down toward {fadeCfg.targetPct}
-                    %/yr over {fadeCfg.years} years, then stays there. Assets already at or below{' '}
-                    {fadeCfg.targetPct}% are untouched. Applies to both lenses.
-                  </span>
-                </span>
-              </div>
-              <label className="mc-switch">
-                <input
-                  type="checkbox"
-                  checked={fadeCfg.enabled}
-                  onChange={(e) => setFade(e.target.checked)}
-                />
-                <span>{t('mc.fadeToggle')}</span>
-              </label>
-
-              <div className="mc-params-actions">
-                <Button onClick={() => monteCarlo.rerun()} disabled={status === 'running'}>
-                  <RefreshIcon size={14} />{' '}
-                  {status === 'running' ? t('mc.running2') : t('mc.runNew')}
-                </Button>
-                <Button data-tour="mc-viewdata" onClick={() => setShowData(true)}>
-                  {t('mc.viewData')}
+              <div className="mc-body-card mc-whatif-card">
+                <div className="wo-section-label">{t('mc.whatIfCardTitle')}</div>
+                <p className="mc-whatif-card__desc">{t('mc.whatIfCardDesc')}</p>
+                <Button data-tour="mc-whatif" onClick={() => setShowGoalSeek(true)}>
+                  {t('mc.whatIfCardCta')}
                 </Button>
               </div>
             </div>
 
             {showGoalSeek && (
               <GoalSeekModal plan={plan} rates={rates} onClose={() => setShowGoalSeek(false)} />
-            )}
-          </div>
-
-          <div className="action-banner">
-            {hasAssets && (
-              <Button
-                data-tour="mc-visualize"
-                onClick={() => {
-                  setTrialFilterCategory(null);
-                  setShowTrialExplorer(true);
-                }}
-              >
-                <ExpandIcon size={14} /> {t('mc.visualizeSimulation')}
-              </Button>
-            )}
-            {hasAssets && (
-              <Button
-                className="action-banner__push-right"
-                data-tour="mc-whatif"
-                onClick={() => setShowGoalSeek(true)}
-              >
-                {t('mc.whatWouldItTake')}
-              </Button>
             )}
           </div>
         </>

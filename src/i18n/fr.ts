@@ -107,6 +107,14 @@ export const fr: Resources = {
     switchToLight: 'Passer au thème clair',
     switchToDark: 'Passer au thème sombre',
   },
+  accessibility: {
+    label: 'Accessibilité',
+    highContrast: 'Augmenter le contraste',
+    fontSize: 'Taille de l’écriture',
+    fontNormal: 'Normale',
+    fontLarge: 'Grande',
+    fontLarger: 'Très grande',
+  },
   settings: {
     title: 'Réglages',
     open: 'Réglages',
@@ -130,6 +138,13 @@ export const fr: Resources = {
   },
   auth: {
     signIn: 'Se connecter',
+    welcomeBack: 'Bon retour',
+    signInDescription: 'Connectez-vous pour retrouver vos plans de retraite.',
+    createDescription: 'Créez votre compte pour commencer à planifier votre retraite.',
+    resetDescription: 'Nous vous enverrons un lien pour choisir un nouveau mot de passe.',
+    heroTitle: 'Votre liberté financière commence ici.',
+    heroDescription:
+      'Visualisez votre avenir, pilotez votre épargne et avancez sereinement vers la retraite.',
     signUp: 'Créer un compte',
     signOut: 'Se déconnecter',
     createTitle: 'Créez votre compte',
@@ -181,7 +196,7 @@ export const fr: Resources = {
       'Cet outil est destiné à des fins strictement informatives et éducatives. Les résultats présentés sont des projections hypothétiques basées sur vos saisies et ne constituent pas un conseil financier, fiscal ou juridique. Aucune garantie de performance n’est offerte. Consultez un professionnel qualifié avant toute décision.',
   },
   footer: {
-    copyright: '© {{year}} Runaway',
+    copyright: '© {{year}} {{title}}',
     methodologyLink: 'Méthodologie',
     contactLink: 'Contactez-nous',
   },
@@ -217,7 +232,7 @@ export const fr: Resources = {
     simulating: 'Simulation…',
     fundedIn:
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
-    oddsNote: 'probabilité que votre argent dure toute la retraite à ce niveau de dépenses',
+    oddsNote: 'probabilité que votre argent dure jusqu’à vos {{age}} ans',
     portfolioToday: "Portefeuille aujourd'hui",
     portfolioAtRetirement: 'Portefeuille à la retraite',
     depletionTitle: 'Épuisement de l’épargne',
@@ -1026,13 +1041,15 @@ export const fr: Resources = {
     btcHintOff:
       'Ajoutez une position BTC ou un ETF Bitcoin spot (FBTC, IBIT, GBTC…) pour utiliser cette superposition.',
     growthFade: 'Atténuation de croissance',
-    fadeToggle: 'Atténuer les CAGR élevés vers un taux mature',
+    fadeToggle: 'Atténuer les CAGR',
+    fadeHint:
+      'Les actifs dont le CAGR dépasse {{target}} % convergent progressivement vers {{target}} % par an sur {{years}} ans, puis restent à ce taux. Les actifs déjà à ce niveau ou en dessous ne changent pas.',
     top25: 'Top 25 %',
     median: 'Médiane',
     bottom25: 'Bottom 25 %',
     bottom10: 'Bottom 10 %',
     medianValueTitle: 'Valeur médiane du portefeuille',
-    medianValueNote: "À l'espérance de vie ({{year}})",
+    medianValueNote: 'Âge {{age}}',
     netWorthTitle: 'Valeur nette du portefeuille en {{year}}',
     medianDepletionTitle: "Année d'épuisement médiane",
     tipSuccess:
@@ -1053,9 +1070,13 @@ export const fr: Resources = {
     outcomeTrials_one: '{{count}} essai',
     outcomeTrials_other: '{{count}} essais',
     outcomeFilterHint: 'Voir ces essais dans l’explorateur de simulation',
-    runNew: 'Lancer une nouvelle simulation',
+    runNew: 'Relancer la simulation',
     running2: 'Exécution…',
     whatWouldItTake: 'Que faudrait-il ?',
+    whatIfCardTitle: 'Scénario « Que faudrait-il ? »',
+    whatIfCardDesc:
+      'Testez les ajustements de dépenses, de retraite et de rendement qui permettraient d’atteindre votre taux de réussite cible.',
+    whatIfCardCta: 'Explorer les ajustements',
     projectedBalance: 'Solde projeté',
     medianDry: 'MÉDIANE À SEC {{year}}',
     medianSurvives: 'LA MÉDIANE SURVIT',
@@ -1073,7 +1094,7 @@ export const fr: Resources = {
       'Chaque simulation est un futur de marché tiré au hasard. Plus il y en a, plus les percentiles extrêmes (haut/bas 1 %) sont stables, au prix d’un calcul plus lent.',
     capText:
       'Pour chaque modèle, le rendement annuel de chaque actif est plafonné à {{max}} % à la hausse et {{min}} % à la baisse. À forte volatilité, le modèle produirait sinon des mouvements annuels absurdes qui dominent le scénario optimiste — le plafond conserve des krachs et de grosses années réalistes pour tout actif volatil (pas seulement le Bitcoin) tout en coupant la hausse incontrôlée sur laquelle aucun plan ne devrait compter.',
-    viewData: 'Modifier les données de simulation',
+    viewData: 'Modifier les données',
     hideData: 'Masquer les données de simulation',
     dataPerAsset: 'Hypothèses par actif',
     dataVolHint:
@@ -1108,8 +1129,8 @@ export const fr: Resources = {
     ariaAxisYears: 'Afficher l’axe X en années',
     ariaAxisAges: 'Afficher l’axe X en âges',
     projectedWithdrawalRate: 'Taux de retrait projeté',
-    visualizeSimulation: 'Explore in detail',
-    trialExplorerTitle: 'Trial Explorer',
+    visualizeSimulation: 'Explorer les simulations',
+    trialExplorerTitle: 'Explorateur de simulations',
     trialExplorerDesc:
       '{{count}} essais échantillonnés indépendamment, chacun coloré selon son résultat. Triez ou filtrez la liste, choisissez un essai, puis parcourez ses années.',
     trialCol: 'Essai',
@@ -1322,8 +1343,10 @@ export const fr: Resources = {
     pro: 'Pro',
     seePlans: 'Voir Premium',
     unlock: 'Débloquer avec Premium',
+    premium: 'Premium',
     paywallTitle: 'Passer à Premium',
     priceCta: 'Passer à Premium — {{price}} {{currency}}/an',
+    notNow: 'Pas maintenant',
     comingSoon:
       'Le paiement en libre-service arrive bientôt. Pour l’instant, Premium est activé manuellement.',
     reason: {
@@ -1340,10 +1363,10 @@ export const fr: Resources = {
         'Vous avez atteint la limite maximale de {{max}} comptes pour le plan gratuit. Passez à l’offre supérieure pour ajouter de nouveaux comptes.',
     },
     benefit: {
-      monteCarlo: 'Probabilité de succès Monte Carlo et explorateur de tirages',
-      accounts: 'Comptes fiscalement avantagés et multiples, avec ordre de retrait',
-      withdrawal: 'Optimisez l’ordre dans lequel les comptes sont utilisés',
-      plans: 'Plans et actifs illimités',
+      monteCarlo: 'Évaluez vos chances de réussite avec les simulations Monte Carlo',
+      accounts: 'Explorez chaque trajectoire simulée en détail',
+      withdrawal: 'Gérez plusieurs comptes fiscalement avantageux et votre stratégie de retrait',
+      plans: 'Créez des plans et ajoutez des actifs sans limite',
     },
     locked: {
       monteCarloTitle: 'Monte Carlo est une fonctionnalité Premium',
