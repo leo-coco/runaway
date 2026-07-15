@@ -132,7 +132,7 @@ describe('RunwayTimeline', () => {
     render(<RunwayTimeline />);
     fireEvent.click(screen.getByRole('button', { name: 'Age' }));
 
-    expect(screen.getByText('44')).toBeInTheDocument();
+    expect(screen.getByText('44 years')).toBeInTheDocument();
     expect(screen.queryByText('2029')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/See all events/));
@@ -142,7 +142,7 @@ describe('RunwayTimeline', () => {
       .getAllByRole('row')
       .slice(1)
       .map((row) => row.querySelector('td')?.textContent);
-    expect(ageCells).toEqual(['40', '44', '47']);
+    expect(ageCells).toEqual(['40 years', '44 years', '47 years']);
   });
 
   it('applies the confidence tint class to uncertain markers', () => {
@@ -195,6 +195,9 @@ describe('RunwayTimeline', () => {
     render(<RunwayTimeline />);
     expect(screen.getByText("Aujourd'hui")).toBeInTheDocument();
     expect(screen.getByText('Portefeuille à sec')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Âge' }));
+    expect(screen.getByText('44 ans')).toBeInTheDocument();
   });
 
   it('shows an add-asset prompt instead of the timeline when there are no holdings', () => {

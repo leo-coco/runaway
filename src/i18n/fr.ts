@@ -309,6 +309,7 @@ export const fr: Resources = {
     mcRange: '50 % des simulations entre {{low}} et {{high}}',
     displayModeLabel: 'Afficher les dates du runaway',
     ageMode: 'Âge',
+    ageValue: '{{age}} ans',
     yearMode: 'Année',
     colYear: 'Année',
     colAge: 'Âge',

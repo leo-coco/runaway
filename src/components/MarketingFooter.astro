@@ -1,0 +1,33 @@
+---
+interface Props {
+  lang: 'fr' | 'en';
+  line?: string;
+}
+
+const { lang, line = 'Know when you’re free.' } = Astro.props;
+const isFr = lang === 'fr';
+const home = isFr ? '/' : '/en';
+const links = isFr
+  ? [
+      { href: '/a-propos', label: 'À propos' },
+      { href: '/methodologie', label: 'Méthodologie' },
+      { href: '/contact', label: 'Contact' },
+    ]
+  : [
+      { href: '/en/about', label: 'About' },
+      { href: '/en/methodology', label: 'Methodology' },
+      { href: '/en/contact', label: 'Contact' },
+    ];
+---
+
+<footer class="marketing-footer">
+  <a class="brand" href={home}>
+    <img src="/favicon.png" alt="" width="32" height="32" />
+    <span>Runaway</span>
+  </a>
+  <p>{line}</p>
+  <div class="marketing-footer__meta">
+    <span>© {new Date().getFullYear()} Runaway</span>
+    {links.map((link) => <a href={link.href}>{link.label}</a>)}
+  </div>
+</footer>

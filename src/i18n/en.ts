@@ -299,6 +299,7 @@ export const en = {
     mcRange: '50% of simulations between {{low}}–{{high}}',
     displayModeLabel: 'Runaway date display',
     ageMode: 'Age',
+    ageValue: '{{age}} years',
     yearMode: 'Year',
     // Column headers for the "all events" table
     colYear: 'Year',
