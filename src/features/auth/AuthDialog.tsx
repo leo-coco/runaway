@@ -10,13 +10,43 @@ export type AuthMode = 'signin' | 'signup' | 'forgot';
 type AuthFormProps = {
   onSignedIn?: () => void;
   onModeChange?: (mode: AuthMode) => void;
+  onVerificationSent?: (email: string) => void;
   showTitle?: boolean;
 };
 
+type VerificationSentPanelProps = {
+  email: string;
+  onComplete: () => void;
+};
+
+export const VerificationSentPanel = ({ email, onComplete }: VerificationSentPanelProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <section className="auth-verification-sent" aria-live="polite">
+      <div className="auth-verification-sent__media">
+        <img className="auth-verification-sent__image" src="/verification-email-hero.png" alt="" />
+      </div>
+      <p className="auth-verification-sent__message">{t('auth.verificationSentMessage')}</p>
+      <p className="auth-verification-sent__email">{email}</p>
+      <p className="auth-verification-sent__hint">{t('auth.verificationSentHint')}</p>
+      <button type="button" className="link-btn" onClick={onComplete}>
+        {t('auth.verificationComplete')}
+      </button>
+    </section>
+  );
+};
+
 /** Shared by the compact account dialog and the full sign-in page. */
-export const AuthForm = ({ onSignedIn, onModeChange, showTitle = false }: AuthFormProps) => {
+export const AuthForm = ({
+  onSignedIn,
+  onModeChange,
+  onVerificationSent,
+  showTitle = false,
+}: AuthFormProps) => {
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('signin');
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -46,8 +76,9 @@ export const AuthForm = ({ onSignedIn, onModeChange, showTitle = false }: AuthFo
         const displayName = email.trim().split('@')[0] || 'Member';
         const { error } = await signUp.email({ email, password, name: displayName, language });
         if (error) throw new Error(error.message ?? t('auth.signUpFailed'));
-        setNotice(t('auth.accountCreated'));
-        setMode('signin');
+        const normalizedEmail = email.trim();
+        if (onVerificationSent) onVerificationSent(normalizedEmail);
+        else setVerificationEmail(normalizedEmail);
       } else {
         const { error } = await authClient.requestPasswordReset({
           email,
@@ -69,6 +100,11 @@ export const AuthForm = ({ onSignedIn, onModeChange, showTitle = false }: AuthFo
     setError(null);
     setNotice(null);
   };
+
+  if (verificationEmail)
+    return (
+      <VerificationSentPanel email={verificationEmail} onComplete={() => switchTo('signin')} />
+    );
 
   return (
     <form onSubmit={submit} className="auth-form">

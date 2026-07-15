@@ -158,6 +158,10 @@ export const fr: Resources = {
     pleaseWait: 'Veuillez patienter…',
     accountCreated:
       'Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.',
+    verificationSentMessage: 'Un e-mail de confirmation vient d’être envoyé à',
+    verificationSentHint:
+      'Ouvrez-le pour valider votre adresse. Pensez aussi à vérifier vos spams.',
+    verificationComplete: 'J’ai vérifié mon adresse',
     resetLinkSent: 'Si cette adresse existe, un lien de réinitialisation arrive.',
     errorGeneric: 'Une erreur est survenue',
     signInFailed: 'Échec de la connexion',
