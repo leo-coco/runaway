@@ -108,7 +108,7 @@ export const useAppStore = create<AppStore>()(
       ...createUiSlice(...a),
     }),
     {
-      name: 'retire-on-model/plans',
+      name: 'runaway/plans',
       version: PLANS_SCHEMA_VERSION,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ plans: state.plans }),

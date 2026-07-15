@@ -13,7 +13,6 @@ export const retirementSettingsFormSchema = z
       .number({ message: 'Enter an inflation rate' })
       .min(0, 'Inflation cannot be negative')
       .max(50, 'Inflation above 50% is not supported'),
-    // Spending profile.
     spendingMode: z.enum(['linear', 'phased']),
     goGoEndAge: z.number().int().min(1).max(120),
     slowGoEndAge: z.number().int().min(1).max(120),

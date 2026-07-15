@@ -34,7 +34,7 @@ export const useThemeStore = create<ThemeStore>()(
         set((s) => ({ theme: resolveTheme(s.theme) === 'dark' ? 'light' : 'dark' })),
     }),
     {
-      name: 'retire-on-model/theme',
+      name: 'runaway/theme',
       storage: createJSONStorage(() => localStorage),
     },
   ),

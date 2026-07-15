@@ -72,7 +72,6 @@ describe('RunwayTimeline', () => {
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText('New car')).toBeInTheDocument();
     expect(screen.getByText('Portfolio runs dry')).toBeInTheDocument();
-    // Year labels present.
     expect(screen.getByText('2029')).toBeInTheDocument();
   });
 

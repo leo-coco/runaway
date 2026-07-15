@@ -6,7 +6,7 @@ import { useEntitlements } from '@/hooks/useEntitlements';
 import { ProBadge } from '@/features/billing/ProBadge';
 import type { TierFeatures } from '@/domain/entitlements';
 import type { PaywallReason } from '@/store/uiSlice';
-import type { TourPage } from './tourSteps';
+import type { TourGuideId } from './tourSteps';
 import { useTour } from './TourProvider';
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
 
 /** A guide may require a premium feature; the Monte Carlo guide sits behind it. */
 interface GuideEntry {
-  key: TourPage;
+  key: TourGuideId;
   titleKey: string;
   descKey: string;
   requires?: keyof TierFeatures & PaywallReason;
@@ -47,7 +47,7 @@ export const TourGuideModal = ({ onClose }: Props) => {
   const openPaywall = useAppStore((s) => s.openPaywall);
   const { features } = useEntitlements();
 
-  const start = (guide: TourPage) => {
+  const start = (guide: TourGuideId) => {
     onClose();
     startTour(guide);
   };

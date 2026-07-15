@@ -112,7 +112,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         exchange: 'Custom',
         nativeCurrency: plan.currency,
       })),
-    [debounced, plan.currency, t]
+    [debounced, plan.currency, t],
   );
 
   const { stocks, crypto } = useMemo(() => {
@@ -135,7 +135,6 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<AppError | null>(null);
 
-  // Custom (manual) asset fields.
   const [customName, setCustomName] = useState('');
   const [customCurrency, setCustomCurrency] = useState<CurrencyCode>(plan.currency);
   const [customPrice, setCustomPrice] = useState(0);

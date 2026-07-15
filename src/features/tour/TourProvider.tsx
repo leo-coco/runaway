@@ -5,13 +5,13 @@ import { useAppStore } from '@/store';
 import { useEntitlements, useEntitlementsReady } from '@/hooks/useEntitlements';
 import type { TierId } from '@/domain/entitlements';
 import { createTour, type TourInstance } from './TourController';
-import { TOUR_GUIDES, accessibleSteps, type TourPage } from './tourSteps';
+import { TOUR_GUIDES, accessibleSteps, type TourGuideId } from './tourSteps';
 import './tour.css';
 
-const SEEN_KEY = 'retire-on-model/tour-seen';
+const SEEN_KEY = 'runaway/tour-seen';
 
 interface TourContextValue {
-  startTour: (guide: TourPage) => void;
+  startTour: (guide: TourGuideId) => void;
 }
 
 const TourContext = createContext<TourContextValue | null>(null);

@@ -5,6 +5,7 @@
 - No sycophantic openers or closing fluff.
 - No emojis or em-dashes.
 - Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
+- Default to no comments in code. Only add one when the WHY is non-obvious (a hidden constraint, a subtle invariant, a workaround for a specific bug). Never write a comment that just restates what the code already says.
 
 ## Git workflow
 - When making the first commit for a feature branch, open the PR automatically right after the commit (no need to ask).

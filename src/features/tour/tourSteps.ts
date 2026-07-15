@@ -2,7 +2,11 @@ import type { Side, Alignment } from 'driver.js';
 import type { ModalKind } from '@/store/uiSlice';
 import type { TierFeatures } from '@/domain/entitlements';
 
+/** A route a step can live on. `portfolio` hosts steps but isn't a guide of its own. */
 export type TourPage = 'dashboard' | 'projection' | 'monte-carlo' | 'portfolio';
+
+/** The guides a user can actually launch from the "Take the tour" picker. */
+export type TourGuideId = Exclude<TourPage, 'portfolio'>;
 
 export interface TourStep {
   /** Stable id — also the i18n sub-key under `tour.steps`. */
@@ -100,6 +104,10 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'plan-modal',
     side: 'left',
     align: 'start',
+    // Showcases the Linear/By-phase choice; "By phase" is premium, so this deep
+    // dive is only offered when the viewer can actually use phased spending. Free
+    // users still get the `spendingButton` step for setting their target income.
+    requires: 'phasedSpending',
   }),
   step('scenario', {
     page: 'dashboard',
@@ -208,7 +216,7 @@ export const MONTE_CARLO_GUIDE_STEPS: readonly TourStep[] = [
 ];
 
 /** The three independently-runnable guides behind the "Take the tour" picker. */
-export const TOUR_GUIDES: Record<TourPage, readonly TourStep[]> = {
+export const TOUR_GUIDES: Record<TourGuideId, readonly TourStep[]> = {
   dashboard: DASHBOARD_GUIDE_STEPS,
   projection: PROJECTION_GUIDE_STEPS,
   'monte-carlo': MONTE_CARLO_GUIDE_STEPS,

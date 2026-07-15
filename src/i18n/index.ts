@@ -11,7 +11,7 @@ export const LANG_LABEL: Record<Lang, string> = {
   fr: 'Français',
 };
 
-const STORAGE_KEY = 'retire-on-model/lang';
+const STORAGE_KEY = 'runaway/lang';
 
 const initialLang = (): Lang => {
   try {

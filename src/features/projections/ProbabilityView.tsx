@@ -180,9 +180,6 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
   const xAxisTickFormatter = (v: number) => (showAge ? `${ageAt(v)}` : `${v}`);
   const xAxisLabelFormatter = (label: string | number) => (showAge ? ageAt(Number(label)) : label);
 
-  // The plan is funded through the year the user reaches `lifeExpectancyAge`.
-  // The age and year inputs are two views of the same value: editing one updates
-  // the other (and re-runs the simulation through that horizon).
   // The plan funds through the year the user reaches `lifeExpectancyAge`. The
   // timeline inputs themselves live in the "Retirement Timeline" modal now.
   const endYear = lifeExpectancyYear(currentAge, startYear, lifeExpectancyAge);

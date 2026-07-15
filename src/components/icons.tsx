@@ -249,8 +249,6 @@ export const TrendingUpIcon = ({ size = 16, ...p }: IconProps) => (
   </svg>
 );
 
-// --- Runway timeline icons ---
-
 export const DotIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <circle cx="12" cy="12" r="5" fill="currentColor" stroke="none" />
