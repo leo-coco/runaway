@@ -1,7 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import i18n from '@/i18n';
 import type * as RunwayEventsModule from '@/services/runwayEvents';
+import { buildRunwayEvents } from '@/services/runwayEvents';
 import type { RunwayEvent } from '@/services/runwayEvents';
 
 // jsdom has no ResizeObserver; the component only uses it to react to layout
@@ -42,12 +45,12 @@ vi.mock('@/services/runwayEvents', async (importOriginal) => {
   return { ...actual, buildRunwayEvents: vi.fn(() => EVENTS) };
 });
 
-const PLAN = { currency: 'CAD', holdings: [{ id: 'h1' }] };
+const PLAN = { currency: 'CAD', holdings: [{ id: 'h1' }], settings: { currentAge: 40 } };
 
 vi.mock('./PlanLayout', () => ({
   usePlanContext: () => ({
     plan: PLAN,
-    projection: { active: {} },
+    projection: { active: {}, startYear: 2025 },
     monteCarlo: { result: { successRate: 0.5 } },
   }),
 }));
@@ -62,32 +65,40 @@ vi.mock('@/store', () => ({
 
 import { RUNWAY_ITEM_WIDTH, RunwayTimeline, selectVisibleRunwayEvents } from './RunwayTimeline';
 
+const appCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+const riskBorderRule = appCss.match(
+  /\.hero__card--risk,\s*\.runway\.hero__card--risk\s*\{([^}]*)\}/,
+)?.[1];
+
 beforeEach(async () => {
   await i18n.changeLanguage('en');
+  vi.mocked(buildRunwayEvents).mockReturnValue(EVENTS);
 });
 
 describe('RunwayTimeline', () => {
-  it('keeps today and the terminal point, with the latest milestones after an ellipsis', () => {
+  it('keeps today and the terminal point, with the nearest milestones before an ellipsis', () => {
     const events: RunwayEvent[] = [
       { id: 'today', kind: 'today', year: 2026, labelKey: 'runway.today', icon: 'dot' },
       {
         id: 'm1',
         kind: 'wealth-milestone',
-        year: 2027,
+        year: 2029,
         labelKey: 'runway.milestone',
+        labelParams: { amount: 200_000 },
+        amount: 200_000,
         icon: 'trophy',
       },
       {
         id: 'm2',
         kind: 'wealth-milestone',
-        year: 2028,
+        year: 2030,
         labelKey: 'runway.milestone',
         icon: 'trophy',
       },
       {
         id: 'm3',
         kind: 'wealth-milestone',
-        year: 2029,
+        year: 2031,
         labelKey: 'runway.milestone',
         icon: 'trophy',
       },
@@ -102,7 +113,7 @@ describe('RunwayTimeline', () => {
 
     const compact = selectVisibleRunwayEvents(events, RUNWAY_ITEM_WIDTH * 4);
     expect(compact.collapsed).toBe(true);
-    expect(compact.visible.map((event) => event.id)).toEqual(['today', 'm3', 'death']);
+    expect(compact.visible.map((event) => event.id)).toEqual(['today', 'm1', 'death']);
 
     const expanded = selectVisibleRunwayEvents(events, RUNWAY_ITEM_WIDTH * 5);
     expect(expanded.collapsed).toBe(false);
@@ -117,9 +128,47 @@ describe('RunwayTimeline', () => {
     expect(screen.getByText('2029')).toBeInTheDocument();
   });
 
+  it('switches timeline markers and the full event list from years to ages', () => {
+    render(<RunwayTimeline />);
+    fireEvent.click(screen.getByRole('button', { name: 'Age' }));
+
+    expect(screen.getByText('44')).toBeInTheDocument();
+    expect(screen.queryByText('2029')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(/See all events/));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('columnheader', { name: 'Age' })).toBeInTheDocument();
+    const ageCells = within(dialog)
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => row.querySelector('td')?.textContent);
+    expect(ageCells).toEqual(['40', '44', '47']);
+  });
+
   it('applies the confidence tint class to uncertain markers', () => {
     const { container } = render(<RunwayTimeline />);
     expect(container.querySelector('.runway__marker--weak')).not.toBeNull();
+  });
+
+  it('uses the same 2px danger border as Monte Carlo when the portfolio runs dry', () => {
+    const { container } = render(<RunwayTimeline />);
+    const card = container.querySelector<HTMLElement>('.runway.hero__card--risk');
+
+    expect(card).not.toBeNull();
+    expect(riskBorderRule).toContain('border-width: 2px');
+    expect(riskBorderRule).toContain('border-color: var(--danger, #f43f5e)');
+  });
+
+  it('does not use the risk border when the portfolio remains funded', () => {
+    vi.mocked(buildRunwayEvents).mockReturnValue(
+      EVENTS.filter((event) => event.kind !== 'portfolio-dry'),
+    );
+
+    const { container } = render(<RunwayTimeline />);
+    const card = container.querySelector<HTMLElement>('.runway');
+
+    expect(card).not.toBeNull();
+    expect(container.querySelector('.runway.hero__card--risk')).toBeNull();
   });
 
   it('opens the "see all events" modal with rows sorted by year', () => {

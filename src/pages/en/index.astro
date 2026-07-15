@@ -1,0 +1,75 @@
+---
+import LandingPage from '../../components/LandingPage.astro';
+
+const copy = {
+  lang: 'en' as const,
+  seoTitle: 'Retirement & Financial Independence Planner | Runaway',
+  seoDescription: 'See when work can become optional and whether your portfolio can fund the lifestyle you want throughout retirement.',
+  nav: { product: 'Product', method: 'Method', faq: 'Questions', login: 'Sign in' },
+  hero: {
+    eyebrow: 'RETIREMENT & FINANCIAL INDEPENDENCE PLANNER',
+    title: 'Can your wealth fund the life you want?',
+    lead: 'Runaway shows when work can become optional — and whether your portfolio can support your desired lifestyle throughout retirement.',
+    primary: 'Build my plan free',
+    secondary: 'Try without email',
+    cue: 'Free to start · No credit card',
+  },
+  strip: ['Your data stays private', 'Editable assumptions', 'Tax-aware projections', 'Explained results'],
+  problem: {
+    eyebrow: 'THE REAL PROBLEM',
+    title: 'Your net worth does not tell you whether it can fund your lifestyle for life.',
+    body: 'Returns, inflation, taxes, future income and changing expenses mean a single number is not enough. What matters is whether your plan lasts, which scenarios put it at risk and which decisions can improve it.',
+    quote: 'When can I step back — without risking running out of money too soon?',
+  },
+  solution: {
+    eyebrow: 'AN ANSWER, NOT A SPREADSHEET',
+    title: 'See the full trajectory of your money.',
+    lead: 'Build your scenario in minutes, then measure both your financial-independence date and your portfolio’s ability to fund retirement.',
+    features: [
+      { n: '01', title: 'Bring your wealth together', body: 'Stocks, ETFs, crypto, accounts and your home: see everything in one place, even across currencies.' },
+      { n: '02', title: 'Project your real life', body: 'Add savings, income, expenses and major plans. See whether your desired lifestyle stays funded over time.' },
+      { n: '03', title: 'Measure your plan’s resilience', body: 'Change an assumption and see its effect. With Monte Carlo (Premium), stress-test your plan across up to 5,000 market futures.' },
+    ],
+  },
+  proof: {
+    eyebrow: 'A TRANSPARENT METHOD',
+    title: 'A clear trajectory. Uncertainty measured.',
+    body: 'The yearly projection shows how your plan evolves. Monte Carlo simulation (Premium) then measures its resilience across thousands of market futures. Assumptions stay visible and editable: results are projections, never promises.',
+    stats: [
+      { value: '1', label: 'clear yearly path from today through retirement' },
+      { value: '5,000', label: 'futures tested per Premium Monte Carlo simulation' },
+      { value: '4', label: 'supported currencies: USD, CAD, EUR and GBP' },
+      { value: '100%', label: 'of core assumptions visible and adjustable' },
+    ],
+  },
+  compare: {
+    title: 'The answers your net worth alone cannot give you.',
+    headers: ['Your question', 'What Runaway shows you'],
+    rows: [
+      ['When can work become optional?', 'A financial-independence date recalculated from your assumptions'],
+      ['Will my portfolio fund my lifestyle?', 'A yearly projection through your chosen target age'],
+      ['What if markets unfold differently?', 'Up to 5,000 Monte Carlo paths (Premium)'],
+      ['Which decision genuinely improves my plan?', 'The immediate effect of every change on your trajectory'],
+    ],
+  },
+  faqTitle: 'Before you build your plan',
+  faq: [
+    { question: 'Can I try Runaway without an account?', answer: 'Yes. Sandbox mode opens without an email and saves your trial locally in your browser.' },
+    { question: 'Does Runaway replace a financial adviser?', answer: 'No. Runaway is a projection and decision-support tool. It does not provide personalized financial, tax or legal advice.' },
+    { question: 'Is my financial data private?', answer: 'Sandbox data stays only in your browser. With an account, synced plans are encrypted before storage and remain accessible only through your account.' },
+    { question: 'What does the Monte Carlo simulation do?', answer: 'A standard projection shows one central path. Monte Carlo (Premium) tests your plan against up to 5,000 market futures to estimate the probability that your portfolio funds your lifestyle through your target age.' },
+    { question: 'Can I edit return and inflation assumptions?', answer: 'Yes. You can adjust the scenario’s key assumptions to test cautious, central or ambitious paths.' },
+    { question: 'Which currencies can I use?', answer: 'Runaway supports plans in USD, CAD and EUR and can consolidate assets denominated in different currencies.' },
+  ],
+  final: {
+    eyebrow: 'YOUR RETIREMENT DESERVES MORE THAN A GUESS',
+    title: 'See whether your plan can fund the life you want.',
+    body: 'Find out when work can become optional and stress-test the strength of your plan. Start free, or explore Runaway with no account and no email.',
+    primary: 'Build my plan free',
+    secondary: 'Open sandbox mode',
+  },
+  footer: { line: 'Know when you’re free.', legal: 'Legal', privacy: 'Privacy' },
+};
+---
+
+<LandingPage {copy} />

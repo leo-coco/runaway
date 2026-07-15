@@ -1,0 +1,21 @@
+---
+import '../index.css';
+import { AppRoot } from '../AppRoot';
+
+const candidateLang = Astro.url.pathname.split('/')[1];
+const lang = candidateLang === 'fr' ? 'fr' : 'en';
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>Runaway — Know when you're free</title>
+  </head>
+  <body>
+    <AppRoot client:only="react" />
+  </body>
+</html>

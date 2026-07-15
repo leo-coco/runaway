@@ -7,6 +7,8 @@ import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { AccessibilityMenu } from '@/features/settings/AccessibilityMenu';
 import { AuthDialog } from './AuthDialog';
 import { useAppStore } from '@/store';
+import { languageFromPathname } from '@/i18n';
+import { useAppMode } from '@/providers/AppModeContext';
 
 const initialsFor = (name?: string | null, email?: string | null) => {
   const source = name?.trim() || email?.trim() || '';
@@ -38,15 +40,24 @@ const RobotAvatar = () => (
 );
 
 export const AuthMenu = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: sessionData, isPending } = useSession();
+  const { sandbox } = useAppMode();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [popPos, setPopPos] = useState<{ left: number; bottom: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const user = sessionData?.user;
+  const accountUser = sessionData?.user;
+  const user = sandbox ? undefined : accountUser;
   const initials = initialsFor(user?.name, user?.email);
+
+  const leaveSandbox = () => {
+    const lang =
+      languageFromPathname(window.location.pathname) ??
+      (i18n.resolvedLanguage === 'fr' ? 'fr' : 'en');
+    window.location.assign(`/${lang}/app/`);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -92,7 +103,9 @@ export const AuthMenu = () => {
       <button
         type="button"
         className="sb-user__trigger"
-        aria-label={user ? t('auth.account') : t('auth.signIn')}
+        aria-label={
+          sandbox ? t('sidebar.sandboxMode') : user ? t('auth.account') : t('auth.signIn')
+        }
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggleOpen}
@@ -119,7 +132,7 @@ export const AuthMenu = () => {
               {user ? initials : <RobotAvatar />}
             </span>
             <div className="sb-profile-pop__identity">
-              <b>{user?.name || t('sidebar.notSignedIn')}</b>
+              <b>{sandbox ? t('sidebar.sandboxMode') : user?.name || t('sidebar.notSignedIn')}</b>
               {user?.email ? <span>{user.email}</span> : null}
             </div>
           </div>
@@ -170,6 +183,18 @@ export const AuthMenu = () => {
                   <span>{t('auth.signOut')}</span>
                 </span>
               </button>
+            ) : sandbox && accountUser ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="sb-profile-pop__item"
+                onClick={leaveSandbox}
+              >
+                <span className="sb-profile-pop__lead">
+                  <UserIcon size={16} />
+                  <span>{t('sidebar.backToAccount')}</span>
+                </span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -188,7 +213,12 @@ export const AuthMenu = () => {
         </div>
       )}
 
-      {dialogOpen && <AuthDialog onClose={() => setDialogOpen(false)} />}
+      {dialogOpen && (
+        <AuthDialog
+          onClose={() => setDialogOpen(false)}
+          onSignedIn={sandbox ? leaveSandbox : () => setDialogOpen(false)}
+        />
+      )}
     </div>
   );
 };

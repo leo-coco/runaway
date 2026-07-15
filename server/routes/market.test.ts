@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const quoteMock = vi.fn();
 const searchMock = vi.fn();
+const getSession = vi.fn();
+
+vi.mock('../auth.js', () => ({ auth: { api: { getSession } } }));
 
 vi.mock('yahoo-finance2', () => ({
   default: class {
@@ -46,6 +49,25 @@ beforeEach(() => {
   store.clear();
   quoteMock.mockReset();
   searchMock.mockReset();
+  getSession.mockReset();
+  getSession.mockResolvedValue({ user: { id: 'user-1' } });
+});
+
+describe('equity authentication', () => {
+  it.each([
+    '/equities/search?keywords=vfv',
+    '/equities/quote?symbol=VFV.TO',
+    '/equities/quotes?symbols=VFV.TO',
+  ])('rejects anonymous requests to %s', async (path) => {
+    getSession.mockResolvedValue(null);
+
+    const res = await marketRoutes.request(path);
+
+    expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({ error: 'Unauthorized' });
+    expect(searchMock).not.toHaveBeenCalled();
+    expect(quoteMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET /equities/quote', () => {
@@ -105,6 +127,40 @@ describe('GET /equities/quote', () => {
 });
 
 describe('GET /equities/quotes', () => {
+  it('accepts exactly 20 unique symbols', async () => {
+    const symbols = Array.from({ length: 20 }, (_, i) => `SYM${i}`);
+    quoteMock.mockResolvedValue(symbols.map((symbol) => yahooQuote(symbol, 1, 'USD')));
+
+    const res = await marketRoutes.request(`/equities/quotes?symbols=${symbols.join(',')}`);
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { quotes: { symbol: string }[] };
+    expect(body.quotes).toHaveLength(20);
+    expect(quoteMock).toHaveBeenCalledWith(symbols);
+  });
+
+  it('rejects more than 20 unique symbols without calling the provider', async () => {
+    const symbols = Array.from({ length: 21 }, (_, i) => `SYM${i}`).join(',');
+
+    const res = await marketRoutes.request(`/equities/quotes?symbols=${symbols}`);
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({
+      error: 'A maximum of 20 unique symbols is allowed',
+    });
+    expect(quoteMock).not.toHaveBeenCalled();
+  });
+
+  it('counts duplicate symbols only once toward the batch limit', async () => {
+    const symbols = [...Array.from({ length: 20 }, (_, i) => `SYM${i}`), 'SYM0'];
+    quoteMock.mockResolvedValue(symbols.slice(0, 20).map((symbol) => yahooQuote(symbol, 1, 'USD')));
+
+    const res = await marketRoutes.request(`/equities/quotes?symbols=${symbols.join(',')}`);
+
+    expect(res.status).toBe(200);
+    expect(quoteMock).toHaveBeenCalledWith(symbols.slice(0, 20));
+  });
+
   it('fetches every symbol in a single upstream call', async () => {
     quoteMock.mockResolvedValue([
       yahooQuote('VFV.TO', 188.32, 'CAD'),

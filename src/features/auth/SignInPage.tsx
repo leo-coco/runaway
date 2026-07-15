@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate } from 'react-router-dom';
-import authBrand from '@/assets/auth-brand.png';
+import authBrand from '@/assets/auth-brand.png?url';
 import { useSession } from '@/lib/authClient';
 import { AuthForm, type AuthMode, VerificationSentPanel } from './AuthDialog';
 
@@ -9,7 +9,12 @@ export const SignInPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: sessionData, isPending } = useSession();
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const initialMode: AuthMode =
+    window.location.pathname.endsWith('/signup') ||
+    new URLSearchParams(window.location.search).get('mode') === 'signup'
+      ? 'signup'
+      : 'signin';
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   const heading =
@@ -45,7 +50,7 @@ export const SignInPage = () => {
           {verificationEmail ? (
             <VerificationSentPanel
               email={verificationEmail}
-              onComplete={() => navigate('/', { replace: true })}
+              onComplete={() => navigate('/signin', { replace: true })}
             />
           ) : (
             <>
@@ -55,8 +60,14 @@ export const SignInPage = () => {
                 <p>{description}</p>
               </div>
               <AuthForm
+                initialMode={initialMode}
                 onSignedIn={() => navigate('/', { replace: true })}
-                onModeChange={setMode}
+                onModeChange={(nextMode) => {
+                  setMode(nextMode);
+                  if (nextMode === 'signup' || nextMode === 'signin') {
+                    navigate(`/${nextMode}`, { replace: true });
+                  }
+                }}
                 onVerificationSent={setVerificationEmail}
               />
             </>

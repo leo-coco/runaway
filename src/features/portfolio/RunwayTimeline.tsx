@@ -9,8 +9,11 @@ import { useLimit } from '@/hooks/useEntitlements';
 import { atLimit } from '@/domain/entitlements';
 import { buildRunwayEvents, type RunwayEvent } from '@/services/runwayEvents';
 import type { SuccessZone } from '@/domain/successRate';
+import { ageInYear } from '@/domain/retirementSettings';
 import { cn } from '@/lib/cn';
 import { usePlanContext } from './PlanLayout';
+
+type DateDisplayMode = 'year' | 'age';
 
 /** Marker circle colour class from the Monte-Carlo confidence tint. */
 const ZONE_CLASS: Record<SuccessZone, string> = {
@@ -34,12 +37,16 @@ const RunwayMarker = ({
   fmt,
   label,
   isPast,
+  displayedDate,
+  displayedRange,
   ellipsisBefore,
 }: {
   event: RunwayEvent;
   fmt: CurrencyFormatter;
   label: string;
   isPast: boolean;
+  displayedDate: number;
+  displayedRange?: { low: number; high: number };
   ellipsisBefore?: boolean;
 }) => {
   const { t } = useTranslation();
@@ -53,7 +60,10 @@ const RunwayMarker = ({
   }
   if (event.mcRange) {
     tipParts.push(
-      t('runway.mcRange', { low: event.mcRange.lowYear, high: event.mcRange.highYear }),
+      t('runway.mcRange', {
+        low: displayedRange?.low ?? event.mcRange.lowYear,
+        high: displayedRange?.high ?? event.mcRange.highYear,
+      }),
     );
   }
 
@@ -77,7 +87,7 @@ const RunwayMarker = ({
         >
           <Icon size={20} />
         </span>
-        <span className="runway__year">{event.year}</span>
+        <span className="runway__year">{displayedDate}</span>
         <span className="runway__label">{label}</span>
       </li>
     </>
@@ -97,8 +107,8 @@ export interface VisibleRunwayEvents {
 /**
  * Selects the markers that fit in the card while preserving the two anchors:
  * today at the start and the plan's terminal point (death or portfolio dry) at
- * the end. When space is tight, the ellipsis represents older middle events
- * and the markers immediately before the terminal point remain visible.
+ * the end. When space is tight, the nearest upcoming events remain visible and
+ * the ellipsis represents the later middle events before the terminal point.
  */
 export const selectVisibleRunwayEvents = (
   events: readonly RunwayEvent[],
@@ -120,11 +130,11 @@ export const selectVisibleRunwayEvents = (
     events[events.length - 1]!;
   const between = events.filter((event) => event !== today && event !== terminal);
 
-  // One slot is the ellipsis. Fill the remaining slots from the end so the
-  // final milestone before the terminal point is never lost.
-  const trailingCount = Math.min(between.length + 1, slots - 2);
-  const trailing = [...between, terminal].slice(-trailingCount);
-  return { visible: [today, ...trailing], collapsed: true, showEllipsis: slots > 2 };
+  // One slot is the ellipsis. Fill the remaining slots from the start so the
+  // card answers the useful question: what is the next milestone from today?
+  const upcomingCount = Math.min(between.length, Math.max(0, slots - 3));
+  const upcoming = between.slice(0, upcomingCount);
+  return { visible: [today, ...upcoming, terminal], collapsed: true, showEllipsis: slots > 2 };
 };
 
 /**
@@ -156,11 +166,15 @@ const AllEventsModal = ({
   events,
   fmt,
   label,
+  displayMode,
+  dateForYear,
   onClose,
 }: {
   events: readonly RunwayEvent[];
   fmt: CurrencyFormatter;
   label: (e: RunwayEvent) => string;
+  displayMode: DateDisplayMode;
+  dateForYear: (year: number) => number;
   onClose: () => void;
 }) => {
   const { t } = useTranslation();
@@ -169,7 +183,7 @@ const AllEventsModal = ({
       <table className="runway-table">
         <thead>
           <tr>
-            <th>{t('runway.colYear')}</th>
+            <th>{t(displayMode === 'age' ? 'runway.colAge' : 'runway.colYear')}</th>
             <th>{t('runway.colEvent')}</th>
             <th className="runway-table__amount">{t('runway.colAmount')}</th>
           </tr>
@@ -177,7 +191,7 @@ const AllEventsModal = ({
         <tbody>
           {events.map((e) => (
             <tr key={e.id}>
-              <td>{e.year}</td>
+              <td>{dateForYear(e.year)}</td>
               <td>{label(e)}</td>
               <td className="runway-table__amount">
                 {e.amount != null ? fmt.compact(e.amount) : '—'}
@@ -202,6 +216,7 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
   const fmt = useCurrencyFormatter(plan.currency);
   const label = useEventLabel(fmt);
   const [showAll, setShowAll] = useState(false);
+  const [displayMode, setDisplayMode] = useState<DateDisplayMode>('year');
   const openModal = useAppStore((s) => s.openModal);
   const openPaywall = useAppStore((s) => s.openPaywall);
   const maxAssets = useLimit('maxAssets');
@@ -211,6 +226,11 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
     [plan, projection.active, monteCarlo.result],
   );
   const { containerRef, visible, showEllipsis } = useVisibleRunwayEvents(events);
+
+  const canShowAge = plan.settings.currentAge > 0;
+  const showAge = canShowAge && displayMode === 'age';
+  const dateForYear = (year: number): number =>
+    showAge ? (ageInYear(plan.settings.currentAge, projection.startYear, year) ?? year) : year;
 
   if (plan.holdings.length === 0) {
     const onAddAsset = () =>
@@ -233,11 +253,39 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
   if (events.length <= 1) return null; // nothing meaningful beyond "today"
 
   const currentYear = new Date().getFullYear();
+  const portfolioRunsDry = events.some((event) => event.kind === 'portfolio-dry');
 
   return (
-    <section className={cn('runway', className)} aria-label={t('runway.title')}>
+    <section
+      className={cn('runway', className, portfolioRunsDry && 'hero__card--risk')}
+      aria-label={t('runway.title')}
+    >
       <div className="runway__head">
         <span className="runway__title">{t('runway.title')}</span>
+        {canShowAge && (
+          <span
+            className="gs-unit-toggle runway__display-toggle"
+            role="group"
+            aria-label={t('runway.displayModeLabel')}
+          >
+            <button
+              type="button"
+              className={displayMode === 'year' ? 'is-active' : ''}
+              aria-pressed={displayMode === 'year'}
+              onClick={() => setDisplayMode('year')}
+            >
+              {t('runway.yearMode')}
+            </button>
+            <button
+              type="button"
+              className={displayMode === 'age' ? 'is-active' : ''}
+              aria-pressed={displayMode === 'age'}
+              onClick={() => setDisplayMode('age')}
+            >
+              {t('runway.ageMode')}
+            </button>
+          </span>
+        )}
       </div>
       <div className="runway__scroll" ref={containerRef}>
         <ul className="runway__track">
@@ -248,6 +296,15 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
               fmt={fmt}
               label={label(e)}
               isPast={e.year < currentYear}
+              displayedDate={dateForYear(e.year)}
+              displayedRange={
+                e.mcRange
+                  ? {
+                      low: dateForYear(e.mcRange.lowYear),
+                      high: dateForYear(e.mcRange.highYear),
+                    }
+                  : undefined
+              }
               ellipsisBefore={showEllipsis && i === visible.length - 1}
             />
           ))}
@@ -258,7 +315,14 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
       </button>
 
       {showAll && (
-        <AllEventsModal events={events} fmt={fmt} label={label} onClose={() => setShowAll(false)} />
+        <AllEventsModal
+          events={events}
+          fmt={fmt}
+          label={label}
+          displayMode={displayMode}
+          dateForYear={dateForYear}
+          onClose={() => setShowAll(false)}
+        />
       )}
     </section>
   );

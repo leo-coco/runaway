@@ -150,360 +150,366 @@ const emptyPlan = (name: string, freeDemo = false, preferredResidence?: Country)
 const isDefaultBase = (a: Account): boolean =>
   a.custom === false && a.kind === 'taxable' && a.taxMode === 'auto';
 
-export const createPlansSlice: StateCreator<PlansSlice, [], [], PlansSlice> = (set, get) => ({
-  plans: [createSeedPlan()],
+export const createPlansSlice =
+  (initialPlans: Plan[] = [createSeedPlan()]): StateCreator<PlansSlice, [], [], PlansSlice> =>
+  (set, get) => ({
+    plans: initialPlans,
 
-  hydratePlans: (plans) => set({ plans }),
+    hydratePlans: (plans) => set({ plans }),
 
-  createPlan: (name = 'Untitled plan', freeDemo = false, residenceCountry) => {
-    const plan = emptyPlan(name, freeDemo, residenceCountry);
-    set((s) => ({ plans: [...s.plans, plan] }));
-    return plan.id;
-  },
+    createPlan: (name = 'Untitled plan', freeDemo = false, residenceCountry) => {
+      const plan = emptyPlan(name, freeDemo, residenceCountry);
+      set((s) => ({ plans: [...s.plans, plan] }));
+      return plan.id;
+    },
 
-  duplicatePlan: (id) => {
-    const source = get().plans.find((p) => p.id === id);
-    if (!source) return null;
-    const now = new Date().toISOString();
-    const copy: Plan = {
-      ...source,
-      id: newId(),
-      name: `${source.name} (copy)`,
-      holdings: source.holdings.map((h) => ({ ...h, id: newId() })),
-      createdAt: now,
-      updatedAt: now,
-    };
-    set((s) => ({ plans: [...s.plans, copy] }));
-    return copy.id;
-  },
+    duplicatePlan: (id) => {
+      const source = get().plans.find((p) => p.id === id);
+      if (!source) return null;
+      const now = new Date().toISOString();
+      const copy: Plan = {
+        ...source,
+        id: newId(),
+        name: `${source.name} (copy)`,
+        holdings: source.holdings.map((h) => ({ ...h, id: newId() })),
+        createdAt: now,
+        updatedAt: now,
+      };
+      set((s) => ({ plans: [...s.plans, copy] }));
+      return copy.id;
+    },
 
-  deletePlan: (id) => set((s) => ({ plans: s.plans.filter((p) => p.id !== id) })),
+    deletePlan: (id) => set((s) => ({ plans: s.plans.filter((p) => p.id !== id) })),
 
-  renamePlan: (id, name, description) =>
-    set((s) => ({
-      plans: s.plans.map((p) => (p.id === id ? touch(p, (x) => ({ ...x, name, description })) : p)),
-    })),
+    renamePlan: (id, name, description) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === id ? touch(p, (x) => ({ ...x, name, description })) : p,
+        ),
+      })),
 
-  setPlanCurrency: (id, currency) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === id
-          ? touch(p, (x) => {
-              // Currency implies a tax residence; re-point the sole default base
-              // account to the new country (keep its id so holdings stay assigned).
-              const residenceCountry = residenceForCurrency(currency);
-              const sole = x.accounts.length === 1 ? x.accounts[0] : undefined;
-              const accounts =
-                sole && isDefaultBase(sole)
-                  ? [{ ...sole, ...BASE_TAXABLE_PRESET[residenceCountry] }]
-                  : x.accounts;
-              return { ...x, currency, residenceCountry, accounts };
-            })
-          : p,
-      ),
-    })),
+    setPlanCurrency: (id, currency) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === id
+            ? touch(p, (x) => {
+                // Currency implies a tax residence; re-point the sole default base
+                // account to the new country (keep its id so holdings stay assigned).
+                const residenceCountry = residenceForCurrency(currency);
+                const sole = x.accounts.length === 1 ? x.accounts[0] : undefined;
+                const accounts =
+                  sole && isDefaultBase(sole)
+                    ? [{ ...sole, ...BASE_TAXABLE_PRESET[residenceCountry] }]
+                    : x.accounts;
+                return { ...x, currency, residenceCountry, accounts };
+              })
+            : p,
+        ),
+      })),
 
-  addHolding: (planId, holding) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => {
-              // Auto-assign to the sole account so tax is modelled without manual steps.
-              const sole = x.accounts.length === 1 ? x.accounts[0]!.id : null;
-              const h =
-                holding.accountId == null && sole ? { ...holding, accountId: sole } : holding;
-              return { ...x, holdings: [...x.holdings, h] };
-            })
-          : p,
-      ),
-    })),
+    addHolding: (planId, holding) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => {
+                // Auto-assign to the sole account so tax is modelled without manual steps.
+                const sole = x.accounts.length === 1 ? x.accounts[0]!.id : null;
+                const h =
+                  holding.accountId == null && sole ? { ...holding, accountId: sole } : holding;
+                return { ...x, holdings: [...x.holdings, h] };
+              })
+            : p,
+        ),
+      })),
 
-  updateHolding: (planId, holdingId, patch) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              holdings: x.holdings.map((h) => (h.id === holdingId ? { ...h, ...patch } : h)),
-            }))
-          : p,
-      ),
-    })),
-
-  removeHolding: (planId, holdingId) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({ ...x, holdings: x.holdings.filter((h) => h.id !== holdingId) }))
-          : p,
-      ),
-    })),
-
-  addAccount: (planId, preset) => {
-    let accountId = '';
-    set((s) => ({
-      plans: s.plans.map((p) => {
-        if (p.id !== planId) return p;
-        const account = accountFromPreset(preset, p.residenceCountry ?? 'US');
-        accountId = account.id;
-        return touch(p, (x) => ({
-          ...x,
-          accounts: [...x.accounts, account],
-          // Append the new account to the end of the draw-down order.
-          withdrawalOrder: [...x.withdrawalOrder, account.id],
-        }));
-      }),
-    }));
-    return accountId;
-  },
-
-  updateAccount: (planId, accountId, patch) =>
-    set((s) => {
-      // Single write choke point for account tax fields: clamp out-of-range
-      // percents (e.g. costBasisPct 250) before they reach the engines.
-      const clean = sanitizeAccountTaxFields(patch);
-      return {
+    updateHolding: (planId, holdingId, patch) =>
+      set((s) => ({
         plans: s.plans.map((p) =>
           p.id === planId
             ? touch(p, (x) => ({
                 ...x,
-                accounts: x.accounts.map((a) => (a.id === accountId ? { ...a, ...clean } : a)),
+                holdings: x.holdings.map((h) => (h.id === holdingId ? { ...h, ...patch } : h)),
               }))
             : p,
         ),
-      };
-    }),
+      })),
 
-  removeAccount: (planId, accountId) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        // A plan always keeps at least one account, so holdings never end up
-        // orphaned by deleting the last envelope.
-        p.id === planId && p.accounts.length > 1
-          ? touch(p, (x) => ({
-              ...x,
-              accounts: x.accounts.filter((a) => a.id !== accountId),
-              withdrawalOrder: x.withdrawalOrder.filter((id) => id !== accountId),
-              // Unassign holdings that referenced the removed account.
-              holdings: x.holdings.map((h) =>
-                h.accountId === accountId ? { ...h, accountId: null } : h,
-              ),
-            }))
-          : p,
-      ),
-    })),
+    removeHolding: (planId, holdingId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({ ...x, holdings: x.holdings.filter((h) => h.id !== holdingId) }))
+            : p,
+        ),
+      })),
 
-  setWithdrawalOrder: (planId, order) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId ? touch(p, (x) => ({ ...x, withdrawalOrder: order })) : p,
-      ),
-    })),
+    addAccount: (planId, preset) => {
+      let accountId = '';
+      set((s) => ({
+        plans: s.plans.map((p) => {
+          if (p.id !== planId) return p;
+          const account = accountFromPreset(preset, p.residenceCountry ?? 'US');
+          accountId = account.id;
+          return touch(p, (x) => ({
+            ...x,
+            accounts: [...x.accounts, account],
+            // Append the new account to the end of the draw-down order.
+            withdrawalOrder: [...x.withdrawalOrder, account.id],
+          }));
+        }),
+      }));
+      return accountId;
+    },
 
-  setResidenceCountry: (planId, country) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              residenceCountry: country,
-              // Switching to Canada needs a province for the combined brackets.
-              residenceProvince:
-                country === 'CA' ? (x.residenceProvince ?? DEFAULT_PROVINCE) : x.residenceProvince,
-            }))
-          : p,
-      ),
-    })),
-
-  setAllResidenceCountries: (country) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        touch(p, (x) => ({
-          ...x,
-          residenceCountry: country,
-          residenceProvince:
-            country === 'CA' ? (x.residenceProvince ?? DEFAULT_PROVINCE) : x.residenceProvince,
-        })),
-      ),
-    })),
-
-  setResidenceProvince: (planId, province) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId ? touch(p, (x) => ({ ...x, residenceProvince: province })) : p,
-      ),
-    })),
-
-  setCorrelation: (planId, holdingIdA, holdingIdB, value) =>
-    set((s) => ({
-      plans: s.plans.map((p) => {
-        if (p.id !== planId) return p;
-        const key = [holdingIdA, holdingIdB].sort().join('|');
-        const clamped = Math.min(1, Math.max(-1, value));
-        return touch(p, (x) => ({
-          ...x,
-          correlationOverrides: { ...(x.correlationOverrides ?? {}), [key]: clamped },
-        }));
+    updateAccount: (planId, accountId, patch) =>
+      set((s) => {
+        // Single write choke point for account tax fields: clamp out-of-range
+        // percents (e.g. costBasisPct 250) before they reach the engines.
+        const clean = sanitizeAccountTaxFields(patch);
+        return {
+          plans: s.plans.map((p) =>
+            p.id === planId
+              ? touch(p, (x) => ({
+                  ...x,
+                  accounts: x.accounts.map((a) => (a.id === accountId ? { ...a, ...clean } : a)),
+                }))
+              : p,
+          ),
+        };
       }),
-    })),
 
-  resetCorrelations: (planId) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId ? touch(p, (x) => ({ ...x, correlationOverrides: {} })) : p,
-      ),
-    })),
-
-  updateSettings: (planId, settings) =>
-    set((s) => ({
-      plans: s.plans.map((p) => (p.id === planId ? touch(p, (x) => ({ ...x, settings })) : p)),
-    })),
-
-  updateScenario: (planId, scenario) =>
-    set((s) => ({
-      plans: s.plans.map((p) => (p.id === planId ? touch(p, (x) => ({ ...x, scenario })) : p)),
-    })),
-
-  setHome: (planId, home) =>
-    set((s) => ({
-      plans: s.plans.map((p) => (p.id === planId ? touch(p, (x) => ({ ...x, home })) : p)),
-    })),
-
-  removeHome: (planId) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => {
-              const { home: _removed, ...rest } = x;
-              return rest;
-            })
-          : p,
-      ),
-    })),
-
-  addExpenseIncome: (planId, data) => {
-    const expense: ExpenseIncome = { ...data, id: newId() };
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              settings: {
-                ...x.settings,
-                // New flow goes to the top of the list so it's immediately visible.
-                expensesIncomes: [expense, ...(x.settings.expensesIncomes ?? [])],
-              },
-            }))
-          : p,
-      ),
-    }));
-    return expense.id;
-  },
-
-  updateExpenseIncome: (planId, expenseId, patch) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              settings: {
-                ...x.settings,
-                expensesIncomes: (x.settings.expensesIncomes ?? []).map((e) =>
-                  e.id === expenseId ? { ...e, ...patch } : e,
+    removeAccount: (planId, accountId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          // A plan always keeps at least one account, so holdings never end up
+          // orphaned by deleting the last envelope.
+          p.id === planId && p.accounts.length > 1
+            ? touch(p, (x) => ({
+                ...x,
+                accounts: x.accounts.filter((a) => a.id !== accountId),
+                withdrawalOrder: x.withdrawalOrder.filter((id) => id !== accountId),
+                // Unassign holdings that referenced the removed account.
+                holdings: x.holdings.map((h) =>
+                  h.accountId === accountId ? { ...h, accountId: null } : h,
                 ),
-              },
-            }))
-          : p,
-      ),
-    })),
+              }))
+            : p,
+        ),
+      })),
 
-  removeExpenseIncome: (planId, expenseId) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              settings: {
-                ...x.settings,
-                expensesIncomes: (x.settings.expensesIncomes ?? []).filter(
-                  (e) => e.id !== expenseId,
-                ),
-              },
-            }))
-          : p,
-      ),
-    })),
+    setWithdrawalOrder: (planId, order) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId ? touch(p, (x) => ({ ...x, withdrawalOrder: order })) : p,
+        ),
+      })),
 
-  setRmdEnabled: (planId, enabled) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({ ...x, settings: { ...x.settings, rmdEnabled: enabled } }))
-          : p,
-      ),
-    })),
+    setResidenceCountry: (planId, country) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                residenceCountry: country,
+                // Switching to Canada needs a province for the combined brackets.
+                residenceProvince:
+                  country === 'CA'
+                    ? (x.residenceProvince ?? DEFAULT_PROVINCE)
+                    : x.residenceProvince,
+              }))
+            : p,
+        ),
+      })),
 
-  addConversion: (planId) => {
-    const plan = get().plans.find((p) => p.id === planId);
-    if (!plan) return null;
-    const deferred = plan.accounts.find((a) => (a.kind ?? 'taxable') === 'tax_deferred');
-    const dest =
-      plan.accounts.find((a) => (a.kind ?? 'taxable') === 'tax_free') ??
-      plan.accounts.find((a) => a.id !== deferred?.id);
-    if (!deferred || !dest) return null;
-    const conversion: ConversionPlan = {
-      id: newId(),
-      fromAccountId: deferred.id,
-      toAccountId: dest.id,
-      annualAmount: 30_000,
-      startAge: 65,
-      endAge: 72,
-    };
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              settings: {
-                ...x.settings,
-                conversions: [...(x.settings.conversions ?? []), conversion],
-              },
-            }))
-          : p,
-      ),
-    }));
-    return conversion.id;
-  },
+    setAllResidenceCountries: (country) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          touch(p, (x) => ({
+            ...x,
+            residenceCountry: country,
+            residenceProvince:
+              country === 'CA' ? (x.residenceProvince ?? DEFAULT_PROVINCE) : x.residenceProvince,
+          })),
+        ),
+      })),
 
-  updateConversion: (planId, conversionId, patch) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              settings: {
-                ...x.settings,
-                conversions: (x.settings.conversions ?? []).map((c) =>
-                  c.id === conversionId ? { ...c, ...patch } : c,
-                ),
-              },
-            }))
-          : p,
-      ),
-    })),
+    setResidenceProvince: (planId, province) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId ? touch(p, (x) => ({ ...x, residenceProvince: province })) : p,
+        ),
+      })),
 
-  removeConversion: (planId, conversionId) =>
-    set((s) => ({
-      plans: s.plans.map((p) =>
-        p.id === planId
-          ? touch(p, (x) => ({
-              ...x,
-              settings: {
-                ...x.settings,
-                conversions: (x.settings.conversions ?? []).filter((c) => c.id !== conversionId),
-              },
-            }))
-          : p,
-      ),
-    })),
-});
+    setCorrelation: (planId, holdingIdA, holdingIdB, value) =>
+      set((s) => ({
+        plans: s.plans.map((p) => {
+          if (p.id !== planId) return p;
+          const key = [holdingIdA, holdingIdB].sort().join('|');
+          const clamped = Math.min(1, Math.max(-1, value));
+          return touch(p, (x) => ({
+            ...x,
+            correlationOverrides: { ...(x.correlationOverrides ?? {}), [key]: clamped },
+          }));
+        }),
+      })),
+
+    resetCorrelations: (planId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId ? touch(p, (x) => ({ ...x, correlationOverrides: {} })) : p,
+        ),
+      })),
+
+    updateSettings: (planId, settings) =>
+      set((s) => ({
+        plans: s.plans.map((p) => (p.id === planId ? touch(p, (x) => ({ ...x, settings })) : p)),
+      })),
+
+    updateScenario: (planId, scenario) =>
+      set((s) => ({
+        plans: s.plans.map((p) => (p.id === planId ? touch(p, (x) => ({ ...x, scenario })) : p)),
+      })),
+
+    setHome: (planId, home) =>
+      set((s) => ({
+        plans: s.plans.map((p) => (p.id === planId ? touch(p, (x) => ({ ...x, home })) : p)),
+      })),
+
+    removeHome: (planId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => {
+                const { home: _removed, ...rest } = x;
+                return rest;
+              })
+            : p,
+        ),
+      })),
+
+    addExpenseIncome: (planId, data) => {
+      const expense: ExpenseIncome = { ...data, id: newId() };
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                settings: {
+                  ...x.settings,
+                  // New flow goes to the top of the list so it's immediately visible.
+                  expensesIncomes: [expense, ...(x.settings.expensesIncomes ?? [])],
+                },
+              }))
+            : p,
+        ),
+      }));
+      return expense.id;
+    },
+
+    updateExpenseIncome: (planId, expenseId, patch) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                settings: {
+                  ...x.settings,
+                  expensesIncomes: (x.settings.expensesIncomes ?? []).map((e) =>
+                    e.id === expenseId ? { ...e, ...patch } : e,
+                  ),
+                },
+              }))
+            : p,
+        ),
+      })),
+
+    removeExpenseIncome: (planId, expenseId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                settings: {
+                  ...x.settings,
+                  expensesIncomes: (x.settings.expensesIncomes ?? []).filter(
+                    (e) => e.id !== expenseId,
+                  ),
+                },
+              }))
+            : p,
+        ),
+      })),
+
+    setRmdEnabled: (planId, enabled) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({ ...x, settings: { ...x.settings, rmdEnabled: enabled } }))
+            : p,
+        ),
+      })),
+
+    addConversion: (planId) => {
+      const plan = get().plans.find((p) => p.id === planId);
+      if (!plan) return null;
+      const deferred = plan.accounts.find((a) => (a.kind ?? 'taxable') === 'tax_deferred');
+      const dest =
+        plan.accounts.find((a) => (a.kind ?? 'taxable') === 'tax_free') ??
+        plan.accounts.find((a) => a.id !== deferred?.id);
+      if (!deferred || !dest) return null;
+      const conversion: ConversionPlan = {
+        id: newId(),
+        fromAccountId: deferred.id,
+        toAccountId: dest.id,
+        annualAmount: 30_000,
+        startAge: 65,
+        endAge: 72,
+      };
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                settings: {
+                  ...x.settings,
+                  conversions: [...(x.settings.conversions ?? []), conversion],
+                },
+              }))
+            : p,
+        ),
+      }));
+      return conversion.id;
+    },
+
+    updateConversion: (planId, conversionId, patch) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                settings: {
+                  ...x.settings,
+                  conversions: (x.settings.conversions ?? []).map((c) =>
+                    c.id === conversionId ? { ...c, ...patch } : c,
+                  ),
+                },
+              }))
+            : p,
+        ),
+      })),
+
+    removeConversion: (planId, conversionId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                settings: {
+                  ...x.settings,
+                  conversions: (x.settings.conversions ?? []).filter((c) => c.id !== conversionId),
+                },
+              }))
+            : p,
+        ),
+      })),
+  });

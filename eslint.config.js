@@ -10,7 +10,7 @@ export default defineConfig([
   // (.claude/worktrees/*) that are full copies of this repo. Never lint into
   // them: a nested worktree's own tsconfig makes typescript-eslint see two
   // candidate roots and fail with a "multiple TSConfigRootDirs" parse error.
-  globalIgnores(['dist', 'coverage', '.claude']),
+  globalIgnores(['dist', 'coverage', '.claude', '.astro']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

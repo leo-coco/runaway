@@ -1,7 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/fr", "destination": "/", "permanent": true },
+    { "source": "/:lang(en|fr)/signin", "destination": "/:lang/app/signin", "permanent": true },
+    { "source": "/:lang(en|fr)/sign-in", "destination": "/:lang/app/signin", "permanent": true },
+    {
+      "source": "/:lang(en|fr)/reset-password",
+      "destination": "/:lang/app/reset-password",
+      "permanent": true
+    },
+    { "source": "/:lang(en|fr)/plan/:path*", "destination": "/:lang/app/plan/:path*", "permanent": true },
+    { "source": "/:lang(en|fr)/account", "destination": "/:lang/app/account", "permanent": true },
+    { "source": "/:lang(en|fr)/admin", "destination": "/:lang/app/admin", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...route]" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/:lang(en|fr)/app", "destination": "/app/index.html" },
+    { "source": "/:lang(en|fr)/app/(.*)", "destination": "/app/index.html" },
+    { "source": "/app", "destination": "/app/index.html" },
+    { "source": "/app/(.*)", "destination": "/app/index.html" }
   ]
 }

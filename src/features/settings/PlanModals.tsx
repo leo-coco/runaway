@@ -12,6 +12,7 @@ import { HomeModal } from './HomeModal';
 import { ConversionsModal } from './ConversionsModal';
 import { AddAssetDialog } from './AddAssetDialog';
 import type { RatesTable } from '@/services/currencyService';
+import { useAppMode } from '@/providers/AppModeContext';
 
 /** Renders whichever plan-level modal is currently open and wires it to the store. */
 export const PlanModals = ({
@@ -24,6 +25,7 @@ export const PlanModals = ({
   rates: RatesTable | undefined;
 }) => {
   const activeModal = useAppStore((s) => s.activeModal);
+  const { sandbox } = useAppMode();
   const closeModal = useAppStore((s) => s.closeModal);
   const renamePlan = useAppStore((s) => s.renamePlan);
   const updateSettings = useAppStore((s) => s.updateSettings);
@@ -109,6 +111,7 @@ export const PlanModals = ({
     case 'conversions':
       return <ConversionsModal plan={plan} onClose={closeModal} />;
     case 'addAsset':
+      if (sandbox) return null;
       return (
         <AddAssetDialog
           plan={plan}

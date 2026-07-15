@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { useSession } from '@/lib/authClient';
 import { CONTACT_SUBJECTS } from '@/domain/contact';
 import { createContactFormSchema, type ContactForm } from '@/schemas/contactSchema';
+import { useAppMode } from '@/providers/AppModeContext';
 
 interface Props {
   onClose: () => void;
@@ -15,7 +16,8 @@ interface Props {
 export const ContactModal = ({ onClose }: Props) => {
   const { t } = useTranslation();
   const { data: sessionData } = useSession();
-  const user = sessionData?.user;
+  const { sandbox } = useAppMode();
+  const user = sandbox ? undefined : sessionData?.user;
   const [failed, setFailed] = useState(false);
   const [sent, setSent] = useState(false);
   const contactFormSchema = useMemo(() => createContactFormSchema(t), [t]);

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import premiumMountain from '@/assets/premium-mountain.png';
+import premiumMountain from '@/assets/premium-mountain.png?url';
 import { useAppStore } from '@/store';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';

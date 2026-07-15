@@ -449,6 +449,7 @@ h4 {
 /* Wider than the base container so the assets table (min-width 1240px, incl. the
    trailing delete-button column) fits without horizontal scrolling. */
 .plan-main {
+  width: 100%;
   max-width: 1440px;
 }
 
@@ -1586,8 +1587,11 @@ h4 {
   background: var(--bg-card);
   box-shadow: var(--shadow-card);
 }
-.hero__card--risk {
-  border: 2px solid var(--danger, #f43f5e);
+.hero__card--risk,
+.runway.hero__card--risk {
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--danger, #f43f5e);
 }
 @media (max-width: 720px) {
   .hero {
@@ -5651,10 +5655,6 @@ th[title] {
   color: var(--text-dim);
   white-space: nowrap;
 }
-.flow-slider {
-  width: 100%;
-  margin: 2px 0 0;
-}
 .flow-inflation {
   display: flex;
   align-items: center;
@@ -6290,7 +6290,14 @@ th[title] {
   flex: 1;
 }
 .runway__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 14px;
+}
+.runway__display-toggle {
+  flex-shrink: 0;
 }
 .runway__title {
   font-size: var(--fs-body);

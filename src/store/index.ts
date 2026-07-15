@@ -5,8 +5,13 @@ import { createUiSlice, type UiSlice } from './uiSlice';
 import type { Plan } from '@/domain/plan';
 import { sanitizeAccountTaxFields } from '@/domain/account';
 import { DEFAULT_PROVINCE } from '@/domain/country';
+import { isSandboxPathname, planStorageKeyForPathname } from './planStorage';
+import { createSandboxPlan } from './seed';
 
 export type AppStore = PlansSlice & UiSlice;
+
+const currentPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
+const sandboxMode = isSandboxPathname(currentPathname);
 
 /**
  * Persisted-plan schema version. Shared by the localStorage `persist` config and
@@ -14,6 +19,27 @@ export type AppStore = PlansSlice & UiSlice;
  * agree on which migration a stored plan needs.
  */
 export const PLANS_SCHEMA_VERSION = 11;
+
+const initialPlans = sandboxMode
+  ? [createSandboxPlan(currentPathname.startsWith('/fr/') ? 'fr' : 'en')]
+  : undefined;
+
+// Persist the generated seed before Zustand hydrates it. Persist middleware only
+// writes after a mutation, which would otherwise generate a new plan id on every
+// reload when the dedicated Sandbox key is still empty.
+if (sandboxMode && initialPlans && typeof window !== 'undefined') {
+  const sandboxStorageKey = planStorageKeyForPathname(currentPathname);
+  try {
+    if (localStorage.getItem(sandboxStorageKey) === null) {
+      localStorage.setItem(
+        sandboxStorageKey,
+        JSON.stringify({ state: { plans: initialPlans }, version: PLANS_SCHEMA_VERSION }),
+      );
+    }
+  } catch {
+    // The Sandbox still works in-memory if browser storage is unavailable.
+  }
+}
 
 /**
  * Backfill fields added after a plan was first persisted, so older saved plans
@@ -104,15 +130,25 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
 export const useAppStore = create<AppStore>()(
   persist(
     (...a) => ({
-      ...createPlansSlice(...a),
+      ...createPlansSlice(initialPlans)(...a),
       ...createUiSlice(...a),
     }),
     {
-      name: 'runaway/plans',
+      // The sandbox uses its own persisted plans. Opening it from an active
+      // account can therefore never expose or mutate that account's local copy.
+      name: planStorageKeyForPathname(currentPathname),
       version: PLANS_SCHEMA_VERSION,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ plans: state.plans }),
       migrate: (persisted) => migratePersisted(persisted),
+      merge: (persisted, current) => {
+        const stored = persisted as Partial<AppStore>;
+        return {
+          ...current,
+          ...stored,
+          plans: Array.isArray(stored.plans) ? stored.plans : current.plans,
+        };
+      },
     },
   ),
 );

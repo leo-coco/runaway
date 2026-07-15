@@ -6,6 +6,7 @@ import type { AssetClass } from '@/domain/assetClass';
 import { DEFAULT_RETIREMENT_SETTINGS } from '@/domain/retirementSettings';
 import { DEFAULT_SCENARIO_CONFIG } from '@/domain/scenario';
 import { newId } from '@/lib/id';
+import { defaultFreeAccount } from '@/domain/account';
 
 interface SeedSpec {
   id: string;
@@ -143,12 +144,77 @@ export const createSeedPlan = (): Plan => {
   return {
     id: newId(),
     name: 'My plan',
-    description: 'My planffefef',
+    description: '',
     currency: 'USD',
     holdings: SEED_HOLDINGS.map((s) => toHolding(s, idByKey[seedAccountKey(s)])),
     accounts,
     withdrawalOrder: accounts.map((a) => a.id),
     settings: { ...DEFAULT_RETIREMENT_SETTINGS, retirementYear: 2033 },
+    scenario: { ...DEFAULT_SCENARIO_CONFIG },
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
+/** Minimal guest plan shown when someone opens the isolated Sandbox. */
+export const createSandboxPlan = (lang: 'en' | 'fr'): Plan => {
+  const now = new Date().toISOString();
+  const account = {
+    ...defaultFreeAccount(),
+    name: lang === 'fr' ? 'Mon compte' : 'My account',
+  };
+  const holdings: Holding[] = [
+    {
+      id: newId(),
+      instrument: {
+        id: 'yahoo:VOO',
+        symbol: 'VOO',
+        name: 'Vanguard S&P 500 ETF',
+        assetClass: 'us_equity',
+        exchange: 'NYSE Arca',
+        nativeCurrency: 'USD',
+      },
+      quantity: 100,
+      pricePerUnit: 500,
+      costBasis: 95,
+      expectedCagrPct: 5,
+      monthlyContribution: 100,
+      accountId: account.id,
+    },
+    {
+      id: newId(),
+      instrument: {
+        id: 'coingecko:bitcoin',
+        symbol: 'BTC',
+        name: 'Bitcoin',
+        assetClass: 'crypto',
+        exchange: 'Crypto',
+        nativeCurrency: 'USD',
+      },
+      quantity: 2,
+      pricePerUnit: 50_000,
+      costBasis: 45_000,
+      expectedCagrPct: 6,
+      monthlyContribution: 0,
+      accountId: account.id,
+    },
+  ];
+
+  return {
+    id: newId(),
+    name: lang === 'fr' ? 'Ma retraite' : 'My retirement',
+    description: '',
+    currency: 'USD',
+    holdings,
+    accounts: [account],
+    withdrawalOrder: [account.id],
+    residenceCountry: 'US',
+    settings: {
+      ...DEFAULT_RETIREMENT_SETTINGS,
+      retirementYear: new Date().getFullYear() + 20,
+      lifeExpectancyAge: 85,
+      annualSpending: 2_500 * 12,
+    },
     scenario: { ...DEFAULT_SCENARIO_CONFIG },
     createdAt: now,
     updatedAt: now,

@@ -11,6 +11,7 @@ import {
   PaletteIcon,
   SunIcon,
 } from '@/components/icons';
+import { useAppMode } from '@/providers/AppModeContext';
 
 type AppearanceOption = { value: Theme; labelKey: string; Icon: typeof SunIcon };
 
@@ -28,6 +29,7 @@ const APPEARANCE_OPTIONS: AppearanceOption[] = [
 export const SettingsMenu = () => {
   const { t, i18n } = useTranslation();
   const { data: sessionData } = useSession();
+  const { sandbox } = useAppMode();
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
   const [submenu, setSubmenu] = useState<'appearance' | 'language' | null>(null);
@@ -36,12 +38,16 @@ export const SettingsMenu = () => {
   const ResolvedIcon = resolveTheme(theme) === 'dark' ? MoonIcon : SunIcon;
 
   const selectLanguage = async (language: Lang) => {
-    if (sessionData?.user) {
+    if (!sandbox && sessionData?.user) {
       const { error } = await authClient.updateUser({ language });
       if (error) console.error('[language] failed to save user preference', error);
     }
-    const localizedPath = window.location.pathname.replace(/^\/(?:en|fr)(?=\/|$)/, `/${language}`);
-    window.location.replace(`${localizedPath}${window.location.search}${window.location.hash}`);
+    await i18n.changeLanguage(language);
+    const localizedPath = window.location.pathname.replace(
+      /^\/(?:en|fr)(?=\/app(?:\/|$))/,
+      `/${language}`,
+    );
+    window.location.assign(`${localizedPath}${window.location.search}${window.location.hash}`);
   };
 
   return (

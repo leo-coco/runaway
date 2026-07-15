@@ -17,7 +17,7 @@ export const INCOME_COLOR = 'var(--success, #34d399)';
 
 export const clamp = (n: number, lo: number, hi: number): number => Math.min(Math.max(n, lo), hi);
 
-/** A year Stepper + slider with a "in X years (age N)" read-out — shared by the
+/** A year Stepper with a "in X years (age N)" read-out — shared by the
  *  one-time Year field and the recurring Start/End Year fields. */
 export const YearField = ({
   label,
@@ -27,7 +27,6 @@ export const YearField = ({
   max,
   currentYear,
   currentAge,
-  color,
   onChange,
 }: {
   label: string;
@@ -37,7 +36,6 @@ export const YearField = ({
   max: number;
   currentYear: number;
   currentAge: number;
-  color: string;
   onChange: (year: number) => void;
 }) => {
   const { t } = useTranslation();
@@ -58,17 +56,6 @@ export const YearField = ({
         step={1}
         value={value}
         onChange={onChange}
-      />
-      <input
-        type="range"
-        className="flow-slider"
-        min={min}
-        max={Math.max(min + 1, max)}
-        step={1}
-        value={value}
-        style={{ accentColor: color }}
-        aria-label={ariaLabel}
-        onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
   );
@@ -129,7 +116,6 @@ export const ExpenseIncomeFields = ({
   const fmt = useCurrencyFormatter(currency);
   const isIncome = draft.kind === 'income';
   const isRecurring = draft.frequency === 'recurring';
-  const color = isIncome ? INCOME_COLOR : EXPENSE_COLOR;
   const endYr = draft.endYear;
 
   const setStart = (y: number) => {
@@ -288,7 +274,6 @@ export const ExpenseIncomeFields = ({
               max={maxYear}
               currentYear={currentYear}
               currentAge={currentAge}
-              color={color}
               onChange={setStart}
             />
             <YearField
@@ -299,7 +284,6 @@ export const ExpenseIncomeFields = ({
               max={maxYear}
               currentYear={currentYear}
               currentAge={currentAge}
-              color={color}
               onChange={setEnd}
             />
           </>
@@ -312,7 +296,6 @@ export const ExpenseIncomeFields = ({
             max={Math.max(currentYear, maxYear)}
             currentYear={currentYear}
             currentAge={currentAge}
-            color={color}
             onChange={(v) => onChange({ year: v })}
           />
         )}
