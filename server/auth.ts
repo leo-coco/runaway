@@ -1,8 +1,9 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from './db/client.js';
-import { authSchema } from './db/schema.js';
+import { authSchema, verification } from './db/schema.js';
 import { serverEnv } from './env.js';
 import { sendResetPasswordEmail, sendVerificationEmail } from './email.js';
 
@@ -30,9 +31,25 @@ export const auth = betterAuth({
         input: true,
         validator: { input: z.enum(['en', 'fr']) },
       },
+      taxResidence: {
+        type: 'string',
+        required: false,
+        defaultValue: 'US',
+        input: true,
+        validator: { input: z.enum(['FR', 'US', 'CA']) },
+      },
       role: { type: 'string', required: false, defaultValue: 'user', input: false },
       tier: { type: 'string', required: false, defaultValue: 'free', input: false },
       premiumUntil: { type: 'date', required: false, input: false },
+    },
+    // Foreign keys cascade to plans, sessions and login accounts. Password-reset
+    // verification rows use the user id as a value rather than a foreign key, so
+    // remove them explicitly as part of the same account-deletion operation.
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        await db.delete(verification).where(eq(verification.value, user.id));
+      },
     },
   },
   emailAndPassword: {

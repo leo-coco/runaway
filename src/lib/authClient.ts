@@ -11,6 +11,7 @@ export const authClient = createAuthClient({
     inferAdditionalFields({
       user: {
         language: { type: 'string', input: true },
+        taxResidence: { type: 'string', input: true },
       },
     }),
   ],

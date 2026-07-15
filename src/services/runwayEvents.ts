@@ -294,15 +294,27 @@ export const buildRunwayEvents = (
     });
   }
 
-  // Once the portfolio runs dry, it's the terminal waypoint — nothing after it matters.
-  const depletionYear = projection.depletionYear;
-  const visible =
-    depletionYear !== null
-      ? events.filter((e) => e.kind === 'portfolio-dry' || e.year <= depletionYear)
-      : events;
+  // The runway starts today and ends at the first terminal point: portfolio dry
+  // when applicable, otherwise the end-of-life projection. Discard stale
+  // flows before today and any event beyond the terminal year.
+  const terminalYear = projection.depletionYear ?? endYear;
+  const terminalKind: RunwayEventKind =
+    projection.depletionYear === null ? 'projection-end' : 'portfolio-dry';
+  const withinRunway = events.filter(
+    (event) => event.year >= baseYear && event.year <= terminalYear,
+  );
 
-  // Stable sort by year (Array.prototype.sort is stable in modern engines).
-  return visible.sort((a, b) => a.year - b.year);
+  // Keep Today first and the terminal marker last when events share a year.
+  // Array.prototype.sort is stable in modern engines, so all other same-year
+  // markers retain their meaningful construction order.
+  return withinRunway.sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    if (a.kind === 'today') return -1;
+    if (b.kind === 'today') return 1;
+    if (a.kind === terminalKind) return 1;
+    if (b.kind === terminalKind) return -1;
+    return 0;
+  });
 };
 
 /** Convenience for renderers: the icon component for an event. */

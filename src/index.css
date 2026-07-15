@@ -369,6 +369,9 @@ h4 {
 }
 .app-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* ---------- app footer ---------- */
@@ -1284,6 +1287,109 @@ h4 {
 }
 .card--pad {
   padding: 16px;
+}
+
+/* ---------- account ---------- */
+.account-page {
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+.account-card {
+  margin-top: 20px;
+}
+.account-card__head h2,
+.account-danger h2 {
+  font-size: var(--fs-xl);
+}
+.account-card__head p,
+.account-danger p {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  margin-top: 4px;
+}
+.account-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+  margin-top: 22px;
+}
+.account-form-grid .field:last-child {
+  grid-column: 1 / -1;
+}
+.account-form-grid .select,
+.account-form-grid .search-input {
+  width: 100%;
+}
+.account-form-grid input[readonly] {
+  cursor: default;
+  color: var(--text-muted);
+  background: var(--bg-elev);
+}
+.account-card__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.account-success {
+  color: var(--success);
+  font-size: var(--fs-sm);
+}
+.account-card--danger {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--card-border));
+}
+.account-danger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+.account-danger__icon,
+.account-delete-warning svg {
+  color: var(--danger);
+}
+.account-danger__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.account-delete-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.account-delete-confirm {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--danger-contrast);
+}
+.account-delete-confirm:hover {
+  background: color-mix(in srgb, var(--danger) 86%, #000);
+}
+@media (max-width: 620px) {
+  .account-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .account-form-grid .field:last-child {
+    grid-column: auto;
+  }
+  .account-danger {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .account-danger .btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 }
 
 /* Gentle hover lift on the dashboard summary cards (design system signature).
@@ -5172,6 +5278,46 @@ th[title] {
   text-align: center;
   color: var(--text-muted);
 }
+.empty-plans {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vh, 40px) 24px;
+}
+.empty-plans__card {
+  width: min(100%, 480px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+.empty-plans__banner {
+  height: 180px;
+  background: #faf9f7;
+}
+.empty-plans__banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.empty-plans__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 32px 36px;
+  text-align: center;
+}
+.empty-plans__content h1 {
+  font-size: var(--fs-2xl);
+}
+.empty-plans__content p {
+  max-width: 300px;
+  margin: 10px 0 24px;
+  color: var(--text-muted);
+}
 .inline-alert {
   display: flex;
   gap: 10px;
@@ -5841,40 +5987,49 @@ th[title] {
 }
 .auth-verification-sent {
   display: flex;
-  min-height: 350px;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   text-align: center;
 }
 .auth-verification-sent__media {
   align-self: stretch;
+  flex: 0 0 160px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   background: #f8f6f2;
 }
 .auth-verification-sent__image {
   display: block;
-  width: 100%;
-  height: auto;
+  width: 140px;
+  max-width: calc(100% - 32px);
+  height: 140px;
+  max-height: calc(100% - 20px);
   margin: 0;
   object-fit: contain;
 }
+.auth-verification-sent__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 24px 36px;
+}
 .auth-verification-sent__message {
   max-width: 310px;
-  margin: 22px 24px 0;
+  margin: 0;
   color: #3e3933;
   font-size: var(--fs-md);
   line-height: 1.5;
 }
 .auth-verification-sent__email {
   max-width: 100%;
-  margin: 4px 24px 0;
+  margin: 4px 0 0;
   overflow-wrap: anywhere;
   color: #1c1917;
   font-weight: var(--fw-semibold);
 }
 .auth-verification-sent__hint {
   max-width: 330px;
-  margin: 16px 24px 28px;
+  margin: 16px 0 28px;
   color: #716b63;
   font-size: var(--fs-sm);
   line-height: 1.5;
@@ -5990,14 +6145,26 @@ th[title] {
   padding: 0;
   overflow: hidden;
 }
-.auth-screen__card--verification .auth-verification-sent {
-  min-height: 0;
-}
 .auth-screen__card--verification .auth-verification-sent__media {
   border-radius: 23px 23px 0 0;
 }
-.auth-screen__card--verification .auth-verification-sent > .link-btn {
-  margin-bottom: 36px;
+.auth-screen__card--reset {
+  padding: 0;
+  overflow: hidden;
+}
+.auth-screen__reset-banner {
+  height: 150px;
+  background: #faf9f7;
+}
+.auth-screen__reset-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+.auth-screen__reset-content {
+  padding: clamp(28px, 4vw, 44px);
 }
 .auth-screen__card-heading {
   margin-bottom: 30px;
@@ -6106,6 +6273,11 @@ th[title] {
 }
 .runway--hero .runway__scroll {
   flex: 1;
+  display: flex;
+  align-items: center;
+  /* Let the markers use a little of the card's horizontal gutter without
+     moving the title or the action link. */
+  margin-inline: -10px;
 }
 .runway__empty {
   display: flex;
@@ -6145,7 +6317,7 @@ th[title] {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  width: 96px;
+  width: 90px;
   flex: 0 0 auto;
   padding: 0 6px;
 }

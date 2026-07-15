@@ -14,7 +14,7 @@ const shell = (title: string, bodyHtml: string): string => `
   <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
     <h2 style="margin:0 0 16px">${title}</h2>
     ${bodyHtml}
-    <p style="color:#888;font-size:12px;margin-top:24px">Retire on Model</p>
+    <p style="color:#888;font-size:12px;margin-top:24px">Runaway</p>
   </div>`;
 
 /** The public asset is deliberately addressed from the canonical app URL: mail clients
@@ -29,15 +29,15 @@ const verificationEmail = (url: string, language: EmailLanguage): string => {
   const copy =
     language === 'fr'
       ? {
-          heroAlt: 'Une enveloppe Retire on Model',
+          heroAlt: 'Une enveloppe Runaway',
           title: 'Bienvenue !',
-          intro: 'Votre espace Retire on Model est presque prêt.',
+          intro: 'Votre espace Runaway est presque prêt.',
           body: 'Confirmez votre adresse email pour activer votre compte et commencer à préparer votre avenir financier.',
           action: 'Confirmer mon adresse email',
           note: 'Si vous n’avez pas créé de compte, vous pouvez ignorer cet email.',
         }
       : {
-          heroAlt: 'A Retire on Model envelope',
+          heroAlt: 'A Runaway envelope',
           title: 'Welcome!',
           intro: 'Your Runaway account is almost ready.',
           body: 'Confirm your email address to activate your account and start planning your financial future.',
@@ -71,14 +71,14 @@ const passwordResetEmail = (url: string, language: EmailLanguage): string => {
   const copy =
     language === 'fr'
       ? {
-          heroAlt: 'Un coffre Retire on Model ouvert',
+          heroAlt: 'Un coffre Runaway ouvert',
           title: 'Réinitialisez votre mot de passe',
           body: 'Nous avons reçu une demande de réinitialisation. Utilisez le bouton ci-dessous pour choisir un nouveau mot de passe sécurisé.',
           action: 'Réinitialiser mon mot de passe',
           note: 'Ce lien expire dans 1 heure. Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet email.',
         }
       : {
-          heroAlt: 'An open Retire on Model safe',
+          heroAlt: 'An open Runaway safe',
           title: 'Reset your password',
           body: 'We received a password-reset request. Use the button below to choose a new secure password.',
           action: 'Reset my password',
@@ -123,8 +123,8 @@ export const sendVerificationEmail = async (
     to,
     subject:
       locale === 'fr'
-        ? 'Bienvenue sur Retire on Model — confirmez votre adresse email'
-        : 'Welcome to Retire on Model — confirm your email address',
+        ? 'Bienvenue sur Runaway — confirmez votre adresse email'
+        : 'Welcome to Runaway — confirm your email address',
     html: verificationEmail(url, locale),
   });
   if (error) console.error('[email] verification email failed to send', { to, error });
@@ -141,8 +141,8 @@ export const sendResetPasswordEmail = async (
     to,
     subject:
       locale === 'fr'
-        ? 'Réinitialisez votre mot de passe — Retire on Model'
-        : 'Reset your password — Retire on Model',
+        ? 'Réinitialisez votre mot de passe — Runaway'
+        : 'Reset your password — Runaway',
     html: passwordResetEmail(url, locale),
   });
   if (error) console.error('[email] reset-password email failed to send', { to, error });

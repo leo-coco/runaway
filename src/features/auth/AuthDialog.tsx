@@ -27,12 +27,14 @@ export const VerificationSentPanel = ({ email, onComplete }: VerificationSentPan
       <div className="auth-verification-sent__media">
         <img className="auth-verification-sent__image" src="/verification-email-hero.png" alt="" />
       </div>
-      <p className="auth-verification-sent__message">{t('auth.verificationSentMessage')}</p>
-      <p className="auth-verification-sent__email">{email}</p>
-      <p className="auth-verification-sent__hint">{t('auth.verificationSentHint')}</p>
-      <button type="button" className="link-btn" onClick={onComplete}>
-        {t('auth.verificationComplete')}
-      </button>
+      <div className="auth-verification-sent__content">
+        <p className="auth-verification-sent__message">{t('auth.verificationSentMessage')}</p>
+        <p className="auth-verification-sent__email">{email}</p>
+        <p className="auth-verification-sent__hint">{t('auth.verificationSentHint')}</p>
+        <button type="button" className="link-btn" onClick={onComplete}>
+          {t('auth.verificationComplete')}
+        </button>
+      </div>
     </section>
   );
 };
@@ -74,7 +76,13 @@ export const AuthForm = ({
         const language = i18n.resolvedLanguage === 'fr' ? 'fr' : 'en';
         // Better Auth stores a required display name, so derive it from the e-mail.
         const displayName = email.trim().split('@')[0] || 'Member';
-        const { error } = await signUp.email({ email, password, name: displayName, language });
+        const { error } = await signUp.email({
+          email,
+          password,
+          name: displayName,
+          language,
+          taxResidence: 'US',
+        });
         if (error) throw new Error(error.message ?? t('auth.signUpFailed'));
         const normalizedEmail = email.trim();
         if (onVerificationSent) onVerificationSent(normalizedEmail);
