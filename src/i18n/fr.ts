@@ -1,6 +1,7 @@
 import type { Resources } from './en';
 
 export const fr: Resources = {
+  appTitle: 'Runaway - Préparez votre liberté',
   common: {
     cancel: 'Annuler',
     saveChanges: 'Enregistrer',

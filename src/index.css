@@ -320,7 +320,7 @@ h4 {
   z-index: 70;
   align-self: flex-start;
   height: 100vh;
-  width: 272px;
+  width: 245px;
   flex-shrink: 0;
   overflow-y: auto;
   display: flex;
@@ -638,7 +638,7 @@ h4 {
   gap: 10px;
   width: 100%;
   min-height: 38px;
-  padding: 6px 12px;
+  padding: 4px 6px;
   border: none;
   border-radius: 10px;
   background: transparent;
@@ -5475,11 +5475,9 @@ th[title] {
   margin-bottom: 14px;
 }
 .runway__title {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: var(--fs-body);
+  color: var(--text);
+  font-weight: 600;
 }
 .runway__scroll {
   overflow: hidden;

@@ -24,15 +24,24 @@ const initialLang = (): Lang => {
   return 'en';
 };
 
+const resources = {
+  en: { translation: en },
+  fr: { translation: fr },
+};
+
 void i18n.use(initReactI18next).init({
-  resources: {
-    en: { translation: en },
-    fr: { translation: fr },
-  },
+  resources,
   lng: initialLang(),
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
 });
+
+const setDocumentTitle = (lng: string) => {
+  document.title =
+    resources[lng as Lang]?.translation.appTitle ?? resources.en.translation.appTitle;
+};
+
+setDocumentTitle(i18n.language);
 
 i18n.on('languageChanged', (lng) => {
   try {
@@ -41,6 +50,7 @@ i18n.on('languageChanged', (lng) => {
   } catch {
     /* ignore */
   }
+  setDocumentTitle(lng);
 });
 
 export default i18n;

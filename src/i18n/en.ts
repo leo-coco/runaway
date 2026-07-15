@@ -1,4 +1,5 @@
 export const en = {
+  appTitle: "Runaway - Know when you're free",
   common: {
     cancel: 'Cancel',
     saveChanges: 'Save Changes',
