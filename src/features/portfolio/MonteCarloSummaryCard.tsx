@@ -4,7 +4,7 @@ import { successStatus, type SuccessZone } from '@/domain/successRate';
 import { useFeature } from '@/hooks/useEntitlements';
 import { useAppStore } from '@/store';
 import { ProBadge } from '@/features/billing/ProBadge';
-import { ShieldIcon, StarIcon } from '@/components/icons';
+import { StarIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { usePlanContext } from './PlanLayout';
 
@@ -12,12 +12,6 @@ const ZONE_COLOR: Record<SuccessZone, string> = {
   strong: 'var(--success)',
   borderline: 'var(--amber)',
   weak: 'var(--danger, #f43f5e)',
-};
-
-const BADGE_KEY: Record<SuccessZone, string> = {
-  strong: 'dashboard.mc.badgeStrong',
-  borderline: 'dashboard.mc.badgeBorderline',
-  weak: 'dashboard.mc.badgeWeak',
 };
 
 const TITLE_KEY: Record<SuccessZone, string> = {
@@ -73,10 +67,6 @@ export const MonteCarloSummaryCard = () => {
           <span className="mc-card__note">{t('dashboard.mc.noData')}</span>
         ) : sx ? (
           <>
-            <span className="mc-card__badge" style={{ color: ZONE_COLOR[sx.zone] }}>
-              <ShieldIcon size={16} />
-              {t(BADGE_KEY[sx.zone])}
-            </span>
             <h2 className="mc-card__title">{t(TITLE_KEY[sx.zone])}</h2>
             <p className="mc-card__desc">{t(DESC_KEY[sx.zone], { pct: sx.pct.toFixed(0) })}</p>
             <Link to={`/plan/${plan.id}/monte-carlo`} className="btn btn--accent mc-card__cta">

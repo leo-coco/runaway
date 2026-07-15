@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { serverEnv } from './env.js';
+import type { ContactSubject } from '../src/domain/contact.js';
 
 let client: Resend | null = null;
 const resend = (): Resend => (client ??= new Resend(serverEnv().RESEND_API_KEY));
@@ -44,4 +45,57 @@ export const sendResetPasswordEmail = async (to: string, url: string): Promise<v
     ),
   });
   if (error) console.error('[email] reset-password email failed to send', { to, error });
+};
+
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/** Contact-form fields are attacker-controlled free text landing in an HTML email. */
+const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch] ?? ch);
+
+const SUBJECT_LABEL: Record<ContactSubject, string> = {
+  problem: 'Problem',
+  question: 'Question',
+  feature: 'Feature request',
+  other: 'Other',
+};
+
+export interface ContactMessage {
+  name: string;
+  email: string;
+  subject: ContactSubject;
+  message: string;
+  /** Set when the sender was signed in, so support can match the message to an account. */
+  userId: string | null;
+}
+
+/**
+ * Deliver a footer contact-form submission to the support mailbox. Unlike the
+ * Better Auth callbacks above, this is awaited by its route, so it reports failure
+ * back rather than silently dropping the message. Reply-To is the sender, letting
+ * support answer straight from the inbox.
+ */
+export const sendContactEmail = async (msg: ContactMessage): Promise<boolean> => {
+  const { error } = await resend().emails.send({
+    from: serverEnv().EMAIL_FROM,
+    to: serverEnv().CONTACT_EMAIL_TO,
+    replyTo: msg.email,
+    subject: `[Contact · ${SUBJECT_LABEL[msg.subject]}] ${msg.name}`,
+    html: shell(
+      `${SUBJECT_LABEL[msg.subject]} from ${escapeHtml(msg.name)}`,
+      `<p style="margin:0 0 4px"><b>From:</b> ${escapeHtml(msg.name)} &lt;${escapeHtml(msg.email)}&gt;</p>
+       <p style="margin:0 0 16px;color:#888;font-size:12px">${msg.userId ? `Signed in · user ${escapeHtml(msg.userId)}` : 'Not signed in'}</p>
+       <div style="white-space:pre-wrap;border-left:3px solid #e5e5e5;padding-left:12px">${escapeHtml(msg.message)}</div>`,
+    ),
+  });
+  if (error) {
+    console.error('[email] contact email failed to send', { from: msg.email, error });
+    return false;
+  }
+  return true;
 };

@@ -4,6 +4,7 @@ import { plansRoutes } from './routes/plans.js';
 import { marketRoutes } from './routes/market.js';
 import { entitlementsRoutes } from './routes/entitlements.js';
 import { adminRoutes } from './routes/admin.js';
+import { contactRoutes } from './routes/contact.js';
 
 /** The single Hono app, shared by the Vercel function and the local dev server. */
 export const app = new Hono();
@@ -22,6 +23,9 @@ app.route('/api/admin', adminRoutes);
 
 // Market-data proxy (keeps provider API keys server-side).
 app.route('/api/market', marketRoutes);
+
+// Footer contact form → support mailbox (open to guests).
+app.route('/api/contact', contactRoutes);
 
 app.get('/api/health', (c) => c.json({ ok: true }));
 

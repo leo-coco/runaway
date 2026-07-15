@@ -354,7 +354,7 @@ export const defaultTaxableAccount = (country: Country): Account =>
  */
 export const defaultFreeAccount = (): Account => ({
   id: newId(),
-  name: 'DEMO',
+  name: 'My account',
   taxRatePct: 0,
   taxableBasePct: 100,
   taxMode: 'auto',

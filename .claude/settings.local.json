@@ -34,7 +34,27 @@
       "Bash(awk '/^  tour: \\\\{/,0' src/i18n/en.ts)",
       "Bash(grep -nE \"^ {6,8}[a-zA-Z]+: \\\\{|title:\")",
       "Bash(sort -u -t: -k3)",
-      "Bash(cd /tmp && npm view yahoo-finance2 version license description dependencies engines --json 2>&1 | head -40; echo \"=== VERSIONS ===\"; npm view yahoo-finance2 versions --json 2>&1 | tail -12; echo \"=== TIME ===\"; npm view yahoo-finance2 time --json 2>&1 | tail -8)"
+      "Bash(cd /tmp && npm view yahoo-finance2 version license description dependencies engines --json 2>&1 | head -40; echo \"=== VERSIONS ===\"; npm view yahoo-finance2 versions --json 2>&1 | tail -12; echo \"=== TIME ===\"; npm view yahoo-finance2 time --json 2>&1 | tail -8)",
+      "Bash(grep -rl \"Monte Carlo\" src -g'*.tsx')",
+      "Bash(grep -rln \"mc-top-actions\" src -g'*.css')",
+      "Bash(xargs ls)",
+      "Bash(mkdir -p src/store/__scratch__)",
+      "Bash(cp /tmp/verify_removeAccount.test.ts src/store/__scratch__/verify.test.ts)",
+      "Bash(sed -i '' \"s#'/Users/leococo/Claude/Projects/Retire Model/retire-on-model/src/store/plansSlice'#'../plansSlice'#\" src/store/__scratch__/verify.test.ts)",
+      "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model\" && rm -rf src/store/__scratch__ /tmp/verify_removeAccount.test.ts)",
+      "Bash(pkill -f \"http.server 8901\")",
+      "Bash(CONTACT_EMAIL_TO=support@example.com API_PORT=8787 npx tsx server/dev.ts)",
+      "Bash(curl -s -w \"\\\\n%{http_code}\\\\n\" -X POST http://localhost:8787/api/contact -H \"Content-Type: application/json\" -d '{\"name\":\"Leo Test\",\"email\":\"leo@example.com\",\"subject\":\"problem\",\"message\":\"Verifying the contact form wiring end to end.\"}')",
+      "Bash(pkill -f \"tsx server/dev.ts\")",
+      "Bash(CONTACT_EMAIL_TO=leoclipet@gmail.com API_PORT=8787 npx tsx server/dev.ts)",
+      "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model\" && npx prettier src/i18n/fr.ts > /tmp/fr-pretty.ts 2>/dev/null; diff src/i18n/fr.ts /tmp/fr-pretty.ts | head -20)",
+      "Bash(grep -E '\\\\.tsx$')",
+      "Bash(curl -s \"http://localhost:8787/api/market/search?q=apple\")",
+      "Bash(curl -s \"http://localhost:8787/api/health\")",
+      "Bash(curl -sv \"http://localhost:8787/\")",
+      "Bash(curl -s \"http://localhost:8787/api/market/equities/search?keywords=apple\")",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
+      "Bash(grep -n \"PlansPage\\\\|'/plans'\\\\|\\\\\"/plans\\\\\"\\\\|/plans\\\\`\" -r \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/src\")"
     ]
   }
 }

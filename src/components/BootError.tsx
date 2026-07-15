@@ -11,7 +11,7 @@ export const BootError = ({ issues }: { issues: readonly string[] }) => (
         <AlertIcon size={22} /> Configuration required
       </h1>
       <p style={{ color: 'var(--text-muted)' }}>
-        Runway could not start because some client configuration is invalid. Copy{' '}
+        Runaway could not start because some client configuration is invalid. Copy{' '}
         <code>.env.example</code> to <code>.env</code> and fix the following:
       </p>
       <ul>

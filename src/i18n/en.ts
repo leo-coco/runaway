@@ -34,7 +34,8 @@ export const en = {
     spendingSub: '{{monthly}} /mo · {{inflation}}% inflation · from {{year}}',
     spendingSubPhased: 'Go-Go → No-Go {{end}}/yr · {{inflation}}% inflation',
     phasedBadge: 'By phase',
-    accountsUnit: 'accounts',
+    accountsUnit_one: 'account',
+    accountsUnit_other: 'accounts',
     accountsSub: 'Tax envelopes for withdrawals',
     withdrawalNotSet: 'Not set',
     withdrawalReady: 'Ready',
@@ -173,8 +174,28 @@ export const en = {
       'This tool is intended for strictly informational and educational purposes. The results shown are hypothetical projections based on your inputs and do not constitute financial, tax, or legal advice. No guarantee of performance is offered. Consult a qualified professional before making any decisions.',
   },
   footer: {
-    copyright: '© {{year}} Runway',
+    copyright: '© {{year}} Runaway',
     methodologyLink: 'Methodology',
+    contactLink: 'Contact us',
+  },
+  contact: {
+    title: 'Contact us',
+    desc: 'A problem, a question, or anything else — send us a message and we will get back to you by email.',
+    name: 'Name',
+    email: 'Email',
+    subject: 'Subject',
+    message: 'Message',
+    subjects: {
+      problem: 'Problem',
+      question: 'Question',
+      feature: 'Feature request',
+      other: 'Other',
+    },
+    send: 'Send message',
+    sending: 'Sending…',
+    error: 'Your message could not be sent. Please try again in a moment.',
+    sentTitle: 'Message sent',
+    sentDesc: 'Thanks for reaching out. We will reply to the email address you gave us.',
   },
   dashboard: {
     portfolioValue: 'Portfolio Value (deterministic)',
@@ -213,9 +234,9 @@ export const en = {
     },
   },
   runway: {
-    title: 'Your runway',
+    title: 'Your runaway',
     seeAll: 'See all events',
-    allEventsTitle: 'Runway events',
+    allEventsTitle: 'Runaway events',
     today: 'Today',
     retirement: 'Retirement starts',
     benefits: 'CPP / OAS starts',
@@ -234,7 +255,7 @@ export const en = {
     colYear: 'Year',
     colEvent: 'Event',
     colAmount: 'Amount',
-    addAssetPrompt: 'Add an asset to see your runway.',
+    addAssetPrompt: 'Add an asset to see your runaway.',
     addAsset: 'Add an asset',
   },
   calc: {
@@ -277,7 +298,6 @@ export const en = {
     optOpeningClosing: 'Opening vs Closing',
     optNetChange: 'Net Change (Close − Open)',
     optApprExpenses: 'Appreciation vs Expenses',
-    optAllocation: 'Allocation (By asset class)',
     optPostRetirement: 'Post-retirement (Years of survival)',
     optScenarios: 'Scenarios (Optimistic / Expected / Pessimistic)',
     descComposition:
@@ -290,7 +310,6 @@ export const en = {
       'Projected net change in portfolio value each year (closing − opening). Positive while saving, negative once withdrawals outpace growth in retirement.',
     descApprExpenses:
       'Compares each year’s investment appreciation with the gross expenses (withdrawals incl. tax) drawn from the portfolio.',
-    descAllocation: 'Current allocation of the portfolio across asset classes.',
     descPostRetirement:
       'How many years your savings last after retirement under each planning scenario.',
     descScenarios: 'Compares optimistic, expected, and pessimistic annual return assumptions.',
@@ -554,6 +573,7 @@ export const en = {
     noAccounts: 'No accounts yet. Add one above to start grouping assets.',
     manual: 'Manual',
     deleteAria: 'Delete {{name}}',
+    lastAccount: 'A plan needs at least one account',
     accountName: 'Account name',
     effective: 'effective',
     type: 'Type',
@@ -961,6 +981,7 @@ export const en = {
     probabilityOfSuccess: 'Probability of success',
     recalculating: 'recalculating…',
     fundedIn: 'Your plan was fully funded in {{count}} of {{total}} simulated markets.',
+    parametersTitle: 'Parameters',
     returnModel: 'Return model',
     selectModel: 'Select model',
     groupStandard: 'Standard',
@@ -976,17 +997,20 @@ export const en = {
     histStartYearHintFixed:
       'Every path replays the exact same real sequence from this year onward (wrapping to 1928 if it runs past 2024) — this makes the run a single deterministic "what if I retired in {{year}}" scenario rather than a spread of outcomes.',
     btcCycle: 'Bitcoin halving cycle',
-    overlayBtc: 'Overlay the halving cycle on BTC',
+    overlayBtc: 'BTC halving cycle',
     btcHintOn:
       'Post-halving bull years (2025, 2029…) then a bear year (2026, 2030…), applied only to your BTC holding.',
     btcHintOff: 'Add a BTC holding or a spot BTC ETF (FBTC, IBIT, GBTC…) to use this overlay.',
     growthFade: 'Growth fade',
     fadeToggle: 'Fade high CAGRs toward a mature rate',
-    whereYouLand: 'Net worth at life expectancy ({{year}})',
     top25: 'Top 25%',
     median: 'Median',
     bottom25: 'Bottom 25%',
     bottom10: 'Bottom 10%',
+    medianValueTitle: 'Median portfolio value',
+    medianValueNote: 'At life expectancy ({{year}})',
+    netWorthTitle: 'Portfolio net worth in {{year}}',
+    medianDepletionTitle: 'Median depletion year',
     tipSuccess:
       'Out of {{count}} simulated futures — each a different way markets could unfold — this is the share where your money lasted the entire retirement without ever running out. Higher is safer: it means your plan survives more of the rough markets too.',
     tipLargeSurplus:
@@ -997,14 +1021,6 @@ export const en = {
       'The money ran out before the end, but relatively late — at or after the typical point of failure. These plans came close.',
     tipFailedMiddle:
       'The money ran out early — before the typical point of failure. These are the plans that fell short soonest.',
-    tipTop25:
-      'A lucky-market outcome: only about 1 simulation in 4 ended richer than this. Nice if it happens, but not something to bank on.',
-    tipMedian:
-      'The middle outcome. Line every simulation up from poorest to richest and this sits dead center — half end higher, half lower. The most typical result.',
-    tipBottom25:
-      'The pessimistic side: about 1 simulation in 4 ended here or lower. A realistic look at how a below-average run could leave you.',
-    tipBottom10:
-      'A stress case: only about 1 simulation in 10 ended worse than this. The rough-markets tail worth planning around.',
     outcomeBreakdown: 'Outcome breakdown',
     outcomeLargeSurplus: 'Large Surplus',
     outcomeComfortable: 'Comfortable',
@@ -1068,8 +1084,8 @@ export const en = {
     ariaAxisYears: 'Show X-axis as years',
     ariaAxisAges: 'Show X-axis as ages',
     projectedWithdrawalRate: 'Projected withdrawal rate',
-    visualizeSimulation: 'Visualize simulation',
-    trialExplorerTitle: 'Trial explorer',
+    visualizeSimulation: 'Explore in detail',
+    trialExplorerTitle: 'Trial Explorer',
     trialExplorerDesc:
       '{{count}} independently sampled trials, each colored by outcome. Sort or filter the list, pick a trial, then scrub through its years.',
     trialCol: 'Trial',
@@ -1143,7 +1159,7 @@ export const en = {
     },
     steps: {
       dashboardIntro: {
-        title: 'Welcome to Runway',
+        title: 'Welcome to Runaway',
         body: 'This guide shows how to set up your plan: timeline, accounts, assets and spending. Use Next and Back to move through it, and close anytime with Esc.',
       },
       timeline: {
@@ -1340,6 +1356,50 @@ export const en = {
     colPremiumUntil: 'Premium until',
     tierFree: 'Free',
     tierPremium: 'Premium',
+  },
+  validation: {
+    common: {
+      cannotBeNegative: 'Cannot be negative',
+      tooNegative: 'Too negative',
+      tooLarge: 'Too large',
+      aboveNotSupported: 'Above {{max}}% is not supported',
+    },
+    planName: {
+      nameRequired: 'Plan name is required',
+      nameTooLong: 'Name is too long',
+      descriptionTooLong: 'Description is too long',
+    },
+    home: {
+      enterName: 'Enter a name',
+      enterValue: 'Enter the value',
+      valueTooLarge: 'That value looks too large',
+      enterAppreciation: 'Enter an appreciation rate',
+      enterOwnershipCost: 'Enter an ownership cost',
+      saleAfterPurchase: 'Sale must be after the purchase',
+    },
+    retirementSettings: {
+      enterSpending: 'Enter a spending amount',
+      spendingCannotBeNegative: 'Spending cannot be negative',
+      spendingTooLarge: 'That spending figure looks too large',
+      enterInflation: 'Enter an inflation rate',
+      inflationCannotBeNegative: 'Inflation cannot be negative',
+      inflationTooHigh: 'Inflation above 50% is not supported',
+      slowGoAfterGoGo: 'Slow-Go must end on or after Go-Go',
+      cannotExceed100: 'Cannot exceed 100%',
+    },
+    scenario: {
+      enterAdjustment: 'Enter an adjustment',
+      useAPositiveAuto: 'Use a positive number; it is subtracted automatically',
+      useAPositive: 'Use a positive number',
+      adjustmentTooLarge: 'Adjustment too large',
+    },
+    contact: {
+      enterName: 'Enter your name',
+      nameTooLong: 'Name is too long',
+      enterValidEmail: 'Enter a valid email address',
+      tellUsMore: 'Tell us a little more (10 characters minimum)',
+      messageTooLong: 'Message is too long',
+    },
   },
 };
 

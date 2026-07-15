@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { InfoIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import {
-  retirementSettingsFormSchema,
+  createRetirementSettingsFormSchema,
   type RetirementSettingsForm,
 } from '@/schemas/retirementSettingsSchema';
 import { safeWithdrawalRate, type SwrZone } from '@/domain/withdrawalRate';
@@ -116,6 +117,7 @@ export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose
   // now-lapsed grant) stays editable so its numbers are never lost; free users
   // just cannot switch a linear plan over to phased.
   const canPhased = useFeature('phasedSpending');
+  const retirementSettingsFormSchema = useMemo(() => createRetirementSettingsFormSchema(t), [t]);
 
   const {
     control,

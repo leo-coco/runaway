@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 export const AppHeader = () => (
   <header className="header">
     <div className="container header__inner">
-      <Link to="/plans" className="brand" aria-label="retire on model — home">
+      <Link to="/" className="brand" aria-label="retire on model — home">
         <span className="brand__mark" aria-hidden="true">
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
             <rect width="30" height="30" rx="9" fill="var(--accent)" />
@@ -23,7 +23,7 @@ export const AppHeader = () => (
         </span>
       </Link>
       <nav className="nav">
-        <Link to="/plans">My Plans</Link>
+        <Link to="/">My Plans</Link>
       </nav>
     </div>
   </header>

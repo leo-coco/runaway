@@ -120,18 +120,19 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           <h2 className="section__title">{t('portfolio.title')}</h2>
           <p className="section__desc">{t('portfolio.desc')}</p>
         </div>
-        <div className="section__actions">
-          <Button
-            data-tour="fetch-prices-btn"
-            onClick={() => fetchAll(plan.holdings)}
-            disabled={isFetchingAll}
-          >
-            {isFetchingAll ? <Spinner /> : <RefreshIcon size={15} />} {t('portfolio.fetchPrices')}
-          </Button>
-          <Button variant="accent" data-tour="addasset-btn" onClick={onAddAsset}>
-            <PlusIcon /> {t('portfolio.addAsset')}
-          </Button>
-        </div>
+      </div>
+
+      <div className="action-banner">
+        <Button
+          data-tour="fetch-prices-btn"
+          onClick={() => fetchAll(plan.holdings)}
+          disabled={isFetchingAll}
+        >
+          {isFetchingAll ? <Spinner /> : <RefreshIcon size={15} />} {t('portfolio.fetchPrices')}
+        </Button>
+        <Button variant="accent" data-tour="addasset-btn" onClick={onAddAsset}>
+          <PlusIcon /> {t('portfolio.addAsset')}
+        </Button>
       </div>
 
       <Card className="breakdown">

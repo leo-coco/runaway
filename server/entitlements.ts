@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { tierConfig } from './db/schema.js';
-import { serverEnv } from './env.js';
 import {
   DEFAULT_TIER_CONFIG,
   resolveEntitlements,
@@ -83,21 +82,5 @@ export const getEntitlements = async (user: AuthUser): Promise<Entitlements> => 
   return resolveEntitlements(user.tier, user.premiumUntil, config);
 };
 
-let adminEmailSet: Set<string> | null = null;
-const adminEmails = (): Set<string> => {
-  if (adminEmailSet) return adminEmailSet;
-  adminEmailSet = new Set(
-    serverEnv()
-      .ADMIN_EMAILS.split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  );
-  return adminEmailSet;
-};
-
-/**
- * True when the user may access admin surfaces: an explicit `admin` role, or an
- * email listed in ADMIN_EMAILS (the bootstrap path before any admin exists).
- */
-export const isAdmin = (user: AuthUser): boolean =>
-  user.role === 'admin' || adminEmails().has(user.email.toLowerCase());
+/** True when the user may access admin surfaces: an explicit `admin` role. */
+export const isAdmin = (user: AuthUser): boolean => user.role === 'admin';

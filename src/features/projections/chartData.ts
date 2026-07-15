@@ -1,6 +1,5 @@
 import type { Projection } from '@/domain/projection';
 import { SCENARIO_LABEL, type ScenarioKey } from '@/domain/scenario';
-import { ASSET_CLASS_LABEL, type AssetClass } from '@/domain/assetClass';
 
 /** Row shape for the stacked composition chart: one entry per year, keyed by symbol. */
 export type CompositionRow = { year: number } & Record<string, number>;
@@ -58,14 +57,6 @@ export const buildScenarioData = (
   }
   return rows;
 };
-
-export const buildAllocationData = (
-  allocation: readonly { assetClass: string; value: number }[],
-): { name: string; value: number }[] =>
-  allocation.map((a) => ({
-    name: ASSET_CLASS_LABEL[a.assetClass as AssetClass] ?? a.assetClass,
-    value: Math.round(a.value),
-  }));
 
 export const buildSurvivalData = (
   byScenario: Record<ScenarioKey, Projection>,

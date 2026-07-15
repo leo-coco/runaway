@@ -4,7 +4,9 @@ import { Footer } from '@/components/layout/Footer';
 import { TourProvider } from '@/features/tour/TourProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppStore } from '@/store';
-import { PlansPage } from '@/features/plans/PlansPage';
+import { useFeature } from '@/hooks/useEntitlements';
+import { Button } from '@/components/ui/Button';
+import { PlusIcon } from '@/components/icons';
 import { PlanLayout } from '@/features/portfolio/PlanLayout';
 import { DashboardPage } from '@/features/portfolio/DashboardPage';
 import { PortfolioPage } from '@/features/portfolio/PortfolioPage';
@@ -18,7 +20,21 @@ import { AdminPage } from '@/features/admin/AdminPage';
 
 const RootRedirect = () => {
   const firstId = useAppStore((s) => s.plans[0]?.id);
-  return <Navigate to={firstId ? `/plan/${firstId}/dashboard` : '/plans'} replace />;
+  const createPlan = useAppStore((s) => s.createPlan);
+  const canAccountsTax = useFeature('accountsTax');
+
+  if (firstId) return <Navigate to={`/plan/${firstId}/dashboard`} replace />;
+
+  return (
+    <div className="container">
+      <div className="state-box">
+        <p>No plans yet. Create your first plan to get started.</p>
+        <Button variant="accent" onClick={() => createPlan('My plan', !canAccountsTax)}>
+          <PlusIcon /> New Plan
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 export const App = () => (
@@ -35,7 +51,6 @@ export const App = () => (
                 <Route path="/" element={<RootRedirect />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/plans" element={<PlansPage />} />
                 <Route path="/plan/:id" element={<PlanLayout />}>
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<DashboardPage />} />

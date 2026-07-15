@@ -1,10 +1,11 @@
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
-import { scenarioFormSchema, type ScenarioForm } from '@/schemas/scenarioSchema';
+import { createScenarioFormSchema, type ScenarioForm } from '@/schemas/scenarioSchema';
 import type { Plan } from '@/domain/plan';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 
 export const ScenarioModal = ({ plan, onSave, onClose }: Props) => {
   const { t } = useTranslation();
+  const scenarioFormSchema = useMemo(() => createScenarioFormSchema(t), [t]);
   const {
     control,
     handleSubmit,

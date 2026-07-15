@@ -225,9 +225,9 @@ describe('new account envelopes', () => {
 });
 
 describe('defaultFreeAccount', () => {
-  it('is a custom tax-free account named DEMO', () => {
+  it('is a custom tax-free account named "My account"', () => {
     const a = defaultFreeAccount();
-    expect(a.name).toBe('DEMO');
+    expect(a.name).toBe('My account');
     expect(a.kind).toBe('tax_free');
     expect(a.custom).toBe(true);
     expect(accountEffectiveRate(a, 'US')).toBe(0);

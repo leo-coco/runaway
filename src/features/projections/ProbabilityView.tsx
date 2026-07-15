@@ -250,129 +250,291 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
         <div className="state-box">{t('mc.running', { count: iterations.toLocaleString() })}</div>
       ) : (
         <>
-          <div className="mc-top-actions">
-            <Button onClick={() => monteCarlo.rerun()} disabled={status === 'running'}>
-              <RefreshIcon size={14} /> {status === 'running' ? t('mc.running2') : t('mc.runNew')}
-            </Button>
-            {hasAssets && (
-              <Button data-tour="mc-whatif" onClick={() => setShowGoalSeek(true)}>
-                {t('mc.whatWouldItTake')}
-              </Button>
-            )}
-            <Button data-tour="mc-viewdata" variant="ghost" onClick={() => setShowData(true)}>
-              {t('mc.viewData')}
-            </Button>
-            {hasAssets && (
-              <Button
-                data-tour="mc-visualize"
-                variant="ghost"
-                onClick={() => {
-                  setTrialFilterCategory(null);
-                  setShowTrialExplorer(true);
-                }}
-              >
-                <ExpandIcon size={14} /> {t('mc.visualizeSimulation')}
-              </Button>
-            )}
+          <div className="hero hero--triple">
+            <div className="hero__card" style={{ borderColor: ZONE_COLOR[sx.zone] }}>
+              <div className="hero__row">
+                <span className="hero__label">{t('mc.probabilityOfSuccess')}</span>
+              </div>
+              <span className="hero__big hero__big--sm" style={{ color: ZONE_COLOR[sx.zone] }}>
+                {sx.pct.toFixed(0)}%
+              </span>
+              <span className="hero__big-note">{t('dashboard.oddsNote')}</span>
+              {sx.pct < 80 && (
+                <button
+                  type="button"
+                  className="hero__action-link"
+                  onClick={() => setShowGoalSeek(true)}
+                >
+                  {t('mc.whatWouldItTake')}
+                </button>
+              )}
+            </div>
+
+            <div className="hero__card">
+              <div className="hero__row">
+                <span className="hero__label">{t('mc.medianValueTitle')}</span>
+              </div>
+              <span className="hero__big hero__big--sm">{fmt.compact(endPctl?.p50 ?? 0)}</span>
+              <span className="hero__big-note">
+                {t('mc.medianValueNote', { year: horizonEndYear })}
+              </span>
+            </div>
+
+            <div className="hero__card">
+              <div className="hero__row">
+                <span className="hero__label">{t('mc.medianDepletionTitle')}</span>
+              </div>
+              <span className="hero__big hero__big--sm">
+                {medianDryYear ?? t('dashboard.neverDepletes')}
+              </span>
+              {medianDryYear !== null && canShowAge && (
+                <span className="hero__big-note">
+                  {t('dashboard.depletionAgeNote', { age: ageAt(medianDryYear) })}
+                </span>
+              )}
+            </div>
           </div>
-          <div className={cn('wo-grid', status === 'running' && 'is-updating')}>
-            <div className="wo-left">
-              <div className="wo-section-label">
-                {t('mc.probabilityOfSuccess')}
-                <InfoTip
-                  title={t('mc.probabilityOfSuccess')}
-                  body={t('mc.tipSuccess', { count: result.iterations.toLocaleString() })}
-                />
-                {status === 'running' && (
-                  <span className="mc-updating">{t('mc.recalculating')}</span>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <span
-                  className="wo-big"
-                  style={{ color: ZONE_COLOR[sx.zone], fontSize: '3.5rem', lineHeight: 1 }}
-                >
-                  {sx.pct.toFixed(0)}%
-                </span>
-                <span
-                  className="wo-badge"
-                  style={{ color: ZONE_COLOR[sx.zone], borderColor: ZONE_COLOR[sx.zone] }}
-                >
-                  ● {t(`successZone.${sx.zone}`)}
-                </span>
-              </div>
-              <p className="field__hint" style={{ marginTop: 10 }}>
-                {t('mc.fundedIn', {
-                  count: Math.round(result.successRate * result.iterations).toLocaleString(),
-                  total: result.iterations.toLocaleString(),
-                })}
-              </p>
 
-              <div className="wo-section-label" style={{ marginTop: 16 }}>
-                {t('mc.outcomeBreakdown')}
-              </div>
-              <div className="outcome-breakdown">
-                {(
-                  [
-                    [
-                      'largeSurplus',
-                      'var(--success)',
-                      t('mc.outcomeLargeSurplus'),
-                      result.outcomeBreakdown.largeSurplus,
-                      t('mc.tipLargeSurplus'),
-                    ],
-                    [
-                      'comfortable',
-                      'var(--accent)',
-                      t('mc.outcomeComfortable'),
-                      result.outcomeBreakdown.comfortable,
-                      t('mc.tipComfortable'),
-                    ],
-                    [
-                      'almostMadeIt',
-                      'var(--amber)',
-                      t('mc.outcomeAlmostMadeIt'),
-                      result.outcomeBreakdown.almostMadeIt,
-                      t('mc.tipAlmostMadeIt'),
-                    ],
-                    [
-                      'failedInMiddle',
-                      'var(--danger)',
-                      t('mc.outcomeFailedMiddle'),
-                      result.outcomeBreakdown.failedInMiddle,
-                      t('mc.tipFailedMiddle'),
-                    ],
-                  ] as const
-                ).map(([category, color, label, count, tip]) => (
-                  <button
-                    type="button"
-                    className="outcome-row"
-                    key={category}
-                    disabled={count === 0}
-                    title={count === 0 ? undefined : t('mc.outcomeFilterHint')}
-                    onClick={() => {
-                      setTrialFilterCategory(category);
-                      setShowTrialExplorer(true);
-                    }}
-                  >
-                    <span className="outcome-row__label">
-                      <i className="outcome-row__dot" style={{ background: color }} />
-                      {label}
-                      <InfoTip title={label} body={tip} />
+          <div className={cn('mc-central', status === 'running' && 'is-updating')}>
+            <div className="mc-cards-row">
+              <div className="mc-body-card">
+                <div className="prob-chart-head">
+                  <div className="mc-chart-title">
+                    {fanView === 'withdrawalRate'
+                      ? t('mc.projectedWithdrawalRate')
+                      : t('mc.projectedBalance')}
+                  </div>
+                  <div className="chart-view" data-tour="mc-fan-view">
+                    <select
+                      id="mc-fan-view"
+                      className="select"
+                      aria-label={t('mc.fanChartView')}
+                      value={fanView}
+                      onChange={(e) => setFanView(e.target.value as 'netWorth' | 'withdrawalRate')}
+                    >
+                      <option value="netWorth">{t('mc.fanViewNetWorth')}</option>
+                      <option value="withdrawalRate">{t('mc.fanViewWithdrawalRate')}</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mc-chart-frame" data-tour="mc-fan-chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={fanData}
+                      margin={{ top: 10, right: 8, left: 4, bottom: 0 }}
+                    >
+                      <CartesianGrid stroke="var(--border)" vertical={false} />
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
+                        stroke="var(--border)"
+                        minTickGap={40}
+                        tickFormatter={xAxisTickFormatter}
+                      />
+                      <YAxis
+                        tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
+                        stroke="var(--border)"
+                        tickFormatter={(v) =>
+                          fanView === 'withdrawalRate'
+                            ? `${Number(v).toFixed(0)}%`
+                            : fmt.compact(Number(v))
+                        }
+                        width={56}
+                      />
+                      <ReferenceLine
+                        x={retirementYear}
+                        stroke="var(--text-dim)"
+                        strokeDasharray="4 4"
+                        label={{
+                          value: t('projChart.retirement', { year: retirementYear }),
+                          fill: 'var(--text-dim)',
+                          fontSize: 10,
+                          position: 'insideTopLeft',
+                        }}
+                      />
+                      <ReferenceLine
+                        x={endYear}
+                        stroke="#5eead4"
+                        strokeDasharray="4 4"
+                        label={{
+                          value: t('projChart.planEnds', { year: endYear }),
+                          fill: '#5eead4',
+                          fontSize: 10,
+                          position: 'insideTopRight',
+                        }}
+                      />
+                      {medianDryYear !== null && (
+                        <ReferenceLine
+                          x={medianDryYear}
+                          stroke={FAN_RED}
+                          strokeDasharray="6 4"
+                          label={{
+                            value: `Median dry ${medianDryYear}`,
+                            fill: FAN_RED,
+                            fontSize: 10,
+                            position: 'top',
+                          }}
+                        />
+                      )}
+                      {/* Central likely range (p25–p75), then the red downside tail
+                      (p10–p25) drawn on top, then the median line. */}
+                      <Area
+                        type="monotone"
+                        dataKey="band2575"
+                        stroke="none"
+                        fill={BAND_MID}
+                        fillOpacity={0.22}
+                        isAnimationActive={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="bandDown"
+                        stroke="none"
+                        fill={FAN_RED}
+                        fillOpacity={0.28}
+                        isAnimationActive={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="m50"
+                        stroke={FAN_ORANGE}
+                        strokeWidth={2.5}
+                        dot={false}
+                        isAnimationActive={false}
+                      />
+                      <Tooltip
+                        content={
+                          <FanTooltip
+                            format={
+                              fanView === 'withdrawalRate'
+                                ? (n: number) => `${n.toFixed(1)}%`
+                                : fmt.format
+                            }
+                            labelFormatter={xAxisLabelFormatter}
+                          />
+                        }
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+
+                  {canShowAge && <AxisModeSwitch mode={xAxisMode} onChange={setXAxisMode} />}
+
+                  <div className="legend legend--bottom">
+                    <span>
+                      <i style={{ background: BAND_MID }} />
+                      {t('mc.legendLikely')}
                     </span>
-                    <span className="outcome-row__stats">
-                      <b className="outcome-row__pct">
-                        {((count / result.iterations) * 100).toFixed(1)}%
-                      </b>
-                      <span className="outcome-row__count">{t('mc.outcomeTrials', { count })}</span>
+                    <span>
+                      <i style={{ background: FAN_ORANGE }} />
+                      {t('mc.median')}
                     </span>
-                  </button>
-                ))}
+                    <span>
+                      <i style={{ background: FAN_RED }} />
+                      {t('mc.legendDownside')}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="wo-section-label" style={{ marginTop: 16 }}>
-                {t('mc.returnModel')}
+              <div className="mc-body-card">
+                <div className="mc-split">
+                  <div>
+                    <div className="wo-section-label">
+                      {t('mc.outcomeBreakdown')}
+                      {status === 'running' && (
+                        <span className="mc-updating">{t('mc.recalculating')}</span>
+                      )}
+                    </div>
+                    <div className="outcome-breakdown">
+                      {(
+                        [
+                          [
+                            'largeSurplus',
+                            'var(--success)',
+                            t('mc.outcomeLargeSurplus'),
+                            result.outcomeBreakdown.largeSurplus,
+                            t('mc.tipLargeSurplus'),
+                          ],
+                          [
+                            'comfortable',
+                            'var(--accent)',
+                            t('mc.outcomeComfortable'),
+                            result.outcomeBreakdown.comfortable,
+                            t('mc.tipComfortable'),
+                          ],
+                          [
+                            'almostMadeIt',
+                            'var(--amber)',
+                            t('mc.outcomeAlmostMadeIt'),
+                            result.outcomeBreakdown.almostMadeIt,
+                            t('mc.tipAlmostMadeIt'),
+                          ],
+                          [
+                            'failedInMiddle',
+                            'var(--danger)',
+                            t('mc.outcomeFailedMiddle'),
+                            result.outcomeBreakdown.failedInMiddle,
+                            t('mc.tipFailedMiddle'),
+                          ],
+                        ] as const
+                      ).map(([category, color, label, count, tip]) => (
+                        <button
+                          type="button"
+                          className="outcome-row"
+                          key={category}
+                          disabled={count === 0}
+                          title={count === 0 ? undefined : t('mc.outcomeFilterHint')}
+                          onClick={() => {
+                            setTrialFilterCategory(category);
+                            setShowTrialExplorer(true);
+                          }}
+                        >
+                          <span className="outcome-row__label">
+                            <i className="outcome-row__dot" style={{ background: color }} />
+                            {label}
+                            <InfoTip title={label} body={tip} />
+                          </span>
+                          <span className="outcome-row__stats">
+                            <b className="outcome-row__pct">
+                              {((count / result.iterations) * 100).toFixed(1)}%
+                            </b>
+                            <span className="outcome-row__count">
+                              {t('mc.outcomeTrials', { count })}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="wo-section-label">
+                      {t('mc.netWorthTitle', { year: horizonEndYear })}
+                    </div>
+                    <div className="hero-networth-list">
+                      {(
+                        [
+                          ['#4ade80', t('mc.top25'), endPctl?.p75],
+                          [FAN_ORANGE, t('mc.median'), endPctl?.p50],
+                          ['#fb7185', t('mc.bottom25'), endPctl?.p25],
+                          ['#f43f5e', t('mc.bottom10'), endPctl?.p10],
+                        ] as const
+                      ).map(([color, label, value]) => (
+                        <div className="hero-networth-list__row" key={label}>
+                          <span>
+                            <i style={{ background: color }} /> {label}
+                          </span>
+                          <b style={{ color }}>{fmt.compact(value ?? 0)}</b>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div className="mc-body-card">
+              <div className="wo-section-label">{t('mc.parametersTitle')}</div>
               <div className="model-picker" data-tour="mc-model">
                 <label htmlFor="mc-model-select" className="model-picker__label">
                   {t('mc.selectModel')}
@@ -487,17 +649,20 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   />
                   <span>{t('mc.overlayBtc')}</span>
                 </span>
+                {hasBtc && (
+                  <span className="mc-info" role="img" aria-label={t('mc.btcHintOn')}>
+                    <InfoIcon size={13} />
+                    <span className="mc-tip" role="tooltip">
+                      {t('mc.btcHintOn')}
+                    </span>
+                  </span>
+                )}
                 {!hasBtc && (
                   <span className="mc-tip mc-tip--below" role="tooltip">
                     {t('mc.btcHintOff')}
                   </span>
                 )}
               </label>
-              {hasBtc && (
-                <p className="field__hint" style={{ marginTop: 0 }}>
-                  {t('mc.btcHintOn')}
-                </p>
-              )}
 
               <div className="wo-section-label" style={{ marginTop: 16 }}>
                 {t('mc.growthFade')}
@@ -520,169 +685,44 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                 />
                 <span>{t('mc.fadeToggle')}</span>
               </label>
+
+              <div className="mc-params-actions">
+                <Button onClick={() => monteCarlo.rerun()} disabled={status === 'running'}>
+                  <RefreshIcon size={14} />{' '}
+                  {status === 'running' ? t('mc.running2') : t('mc.runNew')}
+                </Button>
+                <Button data-tour="mc-viewdata" onClick={() => setShowData(true)}>
+                  {t('mc.viewData')}
+                </Button>
+              </div>
             </div>
 
             {showGoalSeek && (
               <GoalSeekModal plan={plan} rates={rates} onClose={() => setShowGoalSeek(false)} />
             )}
+          </div>
 
-            <div className="wo-right">
-              <div className="prob-chart-head">
-                <div className="wo-section-label" style={{ margin: 0 }}>
-                  {fanView === 'withdrawalRate'
-                    ? t('mc.projectedWithdrawalRate')
-                    : t('mc.projectedBalance')}
-                </div>
-                <div className="chart-view" data-tour="mc-fan-view">
-                  <label htmlFor="mc-fan-view">{t('mc.fanChartView')}</label>
-                  <select
-                    id="mc-fan-view"
-                    className="select"
-                    value={fanView}
-                    onChange={(e) => setFanView(e.target.value as 'netWorth' | 'withdrawalRate')}
-                  >
-                    <option value="netWorth">{t('mc.fanViewNetWorth')}</option>
-                    <option value="withdrawalRate">{t('mc.fanViewWithdrawalRate')}</option>
-                  </select>
-                </div>
-              </div>
-              <div className="mc-chart-frame" data-tour="mc-fan-chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={fanData} margin={{ top: 10, right: 8, left: 4, bottom: 0 }}>
-                    <CartesianGrid stroke="var(--border)" vertical={false} />
-                    <XAxis
-                      dataKey="year"
-                      tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
-                      stroke="var(--border)"
-                      minTickGap={40}
-                      tickFormatter={xAxisTickFormatter}
-                    />
-                    <YAxis
-                      tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
-                      stroke="var(--border)"
-                      tickFormatter={(v) =>
-                        fanView === 'withdrawalRate'
-                          ? `${Number(v).toFixed(0)}%`
-                          : fmt.compact(Number(v))
-                      }
-                      width={56}
-                    />
-                    <ReferenceLine
-                      x={retirementYear}
-                      stroke="var(--text-dim)"
-                      strokeDasharray="4 4"
-                      label={{
-                        value: t('projChart.retirement', { year: retirementYear }),
-                        fill: 'var(--text-dim)',
-                        fontSize: 10,
-                        position: 'insideTopLeft',
-                      }}
-                    />
-                    <ReferenceLine
-                      x={endYear}
-                      stroke="#5eead4"
-                      strokeDasharray="4 4"
-                      label={{
-                        value: t('projChart.planEnds', { year: endYear }),
-                        fill: '#5eead4',
-                        fontSize: 10,
-                        position: 'insideTopRight',
-                      }}
-                    />
-                    {medianDryYear !== null && (
-                      <ReferenceLine
-                        x={medianDryYear}
-                        stroke={FAN_RED}
-                        strokeDasharray="6 4"
-                        label={{
-                          value: `Median dry ${medianDryYear}`,
-                          fill: FAN_RED,
-                          fontSize: 10,
-                          position: 'top',
-                        }}
-                      />
-                    )}
-                    {/* Central likely range (p25–p75), then the red downside tail
-                      (p10–p25) drawn on top, then the median line. */}
-                    <Area
-                      type="monotone"
-                      dataKey="band2575"
-                      stroke="none"
-                      fill={BAND_MID}
-                      fillOpacity={0.22}
-                      isAnimationActive={false}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="bandDown"
-                      stroke="none"
-                      fill={FAN_RED}
-                      fillOpacity={0.28}
-                      isAnimationActive={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="m50"
-                      stroke={FAN_ORANGE}
-                      strokeWidth={2.5}
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                    <Tooltip
-                      content={
-                        <FanTooltip
-                          format={
-                            fanView === 'withdrawalRate'
-                              ? (n: number) => `${n.toFixed(1)}%`
-                              : fmt.format
-                          }
-                          labelFormatter={xAxisLabelFormatter}
-                        />
-                      }
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-
-                {canShowAge && <AxisModeSwitch mode={xAxisMode} onChange={setXAxisMode} />}
-
-                <div className="legend legend--bottom">
-                  <span>
-                    <i style={{ background: BAND_MID }} />
-                    {t('mc.legendLikely')}
-                  </span>
-                  <span>
-                    <i style={{ background: FAN_ORANGE }} />
-                    {t('mc.median')}
-                  </span>
-                  <span>
-                    <i style={{ background: FAN_RED }} />
-                    {t('mc.legendDownside')}
-                  </span>
-                </div>
-              </div>
-
-              <div className="wo-section-label" style={{ marginTop: 16 }}>
-                {t('mc.whereYouLand', { year: horizonEndYear })}
-              </div>
-              <div className="prob-land">
-                {(
-                  [
-                    ['#4ade80', t('mc.top25'), endPctl?.p75, t('mc.tipTop25')],
-                    [FAN_ORANGE, t('mc.median'), endPctl?.p50, t('mc.tipMedian')],
-                    ['#fb7185', t('mc.bottom25'), endPctl?.p25, t('mc.tipBottom25')],
-                    ['#f43f5e', t('mc.bottom10'), endPctl?.p10, t('mc.tipBottom10')],
-                  ] as const
-                ).map(([color, label, value, tip]) => (
-                  <div key={label}>
-                    <span>
-                      <i style={{ background: color }} /> {label}
-                      <InfoTip title={label} body={tip} right />
-                    </span>
-                    <b style={{ color }}>{fmt.compact(value ?? 0)}</b>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="action-banner">
+            {hasAssets && (
+              <Button
+                data-tour="mc-visualize"
+                onClick={() => {
+                  setTrialFilterCategory(null);
+                  setShowTrialExplorer(true);
+                }}
+              >
+                <ExpandIcon size={14} /> {t('mc.visualizeSimulation')}
+              </Button>
+            )}
+            {hasAssets && (
+              <Button
+                className="action-banner__push-right"
+                data-tour="mc-whatif"
+                onClick={() => setShowGoalSeek(true)}
+              >
+                {t('mc.whatWouldItTake')}
+              </Button>
+            )}
           </div>
         </>
       )}

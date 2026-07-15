@@ -38,7 +38,8 @@ export const fr: Resources = {
     spendingSub: '{{monthly}} /mois · {{inflation}} % d’inflation · à partir de {{year}}',
     spendingSubPhased: 'Go-Go → No-Go {{end}}/an · {{inflation}} % d’inflation',
     phasedBadge: 'Par phase',
-    accountsUnit: 'comptes',
+    accountsUnit_one: 'compte',
+    accountsUnit_other: 'comptes',
     accountsSub: 'Enveloppes fiscales pour les retraits',
     withdrawalNotSet: 'Non défini',
     withdrawalReady: 'Prêt',
@@ -180,8 +181,29 @@ export const fr: Resources = {
       'Cet outil est destiné à des fins strictement informatives et éducatives. Les résultats présentés sont des projections hypothétiques basées sur vos saisies et ne constituent pas un conseil financier, fiscal ou juridique. Aucune garantie de performance n’est offerte. Consultez un professionnel qualifié avant toute décision.',
   },
   footer: {
-    copyright: '© {{year}} Runway',
+    copyright: '© {{year}} Runaway',
     methodologyLink: 'Méthodologie',
+    contactLink: 'Contactez-nous',
+  },
+  contact: {
+    title: 'Contactez-nous',
+    desc: 'Un problème, une question ou autre chose — envoyez-nous un message et nous vous répondrons par e-mail.',
+    name: 'Nom',
+    email: 'E-mail',
+    subject: 'Sujet',
+    message: 'Message',
+    subjects: {
+      problem: 'Problème',
+      question: 'Question',
+      feature: 'Demande de fonctionnalité',
+      other: 'Autre',
+    },
+    send: 'Envoyer le message',
+    sending: 'Envoi…',
+    error: "Votre message n'a pas pu être envoyé. Réessayez dans un instant.",
+    sentTitle: 'Message envoyé',
+    sentDesc:
+      "Merci de nous avoir écrit. Nous répondrons à l'adresse e-mail que vous avez indiquée.",
   },
   dashboard: {
     portfolioValue: 'Valeur du portefeuille (déterministe)',
@@ -221,9 +243,9 @@ export const fr: Resources = {
     },
   },
   runway: {
-    title: 'Votre runway',
+    title: 'Votre runaway',
     seeAll: 'Voir tous les événements',
-    allEventsTitle: 'Événements du runway',
+    allEventsTitle: 'Événements du runaway',
     today: "Aujourd'hui",
     retirement: 'Début de la retraite',
     benefits: 'Début RRQ / PSV',
@@ -241,7 +263,7 @@ export const fr: Resources = {
     colYear: 'Année',
     colEvent: 'Événement',
     colAmount: 'Montant',
-    addAssetPrompt: 'Ajoutez un actif pour voir votre runway.',
+    addAssetPrompt: 'Ajoutez un actif pour voir votre runaway.',
     addAsset: 'Ajouter un actif',
   },
   calc: {
@@ -285,7 +307,6 @@ export const fr: Resources = {
     optOpeningClosing: 'Ouverture vs clôture',
     optNetChange: 'Variation nette (clôture − ouverture)',
     optApprExpenses: 'Appréciation vs dépenses',
-    optAllocation: 'Allocation (par classe d’actifs)',
     optPostRetirement: 'Post-retraite (années de survie)',
     optScenarios: 'Scénarios (optimiste / attendu / pessimiste)',
     descComposition:
@@ -298,7 +319,6 @@ export const fr: Resources = {
       'Variation nette projetée de la valeur du portefeuille chaque année (clôture − ouverture). Positive pendant l’épargne, négative quand les retraits dépassent la croissance à la retraite.',
     descApprExpenses:
       'Compare l’appréciation des investissements de chaque année aux dépenses brutes (retraits, impôt inclus) ponctionnées du portefeuille.',
-    descAllocation: 'Allocation actuelle du portefeuille par classe d’actifs.',
     descPostRetirement:
       'Combien d’années votre épargne dure après la retraite selon chaque scénario.',
     descScenarios: 'Compare les hypothèses de rendement annuel optimiste, attendu et pessimiste.',
@@ -569,6 +589,7 @@ export const fr: Resources = {
     noAccounts: 'Aucun compte pour l’instant. Ajoutez-en un ci-dessus pour regrouper les actifs.',
     manual: 'Manuel',
     deleteAria: 'Supprimer {{name}}',
+    lastAccount: 'Un plan doit garder au moins un compte',
     accountName: 'Nom du compte',
     effective: 'effectif',
     type: 'Type',
@@ -983,6 +1004,7 @@ export const fr: Resources = {
     recalculating: 'recalcul…',
     fundedIn:
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
+    parametersTitle: 'Paramètres',
     returnModel: 'Modèle de rendement',
     selectModel: 'Choisir le modèle',
     groupStandard: 'Standard',
@@ -998,18 +1020,21 @@ export const fr: Resources = {
     histStartYearHintFixed:
       "Chaque trajectoire rejoue exactement la même séquence réelle à partir de cette année (avec retour à 1928 si elle dépasse 2024) — la simulation devient un seul scénario déterministe « et si j'avais pris ma retraite en {{year}} » plutôt qu'un éventail de résultats.",
     btcCycle: 'Cycle de halving Bitcoin',
-    overlayBtc: 'Superposer le cycle de halving au BTC',
+    overlayBtc: 'Cycle halving BTC',
     btcHintOn:
       'Années haussières post-halving (2025, 2029…) puis une année baissière (2026, 2030…), appliquées uniquement à votre position BTC.',
     btcHintOff:
       'Ajoutez une position BTC ou un ETF Bitcoin spot (FBTC, IBIT, GBTC…) pour utiliser cette superposition.',
     growthFade: 'Atténuation de croissance',
     fadeToggle: 'Atténuer les CAGR élevés vers un taux mature',
-    whereYouLand: "Valeur nette à l'espérance de vie ({{year}})",
     top25: 'Top 25 %',
     median: 'Médiane',
     bottom25: 'Bottom 25 %',
     bottom10: 'Bottom 10 %',
+    medianValueTitle: 'Valeur médiane du portefeuille',
+    medianValueNote: "À l'espérance de vie ({{year}})",
+    netWorthTitle: 'Valeur nette du portefeuille en {{year}}',
+    medianDepletionTitle: "Année d'épuisement médiane",
     tipSuccess:
       "Sur {{count}} futurs simulés — chacun une façon différente dont les marchés pourraient évoluer — c'est la part où votre argent a duré toute la retraite sans jamais tomber à zéro. Plus c'est haut, plus c'est sûr : votre plan survit aussi à davantage de marchés difficiles.",
     tipLargeSurplus:
@@ -1020,14 +1045,6 @@ export const fr: Resources = {
       "L'argent s'est épuisé avant la fin, mais assez tard — au niveau ou après le point d'échec typique. Ces plans sont passés tout près.",
     tipFailedMiddle:
       "L'argent s'est épuisé tôt — avant le point d'échec typique. Ce sont les plans qui ont flanché le plus vite.",
-    tipTop25:
-      'Un scénario chanceux : seule environ 1 simulation sur 4 a terminé plus riche que ça. Agréable si ça arrive, mais à ne pas tenir pour acquis.',
-    tipMedian:
-      'Le résultat du milieu. Classez toutes les simulations de la plus pauvre à la plus riche : celle-ci est pile au centre — la moitié finit au-dessus, la moitié en dessous. Le résultat le plus typique.',
-    tipBottom25:
-      "Le côté pessimiste : environ 1 simulation sur 4 a terminé ici ou plus bas. Un aperçu réaliste de ce qu'un parcours sous la moyenne pourrait laisser.",
-    tipBottom10:
-      'Un cas de stress : seule environ 1 simulation sur 10 a terminé plus bas que ça. La queue des marchés difficiles à prévoir dans son plan.',
     outcomeBreakdown: 'Répartition des résultats',
     outcomeLargeSurplus: 'Gros surplus',
     outcomeComfortable: 'Confortable',
@@ -1091,8 +1108,8 @@ export const fr: Resources = {
     ariaAxisYears: 'Afficher l’axe X en années',
     ariaAxisAges: 'Afficher l’axe X en âges',
     projectedWithdrawalRate: 'Taux de retrait projeté',
-    visualizeSimulation: 'Visualiser la simulation',
-    trialExplorerTitle: 'Explorateur d’essais',
+    visualizeSimulation: 'Explore in detail',
+    trialExplorerTitle: 'Trial Explorer',
     trialExplorerDesc:
       '{{count}} essais échantillonnés indépendamment, chacun coloré selon son résultat. Triez ou filtrez la liste, choisissez un essai, puis parcourez ses années.',
     trialCol: 'Essai',
@@ -1168,7 +1185,7 @@ export const fr: Resources = {
     },
     steps: {
       dashboardIntro: {
-        title: 'Bienvenue sur Runway',
+        title: 'Bienvenue sur Runaway',
         body: 'Cette visite montre comment construire votre plan : horizon, comptes, actifs et dépenses. Utilisez Suivant et Retour pour avancer, et fermez à tout moment avec Échap.',
       },
       timeline: {
@@ -1368,5 +1385,50 @@ export const fr: Resources = {
     colPremiumUntil: 'Premium jusqu’au',
     tierFree: 'Gratuite',
     tierPremium: 'Premium',
+  },
+  validation: {
+    common: {
+      cannotBeNegative: 'Ne peut pas être négatif',
+      tooNegative: 'Trop négatif',
+      tooLarge: 'Trop élevé',
+      aboveNotSupported: 'Au-delà de {{max}}%, ce n’est pas pris en charge',
+    },
+    planName: {
+      nameRequired: 'Le nom du plan est requis',
+      nameTooLong: 'Le nom est trop long',
+      descriptionTooLong: 'La description est trop longue',
+    },
+    home: {
+      enterName: 'Indiquez un nom',
+      enterValue: 'Indiquez la valeur',
+      valueTooLarge: 'Cette valeur semble trop élevée',
+      enterAppreciation: 'Indiquez un taux d’appréciation',
+      enterOwnershipCost: 'Indiquez un coût de possession',
+      saleAfterPurchase: 'La vente doit avoir lieu après l’achat',
+    },
+    retirementSettings: {
+      enterSpending: 'Indiquez un montant de dépenses',
+      spendingCannotBeNegative: 'Les dépenses ne peuvent pas être négatives',
+      spendingTooLarge: 'Ce montant de dépenses semble trop élevé',
+      enterInflation: 'Indiquez un taux d’inflation',
+      inflationCannotBeNegative: 'L’inflation ne peut pas être négative',
+      inflationTooHigh: 'Une inflation supérieure à 50 % n’est pas prise en charge',
+      slowGoAfterGoGo:
+        'La phase Slow-Go doit se terminer après ou en même temps que la phase Go-Go',
+      cannotExceed100: 'Ne peut pas dépasser 100 %',
+    },
+    scenario: {
+      enterAdjustment: 'Indiquez un ajustement',
+      useAPositiveAuto: 'Utilisez un nombre positif ; il est soustrait automatiquement',
+      useAPositive: 'Utilisez un nombre positif',
+      adjustmentTooLarge: 'Ajustement trop élevé',
+    },
+    contact: {
+      enterName: 'Indiquez votre nom',
+      nameTooLong: 'Le nom est trop long',
+      enterValidEmail: 'Indiquez une adresse e-mail valide',
+      tellUsMore: 'Donnez-nous en un peu plus (10 caractères minimum)',
+      messageTooLong: 'Le message est trop long',
+    },
   },
 };

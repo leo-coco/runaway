@@ -8,8 +8,6 @@ import {
   Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -23,7 +21,6 @@ import { colorForSymbol } from '@/lib/assetColors';
 import type { Plan } from '@/domain/plan';
 import type { ProjectionResult } from '@/hooks/useProjection';
 import {
-  buildAllocationData,
   buildAppreciationExpensesData,
   buildCompositionData,
   buildGrowthData,
@@ -41,7 +38,6 @@ type ChartView =
   | 'openingClosing'
   | 'netChange'
   | 'appreciationExpenses'
-  | 'allocation'
   | 'scenarios'
   | 'postRetirement';
 
@@ -51,7 +47,6 @@ const VIEW_ORDER: ChartView[] = [
   'openingClosing',
   'netChange',
   'appreciationExpenses',
-  'allocation',
   'postRetirement',
   'scenarios',
 ];
@@ -62,7 +57,6 @@ const VIEW_LABEL_KEY: Record<ChartView, string> = {
   openingClosing: 'projChart.optOpeningClosing',
   netChange: 'projChart.optNetChange',
   appreciationExpenses: 'projChart.optApprExpenses',
-  allocation: 'projChart.optAllocation',
   postRetirement: 'projChart.optPostRetirement',
   scenarios: 'projChart.optScenarios',
 };
@@ -73,7 +67,6 @@ const VIEW_DESC_KEY: Record<ChartView, string> = {
   openingClosing: 'projChart.descOpeningClosing',
   netChange: 'projChart.descNetChange',
   appreciationExpenses: 'projChart.descApprExpenses',
-  allocation: 'projChart.descAllocation',
   postRetirement: 'projChart.descPostRetirement',
   scenarios: 'projChart.descScenarios',
 };
@@ -122,7 +115,6 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   );
   const netChangeData = useMemo(() => buildNetChangeData(projection.active), [projection]);
   const scenarioData = useMemo(() => buildScenarioData(projection.byScenario), [projection]);
-  const allocationData = useMemo(() => buildAllocationData(projection.allocation), [projection]);
   const survivalData = useMemo(() => buildSurvivalData(projection.byScenario), [projection]);
 
   const depletion = projection.active.depletionYear;
@@ -224,6 +216,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                   fill: 'var(--danger)',
                   fontSize: 11,
                   position: depletionLabelPosition,
+                  dy: 28,
                 }
               : undefined
           }
@@ -490,33 +483,6 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
               strokeWidth={2}
             />
           </LineChart>
-        ) : view === 'allocation' ? (
-          <PieChart>
-            <Tooltip
-              content={
-                <ChartTooltip
-                  formatter={(value: unknown, name: unknown) => [
-                    fmt.format(Number(value)),
-                    String(name),
-                  ]}
-                />
-              }
-            />
-            <Pie
-              data={allocationData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={130}
-              innerRadius={70}
-              paddingAngle={2}
-            >
-              {allocationData.map((_, i) => (
-                <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-              ))}
-            </Pie>
-          </PieChart>
         ) : (
           <BarChart data={survivalData} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
             <CartesianGrid stroke="var(--border)" vertical={false} />
@@ -541,7 +507,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
         )}
       </ResponsiveContainer>
 
-      {canShowAge && view !== 'allocation' && view !== 'postRetirement' && (
+      {canShowAge && view !== 'postRetirement' && (
         <AxisModeSwitch mode={xAxisMode} onChange={setXAxisMode} />
       )}
 
