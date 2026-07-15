@@ -232,7 +232,7 @@ export const Sidebar = () => {
     deletePlan(id);
     if (id === activeId) {
       const next = plans.find((p) => p.id !== id);
-      navigate(next ? `/plan/${next.id}/dashboard` : '/plans');
+      navigate(next ? `/plan/${next.id}/dashboard` : '/');
     }
     setDeletingId(null);
   };
@@ -250,7 +250,7 @@ export const Sidebar = () => {
           >
             <MenuIcon size={18} />
           </button>
-          <Link to="/" className="sb-brand" aria-label="Runway — home">
+          <Link to="/" className="sb-brand" aria-label="Runaway — home">
             <svg
               className="sb-brand__mark"
               viewBox="0 0 40 32"
@@ -270,7 +270,7 @@ export const Sidebar = () => {
               <circle cx="22" cy="21" r="2.6" fill="var(--accent)" />
               <circle cx="36" cy="6" r="3.4" fill="var(--accent)" />
             </svg>
-            <span className="sb-brand__name">Runway</span>
+            <span className="sb-brand__name">Runaway</span>
           </Link>
         </div>
 

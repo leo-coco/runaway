@@ -8,7 +8,7 @@ interface Crumb {
 
 export const Breadcrumb = ({ items }: { items: readonly Crumb[] }) => (
   <nav className="breadcrumb" aria-label="Breadcrumb">
-    <Link to="/plans" aria-label="Home">
+    <Link to="/" aria-label="Home">
       <HomeIcon size={15} />
     </Link>
     {items.map((c, i) => (

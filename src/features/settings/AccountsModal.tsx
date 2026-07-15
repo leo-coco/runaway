@@ -425,6 +425,7 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
             // Presets just pre-fill type/country/rate at creation time; every
             // account can be edited afterwards.
             const editing = editingId === a.id;
+            const isLastAccount = plan.accounts.length === 1;
             const auto = a.taxMode === 'auto';
             const kind = a.kind ?? 'taxable';
             const source = a.sourceCountry ?? residence;
@@ -468,6 +469,8 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                       variant="danger"
                       size="sm"
                       aria-label={t('accounts.deleteAria', { name: a.name })}
+                      title={isLastAccount ? t('accounts.lastAccount') : undefined}
+                      disabled={isLastAccount}
                       onClick={() => removeAccount(plan.id, a.id)}
                     >
                       <TrashIcon size={16} />
@@ -507,6 +510,8 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                     variant="danger"
                     size="sm"
                     aria-label={t('accounts.deleteAria', { name: a.name })}
+                    title={isLastAccount ? t('accounts.lastAccount') : undefined}
+                    disabled={isLastAccount}
                     onClick={() => {
                       removeAccount(plan.id, a.id);
                       setEditingId(null);

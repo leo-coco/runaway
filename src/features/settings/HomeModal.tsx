@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,7 @@ import {
   HOME_FLOW_LABEL_KEY,
   type Home,
 } from '@/domain/home';
-import { homeFormSchema, type HomeForm } from '@/schemas/homeSchema';
+import { createHomeFormSchema, type HomeForm } from '@/schemas/homeSchema';
 import { useAppStore } from '@/store';
 import { newId } from '@/lib/id';
 import { cn } from '@/lib/cn';
@@ -118,6 +119,7 @@ export const HomeModal = ({ plan, onClose }: Props) => {
   );
   const horizonYears = Math.max(1, maxYear - startYear);
 
+  const homeFormSchema = useMemo(() => createHomeFormSchema(t), [t]);
   const {
     control,
     handleSubmit,
@@ -260,7 +262,11 @@ export const HomeModal = ({ plan, onClose }: Props) => {
             control={control}
             name="hasMortgage"
             render={({ field }) => (
-              <Toggle checked={field.value} onChange={field.onChange} label={t('home.hasMortgage')} />
+              <Toggle
+                checked={field.value}
+                onChange={field.onChange}
+                label={t('home.hasMortgage')}
+              />
             )}
           />
           <span className="field__label">{t('home.hasMortgage')}</span>
@@ -333,7 +339,11 @@ export const HomeModal = ({ plan, onClose }: Props) => {
             control={control}
             name="hasPurchase"
             render={({ field }) => (
-              <Toggle checked={field.value} onChange={field.onChange} label={t('home.hasPurchase')} />
+              <Toggle
+                checked={field.value}
+                onChange={field.onChange}
+                label={t('home.hasPurchase')}
+              />
             )}
           />
           <span className="field__label">{t('home.hasPurchase')}</span>
@@ -516,7 +526,11 @@ export const HomeModal = ({ plan, onClose }: Props) => {
               return (
                 <div
                   key={f.id}
-                  className={cn('flow-card', 'flow-card--readonly', isIncome ? 'flow-card--income' : 'flow-card--expense')}
+                  className={cn(
+                    'flow-card',
+                    'flow-card--readonly',
+                    isIncome ? 'flow-card--income' : 'flow-card--expense',
+                  )}
                 >
                   <div className="flow-card__name flow-card__name--readonly">{flowLabel(f.id)}</div>
                   <div className="flow-card__detail">

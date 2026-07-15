@@ -248,7 +248,9 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
           <div className="ov__content">
             <span className="ov__big">
               {plan.accounts.length}{' '}
-              <span className="ov__big-unit">{t('overview.accountsUnit')}</span>
+              <span className="ov__big-unit">
+                {t('overview.accountsUnit', { count: plan.accounts.length })}
+              </span>
             </span>
             <span className="ov__sub">{t('overview.accountsSub')}</span>
           </div>

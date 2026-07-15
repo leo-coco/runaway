@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { planNameFormSchema, type PlanNameForm } from '@/schemas/planNameSchema';
+import { createPlanNameFormSchema, type PlanNameForm } from '@/schemas/planNameSchema';
 import type { Plan } from '@/domain/plan';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 
 export const PlanNameModal = ({ plan, onSave, onClose }: Props) => {
   const { t } = useTranslation();
+  const planNameFormSchema = useMemo(() => createPlanNameFormSchema(t), [t]);
   const {
     register,
     handleSubmit,

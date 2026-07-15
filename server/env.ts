@@ -27,14 +27,10 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1),
   /** Verified sender, e.g. "Retire on Model <no-reply@yourdomain.com>". */
   EMAIL_FROM: z.string().min(3),
+  /** Mailbox the footer contact form delivers to, e.g. "support@yourdomain.com". */
+  CONTACT_EMAIL_TO: z.string().email(),
   /** ExchangeRate-API key — live FX rates. Proxied via /api/market. */
   EXCHANGERATE_API_KEY: z.string().min(1),
-  /**
-   * Comma-separated emails that are always treated as admins, regardless of their
-   * `role` column. Bootstraps the first admin (no one can grant admin until one
-   * exists). Optional; empty = no bootstrap admins.
-   */
-  ADMIN_EMAILS: z.string().optional().default(''),
 });
 
 export type ServerEnv = z.infer<typeof schema>;

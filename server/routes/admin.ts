@@ -49,7 +49,7 @@ const userPatchSchema = z.object({
 
 export const adminRoutes = new Hono<{ Variables: Vars }>();
 
-// Admin gate: valid session AND admin (role or ADMIN_EMAILS bootstrap).
+// Admin gate: valid session AND admin role.
 adminRoutes.use('*', async (c, next) => {
   const res = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!res?.user) return c.json({ error: 'Unauthorized' }, 401);

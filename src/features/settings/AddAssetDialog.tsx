@@ -125,6 +125,17 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     return { stocks: s, crypto: c };
   }, [results]);
 
+  const stocksByExchange = useMemo(() => {
+    const groups = new Map<string, Instrument[]>();
+    for (const inst of stocks) {
+      const key = inst.exchange || t('addAsset.groupStocks');
+      const group = groups.get(key);
+      if (group) group.push(inst);
+      else groups.set(key, [inst]);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [stocks, t]);
+
   // Shared fields (quantity + CAGR are used by both modes).
   const [quantity, setQuantity] = useState(1);
   const [cagr, setCagr] = useState(8);
@@ -392,12 +403,12 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                   <div className="state-box">{t('addAsset.noMatches')}</div>
                 ) : (
                   <>
-                    {stocks.length > 0 && (
-                      <>
-                        <div className="search-group">{t('addAsset.groupStocks')}</div>
-                        {stocks.map((inst, i) => renderRow(inst, i))}
-                      </>
-                    )}
+                    {stocksByExchange.map(([exchange, insts]) => (
+                      <div key={exchange}>
+                        <div className="search-group">{exchange}</div>
+                        {insts.map((inst, i) => renderRow(inst, i))}
+                      </div>
+                    ))}
                     {crypto.length > 0 && (
                       <>
                         <div className="search-group">{t('addAsset.groupCrypto')}</div>

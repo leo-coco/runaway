@@ -30,8 +30,8 @@ export interface PlansSlice {
 
   /**
    * Create a plan. `freeDemo` picks the free-tier default account (a single
-   * tax-free "DEMO" account) instead of the honest taxable baseline premium
-   * gets; callers decide based on the caller's own entitlements.
+   * tax-free "My account" sandbox) instead of the honest taxable baseline
+   * premium gets; callers decide based on the caller's own entitlements.
    */
   createPlan: (name?: string, freeDemo?: boolean) => string;
   duplicatePlan: (id: string) => string | null;
@@ -124,7 +124,7 @@ const emptyPlan = (name: string, freeDemo = false): Plan => {
   const now = new Date().toISOString();
   const currency: CurrencyCode = 'USD';
   const residenceCountry = residenceForCurrency(currency);
-  // Free plans start with a single tax-free "DEMO" account; everyone else starts
+  // Free plans start with a single tax-free "My account" sandbox; everyone else starts
   // with one basic taxable account matching the residence, so assets have an
   // envelope and tax is modelled from the start.
   const base = freeDemo ? defaultFreeAccount() : defaultTaxableAccount(residenceCountry);
@@ -275,7 +275,9 @@ export const createPlansSlice: StateCreator<PlansSlice, [], [], PlansSlice> = (s
   removeAccount: (planId, accountId) =>
     set((s) => ({
       plans: s.plans.map((p) =>
-        p.id === planId
+        // A plan always keeps at least one account, so holdings never end up
+        // orphaned by deleting the last envelope.
+        p.id === planId && p.accounts.length > 1
           ? touch(p, (x) => ({
               ...x,
               accounts: x.accounts.filter((a) => a.id !== accountId),

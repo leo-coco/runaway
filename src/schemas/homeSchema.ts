@@ -1,44 +1,56 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
 
 /**
  * Validation for the "Home / Real estate" form. The home is described in today's
  * money; optional mortgage, future-purchase and sale sections are gated by their
  * own toggles, so their fields are only meaningful (and cross-checked) when on.
+ * Takes `t` because messages are rendered directly in the form (localized).
  */
-export const homeFormSchema = z
-  .object({
-    name: z.string().min(1, 'Enter a name'),
-    currentValue: z
-      .number({ message: 'Enter the value' })
-      .nonnegative('Value cannot be negative')
-      .max(1_000_000_000, 'That value looks too large'),
-    appreciationPct: z
-      .number({ message: 'Enter an appreciation rate' })
-      .min(-50, 'Too negative')
-      .max(50, 'Too large'),
-    ownershipCostPct: z
-      .number({ message: 'Enter an ownership cost' })
-      .min(0, 'Cannot be negative')
-      .max(20, 'Above 20% is not supported'),
+export const createHomeFormSchema = (t: TFunction) =>
+  z
+    .object({
+      name: z.string().min(1, t('validation.home.enterName')),
+      currentValue: z
+        .number({ message: t('validation.home.enterValue') })
+        .nonnegative(t('validation.common.cannotBeNegative'))
+        .max(1_000_000_000, t('validation.home.valueTooLarge')),
+      appreciationPct: z
+        .number({ message: t('validation.home.enterAppreciation') })
+        .min(-50, t('validation.common.tooNegative'))
+        .max(50, t('validation.common.tooLarge')),
+      ownershipCostPct: z
+        .number({ message: t('validation.home.enterOwnershipCost') })
+        .min(0, t('validation.common.cannotBeNegative'))
+        .max(20, t('validation.common.aboveNotSupported', { max: 20 })),
 
-    hasMortgage: z.boolean(),
-    mortgageBalance: z.number().nonnegative('Cannot be negative').max(1_000_000_000),
-    mortgageRatePct: z.number().min(0, 'Cannot be negative').max(30, 'Above 30% is not supported'),
-    mortgageTermYears: z.number().int().min(0).max(60),
+      hasMortgage: z.boolean(),
+      mortgageBalance: z
+        .number()
+        .nonnegative(t('validation.common.cannotBeNegative'))
+        .max(1_000_000_000),
+      mortgageRatePct: z
+        .number()
+        .min(0, t('validation.common.cannotBeNegative'))
+        .max(30, t('validation.common.aboveNotSupported', { max: 30 })),
+      mortgageTermYears: z.number().int().min(0).max(60),
 
-    hasPurchase: z.boolean(),
-    purchaseYear: z.number().int().min(1900).max(2200),
-    downPayment: z.number().nonnegative('Cannot be negative').max(1_000_000_000),
-    closingCostPct: z.number().min(0, 'Cannot be negative').max(20),
+      hasPurchase: z.boolean(),
+      purchaseYear: z.number().int().min(1900).max(2200),
+      downPayment: z
+        .number()
+        .nonnegative(t('validation.common.cannotBeNegative'))
+        .max(1_000_000_000),
+      closingCostPct: z.number().min(0, t('validation.common.cannotBeNegative')).max(20),
 
-    hasSale: z.boolean(),
-    saleYear: z.number().int().min(1900).max(2200),
-    saleFeePct: z.number().min(0, 'Cannot be negative').max(20),
-    saleCapitalGainsTaxable: z.boolean(),
-  })
-  .refine((v) => !(v.hasSale && v.hasPurchase) || v.saleYear > v.purchaseYear, {
-    message: 'Sale must be after the purchase',
-    path: ['saleYear'],
-  });
+      hasSale: z.boolean(),
+      saleYear: z.number().int().min(1900).max(2200),
+      saleFeePct: z.number().min(0, t('validation.common.cannotBeNegative')).max(20),
+      saleCapitalGainsTaxable: z.boolean(),
+    })
+    .refine((v) => !(v.hasSale && v.hasPurchase) || v.saleYear > v.purchaseYear, {
+      message: t('validation.home.saleAfterPurchase'),
+      path: ['saleYear'],
+    });
 
-export type HomeForm = z.infer<typeof homeFormSchema>;
+export type HomeForm = z.infer<ReturnType<typeof createHomeFormSchema>>;
