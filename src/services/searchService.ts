@@ -4,22 +4,35 @@ import type { Instrument } from '@/domain/asset';
 import type { AssetClass } from '@/domain/assetClass';
 import { isSupportedCurrency, type CurrencyCode } from '@/domain/money';
 import type { CoinGeckoClient } from '@/infrastructure/coinGeckoClient';
-import type { AlphaVantageClient } from '@/infrastructure/alphaVantageClient';
+import type { MarketClient } from '@/infrastructure/marketClient';
 
-/** Unified instrument search across crypto (CoinGecko) and equities (Alpha Vantage). */
+/** Unified instrument search across crypto (CoinGecko) and equities (market proxy). */
 export interface SearchService {
   search(query: string, signal?: AbortSignal): Promise<Result<readonly Instrument[], AppError>>;
 }
 
 export interface SearchServiceDeps {
   readonly coinGecko: CoinGeckoClient;
-  readonly alphaVantage: AlphaVantageClient;
+  readonly market: MarketClient;
 }
 
-const toCurrency = (raw: string): CurrencyCode =>
-  isSupportedCurrency(raw.toUpperCase()) ? (raw.toUpperCase() as CurrencyCode) : 'USD';
+/**
+ * Null when the app cannot represent the currency, which drops the instrument
+ * from the results. Defaulting to USD instead would label, say, a Taipei-listed
+ * TWD fund as dollars and quietly corrupt every total it lands in.
+ */
+const toCurrency = (raw: string): CurrencyCode | null => {
+  const code = raw.toUpperCase();
+  return isSupportedCurrency(code) ? code : null;
+};
 
-const EU_REGION_KEYWORDS = [
+/**
+ * Matched against venue names as the provider displays them ("NYSEArca",
+ * "NasdaqGS", "Toronto", "Paris") — the closest thing to a region it returns.
+ * Note it never spells out "United States", so country names alone would leave
+ * every US listing unclassified.
+ */
+const EU_EXCHANGE_KEYWORDS = [
   'united kingdom',
   'london',
   'germany',
@@ -55,18 +68,43 @@ const EU_REGION_KEYWORDS = [
   'europe',
 ];
 
-const classifyEquity = (region: string): { assetClass: AssetClass; exchange: string } => {
-  const r = region.toLowerCase();
-  if (r.includes('canada') || r.includes('toronto')) {
-    return { assetClass: 'ca_equity', exchange: 'TSX' };
+const CA_EXCHANGE_KEYWORDS = ['toronto', 'canada', 'tsx', 'neo', 'vancouver', 'cse'];
+const US_EXCHANGE_KEYWORDS = [
+  'nyse',
+  'nasdaq',
+  'arca',
+  'bats',
+  'amex',
+  'united states',
+  'usa',
+  'otc',
+];
+
+/** Currency is the fallback signal when the venue name is an opaque code (e.g. "DXE"). */
+const CURRENCY_CLASS: Partial<Record<CurrencyCode, AssetClass>> = {
+  CAD: 'ca_equity',
+  USD: 'us_equity',
+  EUR: 'eu_equity',
+  GBP: 'eu_equity',
+  CHF: 'eu_equity',
+};
+
+const classifyEquity = (
+  exchange: string,
+  currency: CurrencyCode,
+): { assetClass: AssetClass; exchange: string } => {
+  const e = exchange.toLowerCase();
+  const label = exchange || 'Other';
+  if (CA_EXCHANGE_KEYWORDS.some((k) => e.includes(k))) {
+    return { assetClass: 'ca_equity', exchange: label };
   }
-  if (r.includes('united states') || r.includes('usa')) {
-    return { assetClass: 'us_equity', exchange: 'NYSE/NASDAQ' };
+  if (US_EXCHANGE_KEYWORDS.some((k) => e.includes(k))) {
+    return { assetClass: 'us_equity', exchange: label };
   }
-  if (EU_REGION_KEYWORDS.some((k) => r.includes(k))) {
-    return { assetClass: 'eu_equity', exchange: region || 'Europe' };
+  if (EU_EXCHANGE_KEYWORDS.some((k) => e.includes(k))) {
+    return { assetClass: 'eu_equity', exchange: label };
   }
-  return { assetClass: 'other', exchange: region || 'Other' };
+  return { assetClass: CURRENCY_CLASS[currency] ?? 'other', exchange: label };
 };
 
 export const createSearchService = (deps: SearchServiceDeps): SearchService => ({
@@ -76,7 +114,7 @@ export const createSearchService = (deps: SearchServiceDeps): SearchService => (
 
     const [crypto, equities] = await Promise.all([
       deps.coinGecko.search(trimmed, signal),
-      deps.alphaVantage.search(trimmed, signal),
+      deps.market.search(trimmed, signal),
     ]);
 
     const results: Instrument[] = [];
@@ -94,16 +132,20 @@ export const createSearchService = (deps: SearchServiceDeps): SearchService => (
       }
     }
 
-    if (equities.ok && equities.value.bestMatches) {
-      for (const m of equities.value.bestMatches.slice(0, 8)) {
-        const { assetClass, exchange } = classifyEquity(m['4. region']);
+    if (equities.ok) {
+      for (const m of equities.value.results.slice(0, 8)) {
+        const nativeCurrency = toCurrency(m.currency);
+        if (!nativeCurrency) continue;
+        const { assetClass, exchange } = classifyEquity(m.exchange, nativeCurrency);
         results.push({
-          id: `alphavantage:${m['1. symbol']}`,
-          symbol: m['1. symbol'],
-          name: m['2. name'],
+          // `alphavantage:` is the historical prefix for equities and is baked
+          // into saved plans; see instrumentRef.ts.
+          id: `alphavantage:${m.symbol}`,
+          symbol: m.symbol,
+          name: m.name,
           assetClass,
           exchange,
-          nativeCurrency: toCurrency(m['8. currency']),
+          nativeCurrency,
         });
       }
     }

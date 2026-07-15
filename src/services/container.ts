@@ -1,6 +1,6 @@
 import type { AppEnv } from '@/config/env';
 import { createCoinGeckoClient } from '@/infrastructure/coinGeckoClient';
-import { createAlphaVantageClient } from '@/infrastructure/alphaVantageClient';
+import { createMarketClient } from '@/infrastructure/marketClient';
 import { createExchangeRateClient } from '@/infrastructure/exchangeRateClient';
 import { createPriceService, type PriceService } from './priceService';
 import { createSearchService, type SearchService } from './searchService';
@@ -14,11 +14,11 @@ export interface Services {
 /** Compose infrastructure clients and services from validated env. */
 export const createServices = (env: AppEnv): Services => {
   const coinGecko = createCoinGeckoClient(env.coinGeckoBaseUrl);
-  const alphaVantage = createAlphaVantageClient();
+  const market = createMarketClient();
   const exchangeRate = createExchangeRateClient();
 
   return {
-    price: createPriceService({ coinGecko, alphaVantage, exchangeRate }),
-    search: createSearchService({ coinGecko, alphaVantage }),
+    price: createPriceService({ coinGecko, market, exchangeRate }),
+    search: createSearchService({ coinGecko, market }),
   };
 };
