@@ -19,6 +19,7 @@ const PAGE_PATH: Record<TourPage, string> = {
   dashboard: 'dashboard',
   projection: 'projection',
   'monte-carlo': 'monte-carlo',
+  portfolio: 'portfolio',
 };
 
 const routeName = (path: string): TourPage | null => {
