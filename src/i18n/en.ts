@@ -150,6 +150,10 @@ export const en = {
     account: 'Account',
     pleaseWait: 'Please wait…',
     accountCreated: 'Account created. Check your inbox to verify your email, then sign in.',
+    verificationSentMessage: 'A confirmation email has just been sent to',
+    verificationSentHint:
+      'Open it to verify your email address. Remember to check your spam folder too.',
+    verificationComplete: 'I have verified my email address',
     resetLinkSent: 'If that email exists, a reset link is on its way.',
     errorGeneric: 'Something went wrong',
     signInFailed: 'Sign in failed',

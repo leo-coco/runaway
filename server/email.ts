@@ -35,26 +35,19 @@ const verificationEmail = (url: string, language: EmailLanguage): string => {
           body: 'Confirmez votre adresse email pour activer votre compte et commencer à préparer votre avenir financier.',
           action: 'Confirmer mon adresse email',
           note: 'Si vous n’avez pas créé de compte, vous pouvez ignorer cet email.',
-          footer: 'Votre trajectoire vers la liberté financière',
         }
       : {
           heroAlt: 'A Retire on Model envelope',
           title: 'Welcome!',
-          intro: 'Your Retire on Model account is almost ready.',
+          intro: 'Your Runaway account is almost ready.',
           body: 'Confirm your email address to activate your account and start planning your financial future.',
           action: 'Confirm my email address',
           note: 'If you did not create an account, you can safely ignore this email.',
-          footer: 'Your path to financial freedom',
         };
 
   return `
   <div style="margin:0;padding:32px 16px;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;color:#1f2328">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e7ded1;border-radius:20px;overflow:hidden">
-      <tr>
-        <td style="padding:28px 32px 0;text-align:center">
-          <div style="display:inline-block;padding:8px 14px;border:1px solid #eadcc7;border-radius:999px;background:#fbf6ec;color:#9a6f2f;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">Retire on Model</div>
-        </td>
-      </tr>
       <tr>
         <td style="padding:22px 32px 18px;background:#faf9f7;text-align:center">
           <img src="${verificationHeroUrl()}" alt="${copy.heroAlt}" width="220" style="display:block;width:100%;max-width:220px;height:auto;margin:0 auto;border:0;outline:none;text-decoration:none" />
@@ -70,7 +63,7 @@ const verificationEmail = (url: string, language: EmailLanguage): string => {
         </td>
       </tr>
     </table>
-    <p style="max-width:560px;margin:18px auto 0;text-align:center;color:#817667;font-size:12px;line-height:1.5">Retire on Model · ${copy.footer}</p>
+    <p style="max-width:560px;margin:18px auto 0;text-align:center;color:#817667;font-size:12px;line-height:1.5">Runaway. Know when you're free</p>
   </div>`;
 };
 
@@ -83,7 +76,6 @@ const passwordResetEmail = (url: string, language: EmailLanguage): string => {
           body: 'Nous avons reçu une demande de réinitialisation. Utilisez le bouton ci-dessous pour choisir un nouveau mot de passe sécurisé.',
           action: 'Réinitialiser mon mot de passe',
           note: 'Ce lien expire dans 1 heure. Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet email.',
-          footer: 'Votre trajectoire vers la liberté financière',
         }
       : {
           heroAlt: 'An open Retire on Model safe',
@@ -91,17 +83,11 @@ const passwordResetEmail = (url: string, language: EmailLanguage): string => {
           body: 'We received a password-reset request. Use the button below to choose a new secure password.',
           action: 'Reset my password',
           note: 'This link expires in 1 hour. If you did not request it, you can safely ignore this email.',
-          footer: 'Your path to financial freedom',
         };
 
   return `
   <div style="margin:0;padding:32px 16px;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;color:#1f2328">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e7ded1;border-radius:20px;overflow:hidden">
-      <tr>
-        <td style="padding:28px 32px 0;text-align:center">
-          <div style="display:inline-block;padding:8px 14px;border:1px solid #eadcc7;border-radius:999px;background:#fbf6ec;color:#9a6f2f;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">Retire on Model</div>
-        </td>
-      </tr>
       <tr>
         <td style="padding:22px 32px 18px;background:#faf9f7;text-align:center">
           <img src="${passwordResetHeroUrl()}" alt="${copy.heroAlt}" width="220" style="display:block;width:100%;max-width:220px;height:auto;margin:0 auto;border:0;outline:none;text-decoration:none" />
@@ -116,7 +102,7 @@ const passwordResetEmail = (url: string, language: EmailLanguage): string => {
         </td>
       </tr>
     </table>
-    <p style="max-width:560px;margin:18px auto 0;text-align:center;color:#817667;font-size:12px;line-height:1.5">Retire on Model · ${copy.footer}</p>
+    <p style="max-width:560px;margin:18px auto 0;text-align:center;color:#817667;font-size:12px;line-height:1.5">Runaway. Know when you're free</p>
   </div>`;
 };
 

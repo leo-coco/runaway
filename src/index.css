@@ -5839,6 +5839,46 @@ th[title] {
 .auth-msg--ok {
   color: var(--success);
 }
+.auth-verification-sent {
+  display: flex;
+  min-height: 350px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.auth-verification-sent__media {
+  align-self: stretch;
+  background: #f8f6f2;
+}
+.auth-verification-sent__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  object-fit: contain;
+}
+.auth-verification-sent__message {
+  max-width: 310px;
+  margin: 22px 24px 0;
+  color: #3e3933;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+.auth-verification-sent__email {
+  max-width: 100%;
+  margin: 4px 24px 0;
+  overflow-wrap: anywhere;
+  color: #1c1917;
+  font-weight: var(--fw-semibold);
+}
+.auth-verification-sent__hint {
+  max-width: 330px;
+  margin: 16px 24px 28px;
+  color: #716b63;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
 .auth-submit {
   width: 100%;
   justify-content: center;
@@ -5945,6 +5985,19 @@ th[title] {
   border-radius: 24px;
   background: #fff;
   box-shadow: 0 20px 50px rgba(28, 25, 23, 0.1);
+}
+.auth-screen__card--verification {
+  padding: 0;
+  overflow: hidden;
+}
+.auth-screen__card--verification .auth-verification-sent {
+  min-height: 0;
+}
+.auth-screen__card--verification .auth-verification-sent__media {
+  border-radius: 23px 23px 0 0;
+}
+.auth-screen__card--verification .auth-verification-sent > .link-btn {
+  margin-bottom: 36px;
 }
 .auth-screen__card-heading {
   margin-bottom: 30px;
