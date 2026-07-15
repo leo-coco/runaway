@@ -20,10 +20,9 @@ export const BootError = ({ issues }: { issues: readonly string[] }) => (
         ))}
       </ul>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem' }}>
-        Stock (Alpha Vantage) and FX (ExchangeRate-API) keys are now server-side only — set{' '}
-        <code>ALPHA_VANTAGE_API_KEY</code> and <code>EXCHANGERATE_API_KEY</code> in the API
-        environment, not here. CoinGecko (crypto) needs no key. Restart the dev server after editing{' '}
-        <code>.env</code>.
+        The FX (ExchangeRate-API) key is server-side only — set <code>EXCHANGERATE_API_KEY</code> in
+        the API environment, not here. Stock quotes (Yahoo) and crypto (CoinGecko) need no key.
+        Restart the dev server after editing <code>.env</code>.
       </p>
     </div>
   </div>

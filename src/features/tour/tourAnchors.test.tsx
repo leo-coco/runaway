@@ -30,6 +30,7 @@ const mockServices: Services = {
     cryptoPrice: vi.fn(async () => ok(100)),
     cryptoPrices: vi.fn(async () => ok({})),
     stockPrice: vi.fn(async () => ok(50)),
+    stockPrices: vi.fn(async () => ok({})),
     rates: vi.fn(async () => ok({ base: 'USD', rates: { USD: 1, CAD: 1.35 }, asOf: 0 })),
   },
   search: { search: vi.fn(async () => ok([])) },

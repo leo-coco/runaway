@@ -1,0 +1,214 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const quoteMock = vi.fn();
+const searchMock = vi.fn();
+
+vi.mock('yahoo-finance2', () => ({
+  default: class {
+    quote = quoteMock;
+    search = searchMock;
+  },
+}));
+
+/**
+ * In-memory stand-in for the Postgres-backed cache, faithful to the contract
+ * getCached is tested against in server/lib/cachedFetch.test.ts: fresh rows skip
+ * the fetcher, and a throwing fetcher replays the last known-good payload.
+ */
+const store = new Map<string, { payload: unknown; expiresAt: number }>();
+
+vi.mock('../lib/cachedFetch.js', () => ({
+  getCached: async (key: string, ttlMs: number, fetcher: () => Promise<unknown>) => {
+    const row = store.get(key);
+    if (row && row.expiresAt > Date.now()) return { value: row.payload, status: 'hit' };
+    try {
+      const value = await fetcher();
+      store.set(key, { payload: value, expiresAt: Date.now() + ttlMs });
+      return { value, status: 'miss' };
+    } catch (cause) {
+      if (row) return { value: row.payload, status: 'stale' };
+      throw cause;
+    }
+  },
+}));
+
+const { marketRoutes } = await import('./market.js');
+
+const yahooQuote = (symbol: string, price: number, currency: string) => ({
+  symbol,
+  regularMarketPrice: price,
+  currency,
+  fullExchangeName: 'Toronto',
+  regularMarketTime: new Date('2026-07-15T20:00:00Z'),
+});
+
+beforeEach(() => {
+  store.clear();
+  quoteMock.mockReset();
+  searchMock.mockReset();
+});
+
+describe('GET /equities/quote', () => {
+  it('maps a quote to the neutral DTO', async () => {
+    quoteMock.mockResolvedValue([yahooQuote('VFV.TO', 188.32, 'CAD')]);
+
+    const res = await marketRoutes.request('/equities/quote?symbol=VFV.TO');
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      symbol: 'VFV.TO',
+      price: 188.32,
+      currency: 'CAD',
+      exchange: 'Toronto',
+      asOf: Date.parse('2026-07-15T20:00:00Z'),
+    });
+  });
+
+  it('converts minor-unit (GBp) quotes to the major unit', async () => {
+    // Yahoo prices some LSE listings in pence; taking 1025 as GBP would
+    // overstate the holding 100x.
+    quoteMock.mockResolvedValue([yahooQuote('ISF.L', 1025, 'GBp')]);
+
+    const res = await marketRoutes.request('/equities/quote?symbol=ISF.L');
+
+    await expect(res.json()).resolves.toMatchObject({ price: 10.25, currency: 'GBP' });
+  });
+
+  it('reports an unknown symbol as 404, not as an upstream failure', async () => {
+    quoteMock.mockResolvedValue([]);
+
+    const res = await marketRoutes.request('/equities/quote?symbol=NOPE');
+
+    expect(res.status).toBe(404);
+    expect(store.has('equity:NOPE')).toBe(false);
+  });
+
+  it('reports a genuine upstream failure as 502', async () => {
+    quoteMock.mockRejectedValue(new Error('socket hang up'));
+
+    const res = await marketRoutes.request('/equities/quote?symbol=VFV.TO');
+
+    expect(res.status).toBe(502);
+  });
+
+  it('replays the last good quote when upstream fails', async () => {
+    quoteMock.mockResolvedValueOnce([yahooQuote('VFV.TO', 188.32, 'CAD')]);
+    await marketRoutes.request('/equities/quote?symbol=VFV.TO');
+    store.set('equity:VFV.TO', { payload: { symbol: 'VFV.TO', price: 188.32 }, expiresAt: 0 });
+    quoteMock.mockRejectedValue(new Error('yahoo is down'));
+
+    const res = await marketRoutes.request('/equities/quote?symbol=VFV.TO');
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-cache')).toBe('stale');
+  });
+});
+
+describe('GET /equities/quotes', () => {
+  it('fetches every symbol in a single upstream call', async () => {
+    quoteMock.mockResolvedValue([
+      yahooQuote('VFV.TO', 188.32, 'CAD'),
+      yahooQuote('VOO', 691.1, 'USD'),
+    ]);
+
+    const res = await marketRoutes.request('/equities/quotes?symbols=VFV.TO,VOO');
+
+    expect(res.status).toBe(200);
+    expect(quoteMock).toHaveBeenCalledTimes(1);
+    expect(quoteMock).toHaveBeenCalledWith(['VFV.TO', 'VOO']);
+    const body = (await res.json()) as { quotes: { symbol: string }[] };
+    expect(body.quotes.map((q) => q.symbol)).toEqual(['VFV.TO', 'VOO']);
+  });
+
+  it('caches per symbol, so a later batch only fetches the new ones', async () => {
+    quoteMock.mockResolvedValueOnce([yahooQuote('VFV.TO', 188.32, 'CAD')]);
+    await marketRoutes.request('/equities/quotes?symbols=VFV.TO');
+    quoteMock.mockResolvedValueOnce([yahooQuote('VOO', 691.1, 'USD')]);
+
+    const res = await marketRoutes.request('/equities/quotes?symbols=VFV.TO,VOO');
+
+    // VFV.TO was already cached by the single-symbol route's key.
+    expect(res.headers.get('x-cache')).toBe('miss');
+    const body = (await res.json()) as { quotes: { symbol: string }[] };
+    expect(body.quotes.map((q) => q.symbol).sort()).toEqual(['VFV.TO', 'VOO']);
+  });
+
+  it('serves cached symbols without any upstream call', async () => {
+    quoteMock.mockResolvedValue([
+      yahooQuote('VFV.TO', 188.32, 'CAD'),
+      yahooQuote('VOO', 691.1, 'USD'),
+    ]);
+    await marketRoutes.request('/equities/quotes?symbols=VFV.TO,VOO');
+    quoteMock.mockClear();
+
+    const res = await marketRoutes.request('/equities/quotes?symbols=VFV.TO,VOO');
+
+    expect(res.headers.get('x-cache')).toBe('hit');
+    expect(quoteMock).not.toHaveBeenCalled();
+  });
+
+  it('omits unknown symbols rather than failing the whole batch', async () => {
+    quoteMock.mockResolvedValue([yahooQuote('VOO', 691.1, 'USD')]);
+
+    const res = await marketRoutes.request('/equities/quotes?symbols=VOO,NOPE');
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { quotes: { symbol: string }[] };
+    expect(body.quotes.map((q) => q.symbol)).toEqual(['VOO']);
+  });
+});
+
+describe('GET /equities/search', () => {
+  it('drops options and other non-investable noise', async () => {
+    searchMock.mockResolvedValue({
+      quotes: [
+        { isYahooFinance: true, quoteType: 'ETF', symbol: 'VFV.TO', shortname: 'Vanguard S&P 500' },
+        { isYahooFinance: true, quoteType: 'OPTION', symbol: 'VFVA261218P00140000' },
+        { isYahooFinance: true, quoteType: 'FUTURE', symbol: 'ES=F' },
+        { isYahooFinance: false, name: 'Some Startup' },
+      ],
+    });
+    quoteMock.mockResolvedValue([yahooQuote('VFV.TO', 188.32, 'CAD')]);
+
+    const res = await marketRoutes.request('/equities/search?keywords=vfv');
+
+    await expect(res.json()).resolves.toEqual({
+      results: [
+        { symbol: 'VFV.TO', name: 'Vanguard S&P 500', exchange: 'Toronto', currency: 'CAD' },
+      ],
+    });
+  });
+
+  it('drops nameless Morningstar-id funds', async () => {
+    searchMock.mockResolvedValue({
+      quotes: [
+        { isYahooFinance: true, quoteType: 'MUTUALFUND', symbol: '0P0001KRJP.TW' },
+        { isYahooFinance: true, quoteType: 'ETF', symbol: 'GRE.PA', shortname: 'Amundi Greece' },
+      ],
+    });
+    quoteMock.mockResolvedValue([yahooQuote('GRE.PA', 25.1, 'EUR')]);
+
+    const res = await marketRoutes.request('/equities/search?keywords=amundi');
+
+    const body = (await res.json()) as { results: { symbol: string }[] };
+    expect(body.results.map((r) => r.symbol)).toEqual(['GRE.PA']);
+  });
+
+  it('drops results that have no quote, since currency comes from it', async () => {
+    searchMock.mockResolvedValue({
+      quotes: [{ isYahooFinance: true, quoteType: 'EQUITY', symbol: 'GHOST', shortname: 'Ghost' }],
+    });
+    quoteMock.mockResolvedValue([]);
+
+    const res = await marketRoutes.request('/equities/search?keywords=ghost');
+
+    await expect(res.json()).resolves.toEqual({ results: [] });
+  });
+
+  it('short queries do not reach the provider', async () => {
+    const res = await marketRoutes.request('/equities/search?keywords=a');
+
+    await expect(res.json()).resolves.toEqual({ results: [] });
+    expect(searchMock).not.toHaveBeenCalled();
+  });
+});

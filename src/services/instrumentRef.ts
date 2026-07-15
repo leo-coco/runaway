@@ -2,7 +2,13 @@ import type { Instrument } from '@/domain/asset';
 
 /**
  * Instrument ids are namespaced `provider:ref`. These helpers decode them so the
- * price layer knows whether to call CoinGecko or Alpha Vantage.
+ * price layer knows whether to call CoinGecko or the equities proxy.
+ *
+ * `alphavantage` predates the move off Alpha Vantage and now just means
+ * "equity". It is baked into every saved plan (encrypted at rest, so not
+ * rewritable server-side) and must keep parsing forever: an unknown provider
+ * makes parseInstrumentId return null, which strands the holding with
+ * "no linked data provider" in usePriceFetcher.
  */
 export type InstrumentProvider = 'coingecko' | 'alphavantage';
 

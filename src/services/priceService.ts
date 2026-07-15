@@ -2,7 +2,7 @@ import { appError, type AppError } from '@/domain/errors';
 import { err, ok, type Result } from '@/domain/result';
 import type { CurrencyCode } from '@/domain/money';
 import type { CoinGeckoClient } from '@/infrastructure/coinGeckoClient';
-import type { AlphaVantageClient } from '@/infrastructure/alphaVantageClient';
+import type { MarketClient } from '@/infrastructure/marketClient';
 import type { ExchangeRateClient } from '@/infrastructure/exchangeRateClient';
 import type { RatesTable } from './currencyService';
 
@@ -23,16 +23,19 @@ export interface PriceService {
     signal?: AbortSignal,
   ): Promise<Result<Record<string, number>, AppError>>;
   stockPrice(symbol: string, signal?: AbortSignal): Promise<Result<number, AppError>>;
+  /** Batch stock prices for several symbols in one request. */
+  stockPrices(
+    symbols: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<Result<Record<string, number>, AppError>>;
   rates(base: CurrencyCode, signal?: AbortSignal): Promise<Result<RatesTable, AppError>>;
 }
 
 export interface PriceServiceDeps {
   readonly coinGecko: CoinGeckoClient;
-  readonly alphaVantage: AlphaVantageClient;
+  readonly market: MarketClient;
   readonly exchangeRate: ExchangeRateClient;
 }
-
-const isThrottled = (note?: string, info?: string): boolean => Boolean(note ?? info);
 
 export const createPriceService = (deps: PriceServiceDeps): PriceService => ({
   cryptoPrice: async (coinId, vsCurrency, signal) => {
@@ -60,19 +63,23 @@ export const createPriceService = (deps: PriceServiceDeps): PriceService => ({
   },
 
   stockPrice: async (symbol, signal) => {
-    const res = await deps.alphaVantage.quote(symbol, signal);
+    const res = await deps.market.quote(symbol, signal);
     if (!res.ok) return res;
-    if (isThrottled(res.value.Note, res.value.Information)) {
-      return err(
-        appError('rate_limit', 'Alpha Vantage is throttling requests (free tier). Try again soon.'),
-      );
-    }
-    const raw = res.value['Global Quote']?.['05. price'];
-    const price = raw === undefined ? Number.NaN : Number.parseFloat(raw);
-    if (!Number.isFinite(price)) {
+    if (!Number.isFinite(res.value.price)) {
       return err(appError('not_found', `No quote found for "${symbol}".`));
     }
-    return ok(price);
+    return ok(res.value.price);
+  },
+
+  stockPrices: async (symbols, signal) => {
+    if (symbols.length === 0) return ok({});
+    const res = await deps.market.quotes(symbols, signal);
+    if (!res.ok) return res;
+    const out: Record<string, number> = {};
+    for (const quote of res.value.quotes) {
+      if (Number.isFinite(quote.price)) out[quote.symbol.toUpperCase()] = quote.price;
+    }
+    return ok(out);
   },
 
   rates: async (base, signal) => {

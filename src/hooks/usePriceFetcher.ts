@@ -79,13 +79,66 @@ export const usePriceFetcher = (planId: string) => {
     [planId, qc, services, updateHolding],
   );
 
+  /**
+   * Refreshes every holding, collapsing the equities into a single batch
+   * request instead of one per holding. Crypto still goes per-holding: prices
+   * are keyed by (coinId, currency) and holdings may differ in native currency.
+   */
   const fetchAll = useCallback(
     async (holdings: readonly Holding[]): Promise<void> => {
       setIsFetchingAll(true);
-      await Promise.allSettled(holdings.map((h) => fetchPrice(h)));
+
+      const stocks: { holding: Holding; symbol: string }[] = [];
+      const rest: Holding[] = [];
+      for (const h of holdings) {
+        const ref = parseInstrumentId(h.instrument.id);
+        if (ref && ref.provider !== 'coingecko') stocks.push({ holding: h, symbol: ref.ref });
+        else rest.push(h);
+      }
+
+      const fetchStocks = async (): Promise<void> => {
+        if (stocks.length === 0) return;
+        const symbols = [...new Set(stocks.map((s) => s.symbol))];
+        setStatuses((s) => ({
+          ...s,
+          ...Object.fromEntries(stocks.map(({ holding }) => [holding.id, { status: 'loading' }])),
+        }));
+
+        const res = await services.price.stockPrices(symbols);
+        if (!res.ok) {
+          setStatuses((s) => ({
+            ...s,
+            ...Object.fromEntries(
+              stocks.map(({ holding }) => [holding.id, { status: 'error', error: res.error }]),
+            ),
+          }));
+          return;
+        }
+
+        for (const { holding, symbol } of stocks) {
+          const price = res.value[symbol.toUpperCase()];
+          if (price === undefined) {
+            setStatuses((s) => ({
+              ...s,
+              [holding.id]: {
+                status: 'error',
+                error: { kind: 'not_found', message: `No quote found for "${symbol}".` },
+              },
+            }));
+            continue;
+          }
+          // Share the batch result with the per-row fetchPrice path, which
+          // reads this same key.
+          qc.setQueryData(queryKeys.stockPrice(symbol), price);
+          updateHolding(planId, holding.id, { pricePerUnit: price });
+          setStatuses((s) => ({ ...s, [holding.id]: { status: 'success' } }));
+        }
+      };
+
+      await Promise.allSettled([fetchStocks(), ...rest.map((h) => fetchPrice(h))]);
       setIsFetchingAll(false);
     },
-    [fetchPrice],
+    [fetchPrice, planId, qc, services, updateHolding],
   );
 
   return { statuses, isFetchingAll, fetchPrice, fetchAll };
