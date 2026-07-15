@@ -11,7 +11,7 @@ class MockResizeObserver {
   unobserve = vi.fn();
   disconnect = vi.fn();
 }
-(global as unknown as { ResizeObserver: unknown }).ResizeObserver = MockResizeObserver;
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = MockResizeObserver;
 
 // The component derives events from context + service; mock both so the test
 // drives a fixed event list and never needs the store/network.
