@@ -861,8 +861,15 @@ h4 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 20px;
-  margin-bottom: 10px;
+  margin: 20px 0 18px;
+  padding: 16px 24px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 78%, black 22%),
+    color-mix(in srgb, var(--bg) 88%, black 12%)
+  );
 }
 @media (max-width: 860px) {
   .sidebar {
