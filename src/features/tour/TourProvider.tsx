@@ -2,8 +2,10 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode }
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/store';
+import { useEntitlements, useEntitlementsReady } from '@/hooks/useEntitlements';
+import type { TierId } from '@/domain/entitlements';
 import { createTour, type TourInstance } from './TourController';
-import { TOUR_GUIDES, type TourPage } from './tourSteps';
+import { TOUR_GUIDES, accessibleSteps, type TourPage } from './tourSteps';
 import './tour.css';
 
 const SEEN_KEY = 'retire-on-model/tour-seen';
@@ -30,14 +32,32 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
   const plans = useAppStore((s) => s.plans);
   const match = useMatch('/plan/:id/*');
   const activeId = match?.params.id ?? plans[0]?.id;
+  const { features, tier } = useEntitlements();
+  const entitlementsReady = useEntitlementsReady();
 
   // The controller is created once but always reads the latest deps via this ref,
   // so navigation/store/i18n stay current across renders and language switches.
-  const latest = useRef({ navigate, pathname: location.pathname, planId: activeId, openModal, closeModal, t });
+  const latest = useRef({
+    navigate,
+    pathname: location.pathname,
+    planId: activeId,
+    openModal,
+    closeModal,
+    t,
+    features,
+  });
   // Keep the controller's live deps fresh after every render (post-commit, so we
   // never touch the ref during render).
   useEffect(() => {
-    latest.current = { navigate, pathname: location.pathname, planId: activeId, openModal, closeModal, t };
+    latest.current = {
+      navigate,
+      pathname: location.pathname,
+      planId: activeId,
+      openModal,
+      closeModal,
+      t,
+      features,
+    };
   });
 
   // Built once on mount (not during render — it closes over the `latest` ref, whose
@@ -64,7 +84,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
         } catch {
           /* ignore blocked storage */
         }
-        tour.current?.start(TOUR_GUIDES[guide]);
+        tour.current?.start(accessibleSteps(TOUR_GUIDES[guide], latest.current.features));
       },
     }),
     [],
@@ -75,7 +95,10 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
   // mount/unmount/mount cycle (which cancels the first timer) can't suppress it.
   const autoStarted = useRef(false);
   useEffect(() => {
-    if (autoStarted.current || !activeId) return;
+    // Wait for the real tier before filtering steps, so a premium user's first
+    // session doesn't get the free-tier-trimmed guide just because entitlements
+    // hadn't loaded yet.
+    if (autoStarted.current || !activeId || !entitlementsReady) return;
     let seen: boolean;
     try {
       seen = Boolean(localStorage.getItem(SEEN_KEY));
@@ -90,10 +113,36 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         /* ignore */
       }
-      tour.current?.start(TOUR_GUIDES.dashboard);
+      tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features));
     }, 700);
     return () => clearTimeout(id);
-  }, [activeId]);
+  }, [activeId, entitlementsReady]);
+
+  // Re-propose the welcome guide when a user upgrades mid-session, now showing
+  // every step (including the ones the free tier had trimmed). `prevTier` only
+  // starts tracking once entitlements have actually resolved, so the loading
+  // fallback (always "free") is never mistaken for a real free→premium upgrade.
+  const prevTier = useRef<TierId | null>(null);
+  useEffect(() => {
+    if (!entitlementsReady) return;
+    const was = prevTier.current;
+    prevTier.current = tier;
+    if (was !== 'free' || tier !== 'premium') return;
+    try {
+      localStorage.removeItem(SEEN_KEY);
+    } catch {
+      /* ignore */
+    }
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(SEEN_KEY, '1');
+      } catch {
+        /* ignore */
+      }
+      tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features));
+    }, 700);
+    return () => clearTimeout(id);
+  }, [tier, entitlementsReady]);
 
   return <TourContext.Provider value={value}>{children}</TourContext.Provider>;
 };

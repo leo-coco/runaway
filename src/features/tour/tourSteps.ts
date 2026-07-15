@@ -1,5 +1,6 @@
 import type { Side, Alignment } from 'driver.js';
 import type { ModalKind } from '@/store/uiSlice';
+import type { TierFeatures } from '@/domain/entitlements';
 
 export type TourPage = 'dashboard' | 'projection' | 'monte-carlo';
 
@@ -20,12 +21,11 @@ export interface TourStep {
   align?: Alignment;
   /** Override the wait budget for a slow-to-mount target (e.g. Monte Carlo after it runs). */
   timeoutMs?: number;
+  /** Premium feature this step demonstrates; skipped entirely when the viewer lacks it. */
+  requires?: keyof TierFeatures;
 }
 
-const step = (
-  id: string,
-  extra: Omit<TourStep, 'id' | 'titleKey' | 'bodyKey'>,
-): TourStep => ({
+const step = (id: string, extra: Omit<TourStep, 'id' | 'titleKey' | 'bodyKey'>): TourStep => ({
   id,
   titleKey: `tour.steps.${id}.title`,
   bodyKey: `tour.steps.${id}.body`,
@@ -47,6 +47,7 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'accounts-card',
     side: 'bottom',
     align: 'start',
+    requires: 'accountsTax',
   }),
   step('accounts', {
     page: 'dashboard',
@@ -54,6 +55,7 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'tax-residence-select',
     side: 'bottom',
     align: 'start',
+    requires: 'accountsTax',
   }),
   step('accountsPresets', {
     page: 'dashboard',
@@ -61,29 +63,30 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'account-preset-add',
     side: 'bottom',
     align: 'start',
+    requires: 'accountsTax',
   }),
   step('addAssetButton', {
-    page: 'dashboard',
+    page: 'portfolio',
     tourKey: 'addasset-btn',
     side: 'bottom',
     align: 'end',
   }),
   step('addAsset', {
-    page: 'dashboard',
+    page: 'portfolio',
     openModal: 'addAsset',
     tourKey: 'addasset-tabs',
     side: 'bottom',
     align: 'start',
   }),
   step('fetchPrices', {
-    page: 'dashboard',
+    page: 'portfolio',
     tourKey: 'fetch-prices-btn',
     side: 'bottom',
     align: 'end',
   }),
-  step('quantity', { page: 'dashboard', tourKey: 'quantity-input', side: 'top', align: 'center' }),
-  step('cagr', { page: 'dashboard', tourKey: 'cagr-input', side: 'top', align: 'center' }),
-  step('drag', { page: 'dashboard', tourKey: 'drag-handle', side: 'right', align: 'start' }),
+  step('quantity', { page: 'portfolio', tourKey: 'quantity-input', side: 'top', align: 'center' }),
+  step('cagr', { page: 'portfolio', tourKey: 'cagr-input', side: 'top', align: 'center' }),
+  step('drag', { page: 'portfolio', tourKey: 'drag-handle', side: 'right', align: 'start' }),
   step('savings', { page: 'dashboard', tourKey: 'savings-card', side: 'bottom', align: 'start' }),
   step('spendingButton', {
     page: 'dashboard',
@@ -109,6 +112,7 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'withdrawal-card',
     side: 'bottom',
     align: 'start',
+    requires: 'withdrawalOrdering',
   }),
   step('withdrawal', {
     page: 'dashboard',
@@ -116,8 +120,14 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'plan-modal',
     side: 'left',
     align: 'start',
+    requires: 'withdrawalOrdering',
   }),
-  step('currency', { page: 'dashboard', tourKey: 'currency-selector', side: 'bottom', align: 'end' }),
+  step('currency', {
+    page: 'dashboard',
+    tourKey: 'currency-selector',
+    side: 'bottom',
+    align: 'end',
+  }),
   step('dashboardOutro', {}),
 ];
 
@@ -137,7 +147,12 @@ export const PROJECTION_GUIDE_STEPS: readonly TourStep[] = [
     side: 'top',
     align: 'center',
   }),
-  step('calcDetails', { page: 'projection', tourKey: 'calc-details', side: 'top', align: 'center' }),
+  step('calcDetails', {
+    page: 'projection',
+    tourKey: 'calc-details',
+    side: 'top',
+    align: 'center',
+  }),
   step('projectionOutro', {}),
 ];
 
@@ -198,3 +213,12 @@ export const TOUR_GUIDES: Record<TourPage, readonly TourStep[]> = {
   projection: PROJECTION_GUIDE_STEPS,
   'monte-carlo': MONTE_CARLO_GUIDE_STEPS,
 };
+
+/**
+ * Drop any step that demonstrates a premium feature the viewer's tier doesn't
+ * grant right now. Reads live `features` (resolved from tier + the admin-editable
+ * tier_config), so a step reappears the moment that feature is toggled on — no
+ * hardcoded free/premium split.
+ */
+export const accessibleSteps = (steps: readonly TourStep[], features: TierFeatures): TourStep[] =>
+  steps.filter((s) => !s.requires || features[s.requires]);
