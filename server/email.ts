@@ -14,9 +14,14 @@ const shell = (title: string, bodyHtml: string): string => `
 const button = (url: string, label: string): string =>
   `<a href="${url}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px">${label}</a>`;
 
-/** Better Auth hands us the link; Resend handles delivery + deliverability. */
+/**
+ * Better Auth swallows errors thrown from these callbacks (they run via
+ * `runInBackgroundOrAwait`, which only logs and never surfaces to the API
+ * response) — sign-up/reset-request calls still report success to the client
+ * even if delivery fails. Log with enough context to diagnose from server logs.
+ */
 export const sendVerificationEmail = async (to: string, url: string): Promise<void> => {
-  await resend().emails.send({
+  const { error } = await resend().emails.send({
     from: serverEnv().EMAIL_FROM,
     to,
     subject: 'Verify your email',
@@ -25,10 +30,11 @@ export const sendVerificationEmail = async (to: string, url: string): Promise<vo
       `<p>Click below to verify your address and activate your account.</p><p>${button(url, 'Verify email')}</p>`,
     ),
   });
+  if (error) console.error('[email] verification email failed to send', { to, error });
 };
 
 export const sendResetPasswordEmail = async (to: string, url: string): Promise<void> => {
-  await resend().emails.send({
+  const { error } = await resend().emails.send({
     from: serverEnv().EMAIL_FROM,
     to,
     subject: 'Reset your password',
@@ -37,4 +43,5 @@ export const sendResetPasswordEmail = async (to: string, url: string): Promise<v
       `<p>We received a request to reset your password. This link expires in 1 hour.</p><p>${button(url, 'Reset password')}</p><p style="color:#888;font-size:12px">If you didn't request this, ignore this email.</p>`,
     ),
   });
+  if (error) console.error('[email] reset-password email failed to send', { to, error });
 };

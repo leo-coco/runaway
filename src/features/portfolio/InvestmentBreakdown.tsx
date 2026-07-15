@@ -177,8 +177,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                         : ''}
                     </span>
                   </div>
-                  <GainLine gain={g.gain} fmt={fmt} className="acct-section__gain" />
                   <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
+                  <GainLine gain={g.gain} fmt={fmt} className="acct-section__gain" />
                 </div>
 
                 {g.holdings.map((h) => (
@@ -234,7 +234,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
         {plan.holdings.length > 0 && (
           <div className="total-row">
             <span className="label">Total ({plan.currency})</span>
-            <GainLine gain={totalGain} fmt={fmt} className="gain-badge--lg" />
+            <GainLine gain={totalGain} fmt={fmt} />
             <span className="value">{fmt.format(totalValue)}</span>
           </div>
         )}

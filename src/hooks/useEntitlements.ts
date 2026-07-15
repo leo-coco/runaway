@@ -35,3 +35,19 @@ export const useFeature = (feature: keyof TierFeatures): boolean =>
 
 /** Convenience: the current user's limit for a resource (`null` = unlimited). */
 export const useLimit = (limit: keyof TierLimits): number | null => useEntitlements().limits[limit];
+
+/**
+ * True once the server has responded at least once this session — i.e. `useEntitlements()`
+ * is no longer returning the loading/guest fallback. Lets callers avoid treating "still
+ * loading" as a real tier before the actual entitlements are known.
+ */
+export const useEntitlementsReady = (): boolean => {
+  const { data: session } = useSession();
+  const userId = session?.user?.id ?? 'guest';
+  const { isSuccess } = useQuery({
+    queryKey: queryKeys.entitlements(userId),
+    queryFn: fetchEntitlements,
+    staleTime: 5 * 60_000,
+  });
+  return isSuccess;
+};

@@ -25,35 +25,69 @@ export const CalculationDetailsContent = ({ plan, projection }: CalculationDetai
   const hasTax = projection.years.some((y) => y.taxPaid > 0.5);
   const startYear = new Date().getFullYear();
 
+  const scenarioName = t(SCENARIO_NAME_KEY[plan.scenario.active]);
+
   return (
     <>
-      <p className="section__desc" style={{ marginBottom: 12 }}>
-        {t('calc.p1Intro')}{' '}
-        <b style={{ color: 'var(--text)' }}>{t(SCENARIO_NAME_KEY[plan.scenario.active])}</b>
-        {adj === 0 ? t('calc.p1NoAdj') : t('calc.p1Adj', { sign: adj > 0 ? '+' : '', adj })}
-        {t('calc.p1Holds', { count: plan.holdings.length, avg: avgCagr })}
-      </p>
-      <p className="section__desc" style={{ marginBottom: 12 }}>
-        {t('calc.p2Intro', {
-          state: plan.settings.inflationPct > 0 ? t('calc.applied') : t('calc.notApplied'),
-          pct: plan.settings.inflationPct,
-          amount: plan.settings.annualSpending.toLocaleString(),
-          currency: plan.currency,
-        })}
-        {plan.settings.inflationPct > 0
-          ? t('calc.p2Inflated', { year: startYear, retYear: plan.settings.retirementYear })
-          : t('calc.p2Constant', { retYear: plan.settings.retirementYear })}
-        {hasTax ? t('calc.p2WithTax') : t('calc.p2NoTax')}
-      </p>
-      <p className="section__desc">
-        {t('calc.p3Intro', { currency: plan.currency })}
-        {projection.depletionYear === null
-          ? t('calc.p3NoDeplete')
-          : t('calc.p3Deplete', { year: projection.depletionYear }) +
-            (projection.yearsOfSurvival === null
-              ? t('calc.p3DepleteEnd')
-              : t('calc.p3DepleteYears', { years: projection.yearsOfSurvival }))}
-      </p>
+      <div className="calc-section">
+        <h4 className="calc-section__title">{t('calc.sectionGrowth')}</h4>
+        <ul className="calc-list">
+          <li>{t('calc.growthReturn')}</li>
+          <li>
+            {adj === 0
+              ? t('calc.growthScenarioNoAdj', { scenario: scenarioName })
+              : t('calc.growthScenarioAdj', {
+                  scenario: scenarioName,
+                  sign: adj > 0 ? '+' : '',
+                  adj,
+                })}
+          </li>
+          <li>{t('calc.growthPortfolio', { count: plan.holdings.length, avg: avgCagr })}</li>
+        </ul>
+      </div>
+      <div className="calc-section">
+        <h4 className="calc-section__title">{t('calc.sectionSpending')}</h4>
+        <ul className="calc-list">
+          <li>
+            {plan.settings.inflationPct > 0
+              ? t('calc.inflationApplied', { pct: plan.settings.inflationPct })
+              : t('calc.inflationNotApplied')}
+          </li>
+          <li>
+            {plan.settings.inflationPct > 0
+              ? t('calc.spendingIndexed', {
+                  amount: plan.settings.annualSpending.toLocaleString(),
+                  currency: plan.currency,
+                  year: startYear,
+                })
+              : t('calc.spendingConstant', {
+                  amount: plan.settings.annualSpending.toLocaleString(),
+                  currency: plan.currency,
+                })}
+          </li>
+          <li>
+            {hasTax
+              ? t('calc.withdrawalsWithTax', { retYear: plan.settings.retirementYear })
+              : t('calc.withdrawalsNoTax', { retYear: plan.settings.retirementYear })}
+          </li>
+        </ul>
+      </div>
+      <div className="calc-section">
+        <h4 className="calc-section__title">{t('calc.sectionCurrency')}</h4>
+        <ul className="calc-list">
+          <li>{t('calc.currencies', { currency: plan.currency })}</li>
+          <li>
+            {projection.depletionYear === null
+              ? t('calc.diagnosticNoDeplete')
+              : projection.yearsOfSurvival === null
+                ? t('calc.diagnosticDeplete', { year: projection.depletionYear })
+                : t('calc.diagnosticDepleteYears', {
+                    year: projection.depletionYear,
+                    years: projection.yearsOfSurvival,
+                  })}
+          </li>
+        </ul>
+      </div>
     </>
   );
 };

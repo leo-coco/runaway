@@ -83,7 +83,7 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
           <div className="mini-row mini-row--head">
             <span className="mini-row__asset">{t('dashboard.colAsset')}</span>
             <span className="mini-row__value">{t('dashboard.colValue')}</span>
-            <span className="mini-row__gain">{t('portfolio.colRoi')}</span>
+            <span className="mini-row__gain">{t('dashboard.colRoi')}</span>
             <span className="mini-alloc mini-alloc--head">{t('dashboard.allocation')}</span>
           </div>
 

@@ -22,7 +22,7 @@ export const en = {
   overview: {
     retirementTimeline: 'Retirement Timeline',
     savingsCapacity: 'Savings Capacity',
-    lifestyleSpending: 'Retirement lifestyle spending',
+    lifestyleSpending: 'Target retirement income',
     lifestyleSpendingHint: 'This is the net amount you want to have per month in retirement.',
     projectionScenario: 'Projection Scenario',
     accountsTax: 'Accounts & Tax',
@@ -43,16 +43,16 @@ export const en = {
     scenarioOptimistic: 'Optimistic',
     scenarioTooltipConservative: 'Applies a global downgrade of {{value}}% to each asset’s CAGR.',
     scenarioTooltipOptimistic: 'Applies a global upgrade of {{value}}% to each asset’s CAGR.',
-    expensesIncomes: 'Expenses & income',
+    expensesIncomes: 'Income & Expenses',
     expensesIncomesCount: '{{count}} item(s)',
     expensesIncomesEmpty: 'No expenses or income added',
     expensesIncomesNext: 'Next: {{amount}} in {{year}}',
-    home: 'Home / Real estate',
+    home: 'Real estate',
     homeSub: 'Equity is tracked separately from your drawable portfolio',
     homeEmpty: 'No home added',
   },
   home: {
-    title: 'Home / Real estate',
+    title: 'Real estate',
     desc: 'A primary residence is never drawn down to fund spending. Its purchase, mortgage, ownership costs and sale are modelled as cashflows; its equity is tracked separately.',
     name: 'Name',
     namePlaceholder: 'e.g. Family home',
@@ -139,6 +139,13 @@ export const en = {
     signInFailed: 'Sign in failed',
     signUpFailed: 'Sign up failed',
     requestFailed: 'Request failed',
+    errorUserExists: 'An account with this email already exists. Try signing in instead.',
+    errorInvalidCredentials: 'Incorrect email or password.',
+    errorEmailNotVerified:
+      'Please verify your email before signing in. Check your inbox for the confirmation link.',
+    errorInvalidEmail: 'That doesn’t look like a valid email address.',
+    errorPasswordTooShort: 'Password is too short.',
+    errorPasswordTooLong: 'Password is too long.',
     resetTitle: 'Choose a new password',
     resetCta: 'Reset password',
     resetSaving: 'Saving…',
@@ -162,7 +169,7 @@ export const en = {
     notFound: 'This plan could not be found. It may have been deleted.',
     disclaimerLabel: 'Disclaimer:',
     disclaimer:
-      'Hypothetical projections based on user inputs. For educational purposes only. Not financial, investment, tax, or legal advice. No guarantee of results.',
+      'This tool is intended for strictly informational and educational purposes. The results shown are hypothetical projections based on your inputs and do not constitute financial, tax, or legal advice. No guarantee of performance is offered. Consult a qualified professional before making any decisions.',
   },
   footer: {
     copyright: '© {{year}} Runway',
@@ -175,16 +182,16 @@ export const en = {
     trendTitle: 'Total value over time',
     colAsset: 'Asset',
     colValue: 'Value',
+    colRoi: 'Return',
     allocation: 'Allocation',
     simulating: 'Simulating…',
     fundedIn: 'Your plan was fully funded in {{count}} of {{total}} simulated markets.',
-    depletes: '● DEPLETES {{year}} · {{years}} YRS AFTER RETIRING',
     oddsNote: 'odds your money lasts all of retirement at this spending level',
     portfolioToday: 'Portfolio today',
     portfolioAtRetirement: 'Portfolio at retirement',
     depletionTitle: 'Savings depletion',
+    depletionAgeNote: 'Age {{age}}',
     neverDepletes: 'Never',
-    fullyFunded: 'FULLY FUNDED',
     mc: {
       badgeStrong: 'Your retirement is on track',
       badgeBorderline: 'Your retirement needs attention',
@@ -226,32 +233,40 @@ export const en = {
     colYear: 'Year',
     colEvent: 'Event',
     colAmount: 'Amount',
+    addAssetPrompt: 'Add an asset to see your runway.',
+    addAsset: 'Add an asset',
   },
   calc: {
     title: 'How these numbers are calculated',
-    p1Intro:
-      'Each asset compounds annually at its own effective CAGR, defined as its base expected CAGR plus the active scenario adjustment. The current scenario is',
-    p1NoAdj: ' (no adjustment to asset growth rates).',
-    p1Adj: ' ({{sign}}{{adj}} percentage points applied to every asset).',
-    p1Holds_one: ' The portfolio holds {{count}} asset with an average base CAGR of {{avg}}%.',
-    p1Holds_other: ' The portfolio holds {{count}} assets with an average base CAGR of {{avg}}%.',
-    applied: 'applied',
-    notApplied: 'not applied',
-    p2Intro:
-      'Inflation is {{state}} at {{pct}}% per year. Lifestyle spending of {{amount}} {{currency}} is entered in today’s money and ',
-    p2Inflated:
-      'inflated from {{year}}, so it keeps its real value; withdrawals begin in {{retYear}}.',
-    p2Constant: 'held constant; withdrawals begin in {{retYear}}.',
-    p2WithTax:
-      ' Each year’s withdrawal is grossed up to cover the tax due (based on your tax residence and each account’s type), then drawn from your accounts in the configured withdrawal order, pro-rata across the holdings within each account.',
-    p2NoTax:
-      ' Each year’s withdrawal is drawn from your accounts in the configured withdrawal order, pro-rata across the holdings within each account.',
-    p3Intro:
-      'Asset prices are quoted in each instrument’s native currency and converted to the plan currency ({{currency}}) using live exchange rates; all balances are shown in the plan currency. ',
-    p3NoDeplete: 'Savings do not deplete within the projection window.',
-    p3Deplete: 'At this spending level, savings are projected to deplete in {{year}}',
-    p3DepleteEnd: '.',
-    p3DepleteYears: ', {{years}} years after retirement.',
+    sectionGrowth: '📈 Growth & Scenario',
+    growthReturn:
+      'Asset return: each asset grows according to its own effective CAGR (base CAGR + scenario adjustment).',
+    growthScenarioNoAdj: 'Active scenario: "{{scenario}}" (no adjustment applied).',
+    growthScenarioAdj:
+      'Active scenario: "{{scenario}}" ({{sign}}{{adj}} points applied to every asset).',
+    growthPortfolio_one:
+      'Current portfolio: {{count}} asset with an average base CAGR of {{avg}}%.',
+    growthPortfolio_other:
+      'Current portfolio: {{count}} assets with an average base CAGR of {{avg}}%.',
+    sectionSpending: '💸 Spending, Inflation & Tax',
+    inflationApplied: 'Inflation: {{pct}}% per year.',
+    inflationNotApplied: 'Inflation: not applied — spending stays constant in today’s dollars.',
+    spendingIndexed:
+      'Spending: {{amount}} {{currency}} (entered in today’s value, indexed from {{year}} to preserve your purchasing power).',
+    spendingConstant:
+      'Spending: {{amount}} {{currency}} (entered in today’s value, held constant until retirement).',
+    withdrawalsWithTax:
+      'Withdrawals (from {{retYear}}): each annual withdrawal is grossed up to cover tax (based on your tax residence and account type), then drawn from your accounts in the configured order and pro-rata across your holdings.',
+    withdrawalsNoTax:
+      'Withdrawals (from {{retYear}}): each annual withdrawal is drawn from your accounts in the configured order and pro-rata across your holdings.',
+    sectionCurrency: '🌐 Currencies & End Diagnostic',
+    currencies:
+      'Currencies: prices are converted live from their native currency into the plan currency ({{currency}}). All balances are shown in {{currency}}.',
+    diagnosticNoDeplete: 'Diagnostic: savings do not deplete within the projection window.',
+    diagnosticDeplete:
+      'Diagnostic: at this spending level, savings are projected to deplete in {{year}}.',
+    diagnosticDepleteYears:
+      'Diagnostic: at this spending level, savings are projected to deplete in {{year}}, {{years}} years after retirement.',
   },
   projChart: {
     title: 'Portfolio Projections',
@@ -405,13 +420,13 @@ export const en = {
     perYr: '{{amount}}/yr',
   },
   spending: {
-    title: 'Edit Retirement Lifestyle Spending',
-    lifestyleSpending: 'Retirement Lifestyle Spending',
+    title: 'Edit Target Retirement Income',
+    lifestyleSpending: 'Target Retirement Income',
     netMonthlyHint: 'This is the net amount you want to have per month in retirement.',
     monthly: 'Monthly',
     yearly: 'Yearly',
     ariaMonthly: 'Monthly lifestyle spending',
-    ariaYearly: 'Retirement lifestyle spending',
+    ariaYearly: 'Target retirement income',
     currentSwr: 'Current Withdrawal Rate:',
     swrTipAria: 'How the withdrawal rate is calculated',
     swrTipTitle: 'Withdrawal rate (the "4% rule")',
@@ -449,9 +464,9 @@ export const en = {
     resetPhases: 'Reset to defaults',
   },
   expensesIncomes: {
-    title: 'Expenses & income',
+    title: 'Income & Expenses',
     desc: 'Cashflows tied to specific year(s) — a property purchase or sale, education costs, an inheritance received. One-time flows land in a single year; recurring flows repeat every year across a range. Expenses draw from the portfolio, inflows are added to it.',
-    empty: 'No expenses or income added yet. Add a home purchase, tuition, or an inheritance.',
+    empty: 'No expenses or income added yet',
     add: 'Add entry',
     addTitle: 'Add entry',
     editTitle: 'Edit entry',
@@ -1139,7 +1154,7 @@ export const en = {
         body: 'How much you add each month until retirement. Spread a total across assets, or set a per-asset contribution.',
       },
       spendingButton: {
-        title: 'Retirement lifestyle spending',
+        title: 'Target retirement income',
         body: 'Click Edit on this card to set how much you plan to spend each year in retirement.',
       },
       spending: {

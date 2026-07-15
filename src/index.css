@@ -261,7 +261,13 @@ h4 {
 .app-main {
   flex: 1;
   min-width: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   padding-bottom: 40px;
+}
+.app-content {
+  flex: 1;
 }
 
 /* ---------- app footer ---------- */
@@ -1243,12 +1249,6 @@ h4 {
 .hero__card--risk {
   border-color: color-mix(in srgb, var(--danger, #f43f5e) 55%, var(--border));
 }
-.hero__card--warn {
-  border-color: color-mix(in srgb, var(--amber) 55%, var(--border));
-}
-.hero__card--success {
-  border-color: color-mix(in srgb, var(--success) 55%, var(--border));
-}
 @media (max-width: 720px) {
   .hero {
     grid-template-columns: 1fr;
@@ -1308,23 +1308,6 @@ h4 {
   display: block;
   height: 100%;
   border-radius: 999px;
-}
-.hero__badge {
-  align-self: flex-start;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 7px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-.hero__badge--warn {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 50%, var(--border));
-}
-.hero__badge--ok {
-  color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 50%, var(--border));
 }
 .hero--single {
   grid-template-columns: 1fr;
@@ -1688,6 +1671,30 @@ h4 {
   font-size: var(--fs-sm);
   margin-top: 2px;
 }
+.calc-section {
+  margin-bottom: 16px;
+}
+.calc-section:last-child {
+  margin-bottom: 0;
+}
+.calc-section__title {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.calc-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.calc-list li::marker {
+  color: var(--text-dim);
+}
 .section__actions {
   display: flex;
   gap: 10px;
@@ -1754,7 +1761,7 @@ h4 {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 8px;
   line-height: 1.2;
   white-space: nowrap;
@@ -1836,21 +1843,6 @@ h4 {
   font-size: var(--fs-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-.gain-badge {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.gain-badge.is-pos {
-  color: var(--success, #34d399);
-}
-.gain-badge.is-neg {
-  color: var(--danger, #f43f5e);
-}
-.gain-badge--lg {
-  font-size: var(--fs-body);
 }
 .move-select {
   margin-top: 6px;
@@ -2041,16 +2033,20 @@ h4 {
   flex-direction: column;
   min-width: 360px;
 }
-/* Every row (header + data) shares this exact column template so the Value,
-   Gain and Répartition columns line up pixel-for-pixel down the whole table.
-   Only the asset column flexes; the rest are fixed widths. */
+/* Every row (header, account subtotal and data) shares this exact column
+   template so Value, Rendement and Répartition line up pixel-for-pixel down
+   the whole table. Asset only needs room for the badge + symbol, so it's
+   capped narrow; Rendement is the widest field (amount + % pill) so it
+   absorbs any remaining width, and Répartition keeps a fixed width sized
+   for its bar + percentage. */
 .mini-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px 86px 96px;
+  grid-template-columns: minmax(0, 120px) 64px 1fr 96px;
   column-gap: 8px;
   align-items: center;
   min-height: 40px;
-  padding: 9px 0;
+  padding: 9px 8px;
+  border-left: 3px solid transparent;
   border-bottom: 1px solid var(--border);
 }
 .mini-row--head {
@@ -2060,7 +2056,7 @@ h4 {
   text-transform: uppercase;
   letter-spacing: 0.02em;
   min-height: 0;
-  padding: 0 0 8px;
+  padding: 0 8px 8px;
   border-bottom: 1px solid var(--border-strong);
 }
 /* All cells centre their content, both axes — the grid's align-items:center
@@ -2085,10 +2081,20 @@ h4 {
 .mini-alloc__pct.muted {
   color: var(--text-dim);
 }
-.mini-row__gain .gain-badge {
-  display: inline-block;
+.mini-row__gain .ret-cell,
+.mini-acct__right .ret-cell {
+  justify-content: center;
+  gap: 4px;
+}
+.mini-row__gain .ret-amt,
+.mini-row__gain .ret-pill,
+.mini-acct__right .ret-amt,
+.mini-acct__right .ret-pill {
   font-size: 0.65625rem;
-  white-space: normal;
+}
+.mini-row__gain .ret-pill,
+.mini-acct__right .ret-pill {
+  padding: 1px 6px;
 }
 .mini-row__asset {
   display: flex;
@@ -2117,19 +2123,20 @@ h4 {
   flex-shrink: 0;
 }
 
-/* account header inside the mini table — right side lines up with the
-   Répartition column's right edge, same as the data rows below it. */
+/* account header inside the mini table — shares the row's grid template so
+   its Rendement figure lands in the exact same column as the data rows'. */
 .mini-acct {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 120px) 64px 1fr 96px;
+  column-gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 4px 0 4px 8px;
+  padding: 4px 8px 4px 8px;
   border-left: 3px solid var(--accent);
   border-bottom: 1px solid var(--border);
   background: var(--bg);
 }
 .mini-acct__main {
+  grid-column: 1 / 3;
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -2148,10 +2155,8 @@ h4 {
   white-space: nowrap;
 }
 .mini-acct__right {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-shrink: 0;
+  grid-column: 3;
+  min-width: 0;
 }
 .mini-acct__total {
   font-weight: 700;
@@ -2463,9 +2468,15 @@ h4 {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+/* Data-table headers carrying a native `title` tooltip get a help cursor so the
+   affordance is visible on hover. */
+th[title] {
+  cursor: help;
+}
 /* Instant hover tooltip (badges / pills explaining tax treatment). */
 .tip-host {
   position: relative;
+  cursor: help;
 }
 .tip-bubble {
   position: absolute;
@@ -5450,6 +5461,16 @@ h4 {
 .runway--hero .runway__scroll {
   flex: 1;
 }
+.runway__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.runway--hero .runway__empty {
+  flex: 1;
+}
 .runway__head {
   margin-bottom: 14px;
 }
@@ -5461,17 +5482,18 @@ h4 {
   color: var(--text-muted);
 }
 .runway__scroll {
-  overflow-x: auto;
+  overflow: hidden;
   padding-bottom: 6px;
 }
 .runway__track {
   display: flex;
   align-items: flex-start;
+  justify-content: center;
   gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
-  min-width: min-content;
+  width: 100%;
 }
 .runway__item {
   position: relative;
@@ -5479,7 +5501,8 @@ h4 {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-width: 96px;
+  width: 96px;
+  flex: 0 0 auto;
   padding: 0 6px;
 }
 /* Connector line between markers. */
@@ -5496,11 +5519,6 @@ h4 {
 }
 .runway__item:first-child::before {
   display: none;
-}
-/* The item's own centering (min-width box) pads the first marker away from
-   the card's left edge more than intended — pull it back. */
-.runway__item:first-child {
-  margin-left: -24px;
 }
 .runway__item--past::before {
   background: var(--border);
@@ -5556,6 +5574,14 @@ h4 {
 .runway__marker--portfolio-dry {
   border-color: var(--danger);
   color: var(--danger);
+}
+.runway__marker--ellipsis {
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 .runway__year {
   font-size: var(--fs-sm);
