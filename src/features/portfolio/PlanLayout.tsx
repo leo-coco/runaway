@@ -93,7 +93,12 @@ export const PlanLayout = () => {
     <div className="container plan-main">
       <div className="plan-topbar">
         <div className="plan-title">
-          <h1>{plan.name}</h1>
+          <div className="plan-title__copy">
+            <h1>{plan.name}</h1>
+            {plan.description.trim() && (
+              <p className="plan-title__description">{plan.description}</p>
+            )}
+          </div>
           <span className="currency-control" data-tour="currency-selector">
             <label htmlFor="master-currency">{t('plan.currency')}</label>
             <select

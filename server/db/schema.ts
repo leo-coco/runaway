@@ -14,6 +14,9 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  // The preferred UI and transactional-email language. Kept on the user rather
+  // than only in localStorage so it follows the account across devices.
+  language: text('language').notNull().default('en'),
   // Freemium fields (exposed to Better Auth via user.additionalFields in auth.ts).
   // `role` gates the admin surface; `tier` + `premiumUntil` drive entitlements. In
   // phase 1 these are set manually from the admin panel; phase 2 a Stripe webhook

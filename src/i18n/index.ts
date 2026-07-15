@@ -11,10 +11,17 @@ export const LANG_LABEL: Record<Lang, string> = {
   fr: 'Français',
 };
 
+export const languageFromPathname = (pathname: string): Lang | null => {
+  const candidate = pathname.split('/')[1];
+  return candidate === 'en' || candidate === 'fr' ? candidate : null;
+};
+
 const STORAGE_KEY = 'runaway/lang';
 
 const initialLang = (): Lang => {
   try {
+    const languageInUrl = languageFromPathname(window.location.pathname);
+    if (languageInUrl) return languageInUrl;
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'en' || stored === 'fr') return stored;
     if (navigator.language?.toLowerCase().startsWith('fr')) return 'fr';

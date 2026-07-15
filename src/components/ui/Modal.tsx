@@ -15,6 +15,8 @@ interface ModalProps {
   xl?: boolean;
   /** Edge-to-edge, near-viewport-sized modal for content-dense explorers. */
   fullscreen?: boolean;
+  /** Optional styling hook for a specialised modal layout. */
+  className?: string;
 }
 
 export const Modal = ({
@@ -27,6 +29,7 @@ export const Modal = ({
   wide,
   xl,
   fullscreen,
+  className,
 }: ModalProps) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -50,6 +53,7 @@ export const Modal = ({
           wide && 'modal--wide',
           xl && 'modal--xl',
           fullscreen && 'modal--fullscreen',
+          className,
         )}
         role="dialog"
         aria-modal="true"

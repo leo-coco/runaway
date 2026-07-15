@@ -20,6 +20,7 @@ import { AuthMenu } from '@/features/auth/AuthMenu';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { TourGuideModal } from '@/features/tour/TourGuideModal';
+import runawayLogo from '@/assets/runaway-logo.png';
 import type { Plan } from '@/domain/plan';
 
 const DOTS = ['#6aa3e0', '#c084fc', '#5dcaa5', '#e0a85d', '#f0768b'];
@@ -251,25 +252,7 @@ export const Sidebar = () => {
             <MenuIcon size={18} />
           </button>
           <Link to="/" className="sb-brand" aria-label="Runaway — home">
-            <svg
-              className="sb-brand__mark"
-              viewBox="0 0 40 32"
-              fill="none"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="M4 26 L14 16 L22 21 L36 6"
-                stroke="var(--accent)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="4" cy="26" r="2.6" fill="var(--accent)" />
-              <circle cx="14" cy="16" r="2.6" fill="var(--accent)" />
-              <circle cx="22" cy="21" r="2.6" fill="var(--accent)" />
-              <circle cx="36" cy="6" r="3.4" fill="var(--accent)" />
-            </svg>
+            <img className="sb-brand__mark" src={runawayLogo} alt="" />
             <span className="sb-brand__name">Runaway</span>
           </Link>
         </div>

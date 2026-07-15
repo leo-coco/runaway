@@ -190,6 +190,18 @@ export const PaletteIcon = ({ size = 16, ...p }: IconProps) => (
     <circle cx="14" cy="7.5" r="0.8" fill="currentColor" stroke="none" />
   </svg>
 );
+export const AccessibilityIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="12" cy="4" r="2" />
+    <path d="M5 8h14M12 8v13M8 21l4-7 4 7" />
+  </svg>
+);
+export const ContrastIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 4a8 8 0 0 0 0 16Z" fill="currentColor" stroke="none" />
+  </svg>
+);
 export const TaxIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <path d="M14 3H8a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h8" />
