@@ -1,0 +1,71 @@
+---
+import MarketingFooter from '../components/MarketingFooter.astro';
+import MarketingLayout from './MarketingLayout.astro';
+
+interface Props {
+  lang: 'fr' | 'en';
+  title: string;
+  description: string;
+  canonicalPath: string;
+  alternateFrPath: string;
+  alternateEnPath: string;
+  eyebrow: string;
+  heading: string;
+  intro: string;
+}
+
+const {
+  lang,
+  title,
+  description,
+  canonicalPath,
+  alternateFrPath,
+  alternateEnPath,
+  eyebrow,
+  heading,
+  intro,
+} = Astro.props;
+const isFr = lang === 'fr';
+const home = isFr ? '/' : '/en';
+const alternate = isFr ? alternateEnPath : alternateFrPath;
+const appBase = `/${lang}/app`;
+---
+
+<MarketingLayout
+  {lang}
+  {title}
+  {description}
+  {canonicalPath}
+  {alternateFrPath}
+  {alternateEnPath}
+>
+  <header class="site-header editorial-header">
+    <a class="brand" href={home} aria-label={isFr ? 'Runaway — accueil' : 'Runaway — home'}>
+      <img src="/favicon.png" alt="" width="36" height="36" />
+      <span>Runaway</span>
+    </a>
+    <nav aria-label={isFr ? 'Navigation principale' : 'Primary navigation'}>
+      <a href={`${home}#product`}>{isFr ? 'Produit' : 'Product'}</a>
+      <a href={isFr ? '/methodologie' : '/en/methodology'}>{isFr ? 'Méthodologie' : 'Methodology'}</a>
+      <a href={isFr ? '/contact' : '/en/contact'}>Contact</a>
+    </nav>
+    <div class="header-actions">
+      <a class="lang-link" href={alternate} hreflang={isFr ? 'en' : 'fr'}>{isFr ? 'EN' : 'FR'}</a>
+      <a class="text-link" href={`${appBase}/signin`}>{isFr ? 'Se connecter' : 'Sign in'}</a>
+      <a class="button button--small" href={`${appBase}/signup`}>{isFr ? 'Créer mon plan' : 'Build my plan'}</a>
+    </div>
+  </header>
+
+  <main class="editorial-main">
+    <header class="editorial-hero section-shell">
+      <p class="eyebrow"><span></span>{eyebrow}</p>
+      <h1>{heading}</h1>
+      <p>{intro}</p>
+    </header>
+    <div class="editorial-body section-shell">
+      <slot />
+    </div>
+  </main>
+
+  <MarketingFooter {lang} />
+</MarketingLayout>

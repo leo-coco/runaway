@@ -1,0 +1,122 @@
+---
+import EditorialLayout from '../layouts/EditorialLayout.astro';
+
+const { lang } = Astro.props as { lang: 'fr' | 'en' };
+const isFr = lang === 'fr';
+const copy = isFr
+  ? {
+      title: 'Méthodologie des projections financières | Runaway',
+      description: 'Découvrez comment Runaway calcule les projections de retraite, traite l’inflation et la fiscalité, et mesure l’incertitude avec Monte-Carlo.',
+      canonical: '/methodologie', alternateFr: '/methodologie', alternateEn: '/en/methodology',
+      eyebrow: 'MÉTHODOLOGIE', heading: 'Comprendre ce qui se passe derrière les chiffres.',
+      intro: 'Runaway transforme vos informations et vos hypothèses en trajectoires financières. Cette page présente les principes du calcul, ses sources et ses limites — sans prétendre prédire les marchés.',
+      principleTitle: 'Le principe de départ',
+      principle: 'Votre rendement attendu est une hypothèse, pas une prévision. Runaway applique les paramètres que vous choisissez et montre leurs conséquences possibles dans le temps.',
+      steps: [
+        ['01', 'Construire le point de départ', 'Le plan rassemble les actifs, comptes, devises, prix de revient, contributions, revenus, dépenses, projets et paramètres de retraite saisis par l’utilisateur.'],
+        ['02', 'Projeter année après année', 'La projection déterministe fait évoluer chaque actif, ajoute les contributions, applique les flux programmés, indexe les dépenses sur l’inflation et finance les retraits jusqu’à l’horizon choisi.'],
+        ['03', 'Appliquer une fiscalité simplifiée', 'Les retraits sont estimés selon la résidence, le type de compte et des barèmes représentatifs pour la France, le Canada et les États-Unis. Les règles restent volontairement simplifiées.'],
+        ['04', 'Mesurer l’incertitude', 'Monte-Carlo teste jusqu’à 5 000 futurs de marché en faisant varier les rendements selon des hypothèses de volatilité, de corrélation, de queues de distribution et de krach.'],
+      ],
+      assetsTitle: 'Des patrimoines modernes et multidevises',
+      assets: 'Runaway peut réunir des actions, ETF, cryptomonnaies, liquidités, actifs personnalisés et immobilier. Les positions peuvent être libellées en USD, CAD, EUR ou GBP, puis consolidées dans la devise du plan.',
+      modelsTitle: 'Deux lectures complémentaires',
+      deterministic: ['Projection déterministe', 'Une trajectoire centrale, lisible et reproductible à partir des hypothèses retenues. Elle permet de comprendre directement l’effet d’un changement.'],
+      monteCarlo: ['Simulation Monte-Carlo', 'Une distribution de trajectoires possibles destinée à montrer la dispersion et le risque de séquence. Le taux de succès correspond à la part des trajectoires qui financent l’horizon complet.'],
+      sourcesTitle: 'Hypothèses et sources',
+      sources: [
+        'Les rendements attendus sont choisis par l’utilisateur ; ils ne constituent pas des prévisions de Runaway.',
+        'Les volatilités, corrélations et sensibilités aux krachs sont des valeurs par défaut documentées et modifiables par position.',
+        'Le mode historique utilise notamment les rendements totaux du S&P 500 et des obligations du Trésor américain publiés par Aswath Damodaran, ainsi que l’inflation CPI-U américaine.',
+        'Les barèmes fiscaux intégrés sont datés de 2026 et reposent sur des sources publiques françaises, canadiennes et américaines.',
+      ],
+      limitsTitle: 'Ce que le modèle ne peut pas savoir',
+      limits: [
+        'Les rendements, l’inflation, les taux de change et la fiscalité réels différeront des hypothèses.',
+        'Les règles fiscales sont simplifiées et ne couvrent pas toutes les situations personnelles, conventions ou taxes locales.',
+        'Les historiques ne garantissent aucun résultat futur et certaines classes récentes, notamment les cryptomonnaies, disposent d’un historique limité.',
+        'Un taux de succès est une propriété du modèle et de ses entrées, pas une probabilité certaine concernant la vie réelle.',
+      ],
+      update: 'Méthodologie correspondant au moteur Runaway 2026. Les hypothèses et sources sont mises à jour avec le produit.',
+      disclaimer: 'Projections hypothétiques à but informatif et éducatif uniquement. Runaway ne fournit pas de conseil financier, fiscal ou juridique et ne garantit aucun résultat.',
+      try: 'Tester la méthodologie dans le sandbox',
+    }
+  : {
+      title: 'Financial projection methodology | Runaway',
+      description: 'Learn how Runaway calculates retirement projections, handles inflation and taxes, and measures uncertainty with Monte Carlo simulation.',
+      canonical: '/en/methodology', alternateFr: '/methodologie', alternateEn: '/en/methodology',
+      eyebrow: 'METHODOLOGY', heading: 'Understand what happens behind the numbers.',
+      intro: 'Runaway turns your information and assumptions into financial paths. This page explains the calculation principles, sources, and limitations — without pretending to predict markets.',
+      principleTitle: 'The starting principle',
+      principle: 'Your expected return is an assumption, not a forecast. Runaway applies the parameters you choose and shows their possible consequences over time.',
+      steps: [
+        ['01', 'Build the starting point', 'The plan brings together the assets, accounts, currencies, cost basis, contributions, income, spending, life events, and retirement settings entered by the user.'],
+        ['02', 'Project year by year', 'The deterministic projection grows each asset, adds contributions, applies scheduled flows, indexes spending to inflation, and funds withdrawals through the selected horizon.'],
+        ['03', 'Apply simplified taxation', 'Withdrawals are estimated from tax residence, account type, and representative schedules for France, Canada, and the United States. The rules are intentionally simplified.'],
+        ['04', 'Measure uncertainty', 'Monte Carlo tests up to 5,000 market futures by varying returns through assumptions for volatility, correlation, distribution tails, and crash regimes.'],
+      ],
+      assetsTitle: 'Modern, multi-currency wealth',
+      assets: 'Runaway can bring together stocks, ETFs, cryptocurrencies, cash, custom assets, and real estate. Holdings can be denominated in USD, CAD, EUR, or GBP and consolidated into the plan currency.',
+      modelsTitle: 'Two complementary views',
+      deterministic: ['Deterministic projection', 'One central, readable, and reproducible path based on the selected assumptions. It makes the effect of a change easy to understand.'],
+      monteCarlo: ['Monte Carlo simulation', 'A distribution of possible paths designed to show dispersion and sequence risk. The success rate is the share of paths that fund the full horizon.'],
+      sourcesTitle: 'Assumptions and sources',
+      sources: [
+        'Expected returns are selected by the user; they are not Runaway forecasts.',
+        'Volatility, correlation, and crash-sensitivity assumptions are documented defaults that can be overridden per holding.',
+        'Historical mode uses, among other inputs, S&P 500 and US Treasury total returns published by Aswath Damodaran and US CPI-U inflation.',
+        'Embedded tax schedules are dated 2026 and rely on public French, Canadian, and US sources.',
+      ],
+      limitsTitle: 'What the model cannot know',
+      limits: [
+        'Actual returns, inflation, exchange rates, and taxation will differ from the assumptions.',
+        'Tax rules are simplified and do not cover every personal situation, treaty, or local tax.',
+        'History does not guarantee future results, and newer asset classes such as cryptocurrencies have limited histories.',
+        'A success rate is a property of the model and its inputs, not a certain probability about real life.',
+      ],
+      update: 'Methodology for the 2026 Runaway engine. Assumptions and sources evolve with the product.',
+      disclaimer: 'Hypothetical projections for informational and educational purposes only. Runaway does not provide financial, tax, or legal advice and does not guarantee any outcome.',
+      try: 'Test the methodology in sandbox',
+    };
+---
+
+<EditorialLayout
+  {lang}
+  title={copy.title}
+  description={copy.description}
+  canonicalPath={copy.canonical}
+  alternateFrPath={copy.alternateFr}
+  alternateEnPath={copy.alternateEn}
+  eyebrow={copy.eyebrow}
+  heading={copy.heading}
+  intro={copy.intro}
+>
+  <article class="editorial-article methodology-public">
+    <section class="method-principle">
+      <span>01</span><div><h2>{copy.principleTitle}</h2><p>{copy.principle}</p></div>
+    </section>
+    <section class="editorial-section">
+      <div class="method-steps">
+        {copy.steps.map(([number, title, body]) => (
+          <article><span>{number}</span><div><h3>{title}</h3><p>{body}</p></div></article>
+        ))}
+      </div>
+    </section>
+    <section class="editorial-section editorial-section--dark">
+      <h2>{copy.assetsTitle}</h2><p>{copy.assets}</p>
+    </section>
+    <section class="editorial-section">
+      <h2>{copy.modelsTitle}</h2>
+      <div class="editorial-card-grid editorial-card-grid--two">
+        {[copy.deterministic, copy.monteCarlo].map(([title, body]) => <article class="editorial-card"><h3>{title}</h3><p>{body}</p></article>)}
+      </div>
+    </section>
+    <section class="editorial-section editorial-columns">
+      <div><h2>{copy.sourcesTitle}</h2><ul>{copy.sources.map((item) => <li>{item}</li>)}</ul></div>
+      <div><h2>{copy.limitsTitle}</h2><ul>{copy.limits.map((item) => <li>{item}</li>)}</ul></div>
+    </section>
+    <p class="method-update">{copy.update}</p>
+    <aside class="editorial-note"><p>{copy.disclaimer}</p></aside>
+    <div class="editorial-actions"><a class="button" href={`/${lang}/app/sandbox`}>{copy.try}<span>↗</span></a></div>
+  </article>
+</EditorialLayout>

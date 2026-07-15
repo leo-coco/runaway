@@ -1,0 +1,113 @@
+---
+import EditorialLayout from '../layouts/EditorialLayout.astro';
+
+const { lang } = Astro.props as { lang: 'fr' | 'en' };
+const isFr = lang === 'fr';
+const copy = isFr
+  ? {
+      title: 'À propos de Runaway | Planifier sa liberté financière',
+      description: 'Découvrez pourquoi Runaway a été créé, les convictions qui guident le produit et la mission de son développeur indépendant.',
+      canonical: '/a-propos', alternateFr: '/a-propos', alternateEn: '/en/about',
+      eyebrow: 'À PROPOS DE RUNAWAY',
+      heading: 'Rendre l’avenir financier plus lisible.',
+      intro: 'Runaway est un projet indépendant né d’une question simple : à partir de quand mon patrimoine peut-il réellement financer la vie que je souhaite ?',
+      originTitle: 'Pourquoi Runaway existe',
+      origin: [
+        'Réfléchir aujourd’hui à son épargne, à ses investissements et à la vie que l’on souhaite construire est une chance. Cela permet de prendre du recul, de mieux comprendre ses possibilités et de planifier l’avenir avec davantage de sérénité.',
+        'Après avoir essayé plusieurs outils de planification financière, j’ai souvent retrouvé le même compromis : certaines solutions étaient coûteuses, tandis que d’autres ne permettaient pas d’aller suffisamment loin dans les projections et la personnalisation. C’est de ce constat qu’est né Runaway.',
+      ],
+      creatorTitle: 'Un produit indépendant',
+      creator: [
+        'Runaway est créé par un développeur ayant huit années d’expérience dans l’industrie du logiciel, principalement dans le développement front-end.',
+        'Depuis plusieurs années, je m’intéresse particulièrement à l’investissement, à l’indépendance financière et à la manière dont les décisions prises aujourd’hui peuvent influencer notre liberté future. J’ai construit Runaway pour réunir dans un même outil ce que je cherchais ailleurs : une expérience accessible, des hypothèses modifiables, des projections détaillées et une présentation claire de ce qui se passe derrière les chiffres.',
+      ],
+      missionTitle: 'Une mission pensée au-delà des frontières',
+      mission: [
+        'J’ai voulu créer un outil capable de représenter des patrimoines modernes et diversifiés, composés d’actions, d’ETF, de cryptomonnaies, de liquidités ou d’autres actifs, sans devoir disperser son plan entre plusieurs applications.',
+        'Étant moi-même franco-canadien, il était important que Runaway s’adapte aux réalités de la France et du Canada, avec leurs devises, leurs types de comptes et leurs particularités fiscales. Les États-Unis ont également été intégrés, car leur marché et leurs pratiques d’investissement occupent une place importante dans la planification financière.',
+        'Runaway est développé avec beaucoup de soin, de conviction et d’amour. Mon ambition est de proposer l’outil que j’aurais aimé trouver : complet sans être inaccessible, rigoureux sans être intimidant, et capable d’aider davantage de personnes à planifier leur avenir avec confiance.',
+      ],
+      principlesTitle: 'Les principes qui guident le produit',
+      principles: [
+        ['Transparence', 'Les hypothèses, les méthodes et les limites doivent rester compréhensibles.'],
+        ['Liberté', 'Chaque utilisateur peut modifier son scénario et explorer ses propres décisions.'],
+        ['Confidentialité', 'Les informations financières méritent une conception prudente et respectueuse.'],
+        ['Accessibilité', 'Planifier son avenir ne devrait pas nécessiter un tableur complexe ou un outil hors de prix.'],
+      ],
+      note: 'Runaway ne fournit pas de conseil financier, fiscal ou juridique personnalisé. Les résultats sont des projections hypothétiques fondées sur les informations et les hypothèses choisies par l’utilisateur.',
+      method: 'Découvrir la méthodologie', sandbox: 'Essayer sans email',
+    }
+  : {
+      title: 'About Runaway | Plan your financial freedom',
+      description: 'Discover why Runaway was built, the beliefs behind the product, and the mission of its independent developer.',
+      canonical: '/en/about', alternateFr: '/a-propos', alternateEn: '/en/about',
+      eyebrow: 'ABOUT RUNAWAY',
+      heading: 'Make your financial future easier to understand.',
+      intro: 'Runaway is an independent project born from a simple question: when can my wealth truly fund the life I want?',
+      originTitle: 'Why Runaway exists',
+      origin: [
+        'Thinking today about your savings, investments, and the life you want to build is an opportunity. It helps you step back, understand what may be possible, and plan the future with greater clarity.',
+        'After trying several financial-planning tools, I kept finding the same compromise: some were expensive, while others did not go far enough in their projections or customization. Runaway grew out of that gap.',
+      ],
+      creatorTitle: 'An independent product',
+      creator: [
+        'Runaway is built by a developer with eight years of experience in the software industry, primarily in front-end development.',
+        'I have long cared about investing, financial independence, and the way today’s decisions can influence tomorrow’s freedom. I built Runaway to bring together what I was looking for elsewhere: an accessible experience, editable assumptions, detailed projections, and a clear view of what happens behind the numbers.',
+      ],
+      missionTitle: 'A mission designed across borders',
+      mission: [
+        'I wanted to create a tool that can represent modern, diversified wealth across stocks, ETFs, cryptocurrencies, cash, and other assets, without forcing people to split their plan across several applications.',
+        'As a French-Canadian, it mattered to me that Runaway reflect the realities of both France and Canada, including their currencies, account types, and tax considerations. The United States is supported as well because its markets and investing practices play a major role in financial planning.',
+        'Runaway is developed independently with care, conviction, and love. My ambition is to build the tool I wish I had found: comprehensive without being inaccessible, rigorous without being intimidating, and genuinely useful to people planning their future.',
+      ],
+      principlesTitle: 'The principles behind the product',
+      principles: [
+        ['Transparency', 'Assumptions, methods, and limitations should remain understandable.'],
+        ['Freedom', 'People can change their scenario and explore their own decisions.'],
+        ['Privacy', 'Financial information deserves careful and respectful product design.'],
+        ['Accessibility', 'Planning your future should not require a complex spreadsheet or an overpriced tool.'],
+      ],
+      note: 'Runaway does not provide personalized financial, tax, or legal advice. Results are hypothetical projections based on the information and assumptions selected by each user.',
+      method: 'Explore the methodology', sandbox: 'Try without email',
+    };
+---
+
+<EditorialLayout
+  {lang}
+  title={copy.title}
+  description={copy.description}
+  canonicalPath={copy.canonical}
+  alternateFrPath={copy.alternateFr}
+  alternateEnPath={copy.alternateEn}
+  eyebrow={copy.eyebrow}
+  heading={copy.heading}
+  intro={copy.intro}
+>
+  <article class="editorial-article">
+    <section class="editorial-section editorial-section--lead">
+      <h2>{copy.originTitle}</h2>
+      {copy.origin.map((paragraph) => <p>{paragraph}</p>)}
+    </section>
+    <section class="editorial-section">
+      <h2>{copy.creatorTitle}</h2>
+      {copy.creator.map((paragraph) => <p>{paragraph}</p>)}
+    </section>
+    <section class="editorial-section editorial-section--dark">
+      <h2>{copy.missionTitle}</h2>
+      {copy.mission.map((paragraph) => <p>{paragraph}</p>)}
+    </section>
+    <section class="editorial-section">
+      <h2>{copy.principlesTitle}</h2>
+      <div class="editorial-card-grid">
+        {copy.principles.map(([title, body], index) => (
+          <article class="editorial-card"><span>0{index + 1}</span><h3>{title}</h3><p>{body}</p></article>
+        ))}
+      </div>
+    </section>
+    <aside class="editorial-note"><p>{copy.note}</p></aside>
+    <div class="editorial-actions">
+      <a class="button" href={isFr ? '/methodologie' : '/en/methodology'}>{copy.method}<span>→</span></a>
+      <a class="button button--ghost" href={`/${lang}/app/sandbox`}>{copy.sandbox}<span>↗</span></a>
+    </div>
+  </article>
+</EditorialLayout>

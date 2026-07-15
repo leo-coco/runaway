@@ -1,5 +1,8 @@
 ---
+import { Picture } from 'astro:assets';
+import dashboardScreenshot from '../assets/runaway-dashboard.png';
 import MarketingLayout from '../layouts/MarketingLayout.astro';
+import MarketingFooter from './MarketingFooter.astro';
 
 interface Copy {
   lang: 'fr' | 'en';
@@ -15,7 +18,7 @@ interface Copy {
   faqTitle: string;
   faq: { question: string; answer: string }[];
   final: { eyebrow: string; title: string; body: string; primary: string; secondary: string };
-  footer: { line: string; legal: string; privacy: string };
+  footer: { line: string };
 }
 
 const { copy } = Astro.props as { copy: Copy };
@@ -29,6 +32,7 @@ const appBase = `/${copy.lang}/app`;
   description={copy.seoDescription}
   canonicalPath={isFr ? '/' : '/en'}
   faq={copy.faq}
+  kind="landing"
 >
   <header class="site-header">
     <a class="brand" href={isFr ? '/' : '/en'} aria-label="Runaway — home">
@@ -62,12 +66,13 @@ const appBase = `/${copy.lang}/app`;
 
       <div class="product-window" aria-label={isFr ? "Aperçu de l'application Runaway" : 'Runaway app preview'}>
         <div class="window-top"><i></i><i></i><i></i><span>runaway.money/app</span></div>
-        <img
+        <Picture
           class="product-screenshot"
-          src="/runaway-dashboard.png"
+          src={dashboardScreenshot}
+          formats={['avif', 'webp']}
+          widths={[480, 720, 1440]}
+          sizes="(max-width: 640px) calc(100vw - 20px), (max-width: 980px) min(720px, calc(100vw - 48px)), 706px"
           alt={isFr ? "Tableau de bord réel de l'application Runaway" : 'Real Runaway application dashboard'}
-          width="1800"
-          height="1542"
           loading="eager"
           decoding="async"
           fetchpriority="high"
@@ -152,9 +157,5 @@ const appBase = `/${copy.lang}/app`;
     </section>
   </main>
 
-  <footer>
-    <a class="brand" href={isFr ? '/' : '/en'}><img src="/favicon.png" alt="" width="32" height="32" /><span>Runaway</span></a>
-    <p>{copy.footer.line}</p>
-    <div><span>© {new Date().getFullYear()} Runaway</span><span>{copy.footer.legal}</span><span>{copy.footer.privacy}</span></div>
-  </footer>
+  <MarketingFooter lang={copy.lang} line={copy.footer.line} />
 </MarketingLayout>

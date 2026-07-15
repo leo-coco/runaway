@@ -45,8 +45,8 @@ const RunwayMarker = ({
   fmt: CurrencyFormatter;
   label: string;
   isPast: boolean;
-  displayedDate: number;
-  displayedRange?: { low: number; high: number };
+  displayedDate: string;
+  displayedRange?: { low: string; high: string };
   ellipsisBefore?: boolean;
 }) => {
   const { t } = useTranslation();
@@ -174,7 +174,7 @@ const AllEventsModal = ({
   fmt: CurrencyFormatter;
   label: (e: RunwayEvent) => string;
   displayMode: DateDisplayMode;
-  dateForYear: (year: number) => number;
+  dateForYear: (year: number) => string;
   onClose: () => void;
 }) => {
   const { t } = useTranslation();
@@ -229,8 +229,11 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
 
   const canShowAge = plan.settings.currentAge > 0;
   const showAge = canShowAge && displayMode === 'age';
-  const dateForYear = (year: number): number =>
-    showAge ? (ageInYear(plan.settings.currentAge, projection.startYear, year) ?? year) : year;
+  const dateForYear = (year: number): string => {
+    if (!showAge) return `${year}`;
+    const age = ageInYear(plan.settings.currentAge, projection.startYear, year);
+    return age === null ? `${year}` : t('runway.ageValue', { age });
+  };
 
   if (plan.holdings.length === 0) {
     const onAddAsset = () =>
