@@ -1,25 +1,51 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import premiumMountain from '@/assets/premium-mountain.png';
 import { useAppStore } from '@/store';
+import { useSession } from '@/lib/authClient';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';
+import { startCheckout, BillingUnavailableError } from './billingApi';
 
 /**
  * Global upgrade paywall. Opened via `openPaywall(reason)` from any gated surface;
- * shows what Premium unlocks + the live price. Phase 1 has no self-serve checkout
- * (Premium is granted from the admin panel), so the CTA is informational; phase 2
- * wires it to Stripe Checkout.
+ * shows what Premium unlocks + the live price. The CTA starts Stripe Checkout for
+ * signed-in users (routing guests to sign-in first). When billing isn't configured
+ * server-side it falls back to the informational "coming soon" note.
  */
 export const PaywallDialog = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { data: session } = useSession();
   const reason = useAppStore((s) => s.paywall);
   const close = useAppStore((s) => s.closePaywall);
   const { pricing, limits } = useEntitlements();
+  const [busy, setBusy] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!reason) return null;
   const price = effectivePrice(pricing);
+
+  const upgrade = async () => {
+    if (!session?.user) {
+      close();
+      navigate('/signin');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await startCheckout();
+    } catch (err) {
+      if (err instanceof BillingUnavailableError) setUnavailable(true);
+      else setError(t('billing.checkoutError'));
+      setBusy(false);
+    }
+  };
 
   return (
     <Modal
@@ -28,11 +54,13 @@ export const PaywallDialog = () => {
       className="modal--paywall"
       footer={
         <>
-          <Button variant="ghost" onClick={close}>
+          <Button variant="ghost" onClick={close} disabled={busy}>
             {t('billing.notNow')}
           </Button>
-          <Button variant="primary" onClick={close}>
-            {t('billing.priceCta', { price, currency: pricing.currency })}
+          <Button variant="primary" onClick={() => void upgrade()} disabled={busy || unavailable}>
+            {busy
+              ? t('billing.redirecting')
+              : t('billing.priceCta', { price, currency: pricing.currency })}
           </Button>
         </>
       }
@@ -58,7 +86,8 @@ export const PaywallDialog = () => {
           <li>{t('billing.benefit.plans')}</li>
         </ul>
       </div>
-      <p className="paywall__note">{t('billing.comingSoon')}</p>
+      {error && <p className="paywall__note field-error">{error}</p>}
+      {unavailable && <p className="paywall__note">{t('billing.comingSoon')}</p>}
     </Modal>
   );
 };

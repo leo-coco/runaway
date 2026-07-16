@@ -1427,11 +1427,17 @@ export const fr: Resources = {
   },
   billing: {
     pro: 'Pro',
+    free: 'Gratuit',
     seePlans: 'Voir Premium',
     unlock: 'Débloquer avec Premium',
     premium: 'Premium',
     paywallTitle: 'Passer à Premium',
     priceCta: 'Passer à Premium — {{price}} {{currency}}/an',
+    redirecting: 'Redirection…',
+    checkoutError: 'Impossible de démarrer le paiement. Veuillez réessayer.',
+    subscriptionTitle: 'Abonnement',
+    currentPlan: 'Offre actuelle',
+    manageBilling: 'Gérer l’abonnement',
     notNow: 'Pas maintenant',
     comingSoon:
       'Le paiement en libre-service arrive bientôt. Pour l’instant, Premium est activé manuellement.',

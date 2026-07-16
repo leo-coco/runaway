@@ -1399,11 +1399,17 @@ export const en = {
   },
   billing: {
     pro: 'Pro',
+    free: 'Free',
     seePlans: 'See Premium',
     unlock: 'Unlock with Premium',
     premium: 'Premium',
     paywallTitle: 'Upgrade to Premium',
     priceCta: 'Upgrade — {{price}} {{currency}}/yr',
+    redirecting: 'Redirecting…',
+    checkoutError: 'Could not start checkout. Please try again.',
+    subscriptionTitle: 'Subscription',
+    currentPlan: 'Current plan',
+    manageBilling: 'Manage billing',
     notNow: 'Not now',
     comingSoon: 'Self-serve checkout is coming soon. Premium is enabled manually for now.',
     reason: {

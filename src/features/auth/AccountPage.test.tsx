@@ -15,6 +15,10 @@ vi.mock('@/store', () => ({
     selector({ hydratePlans, setAllResidenceCountries }),
 }));
 
+// BillingCard pulls in react-query + entitlements; it has its own test. This suite
+// covers the profile/delete path, so stub it out.
+vi.mock('@/features/billing/BillingCard', () => ({ BillingCard: () => null }));
+
 vi.mock('@/lib/authClient', () => ({
   authClient: {
     deleteUser: (...args: unknown[]) => deleteUser(...args),
