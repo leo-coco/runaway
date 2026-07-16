@@ -11,7 +11,29 @@ export default defineConfig({
   site: 'https://runaway.money',
   output: 'static',
   trailingSlash: 'never',
-  integrations: [react(), sitemap({ filter: (page) => !page.includes('/app') })],
+  integrations: [
+    react(),
+    sitemap({
+      filter: (page) => !page.includes('/app'),
+      lastmod: new Date(),
+      serialize(item) {
+        const path = new URL(item.url).pathname;
+        const frToEn = { '/': '/en', '/a-propos': '/en/about', '/contact': '/en/contact', '/methodologie': '/en/methodology' };
+        const enToFr = Object.fromEntries(Object.entries(frToEn).map(([fr, en]) => [en, fr]));
+        const frPath = frToEn[path] ? path : (enToFr[path] ?? null);
+        const enPath = frToEn[path] ?? (enToFr[path] ? path : null);
+        if (!frPath || !enPath) return item;
+        return {
+          ...item,
+          links: [
+            { lang: 'fr', url: new URL(frPath, item.url).href },
+            { lang: 'en', url: new URL(enPath, item.url).href },
+            { lang: 'x-default', url: new URL(frPath, item.url).href },
+          ],
+        };
+      },
+    }),
+  ],
   vite: {
     resolve: {
       alias: {

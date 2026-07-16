@@ -13,6 +13,7 @@ interface Copy {
   strip: string[];
   problem: { eyebrow: string; title: string; body: string; quote: string };
   solution: { eyebrow: string; title: string; lead: string; features: { n: string; title: string; body: string }[] };
+  coverage: { eyebrow: string; title: string; lead: string; items: { title: string; body: string }[] };
   proof: { eyebrow: string; title: string; body: string; stats: { value: string; label: string }[] };
   compare: { title: string; headers: string[]; rows: string[][] };
   faqTitle: string;
@@ -110,6 +111,23 @@ const appBase = `/${copy.lang}/app`;
             </div>
             <h3>{feature.title}</h3>
             <p>{feature.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="coverage section-shell">
+      <div class="section-intro">
+        <p class="eyebrow"><span></span>{copy.coverage.eyebrow}</p>
+        <h2>{copy.coverage.title}</h2>
+        <p>{copy.coverage.lead}</p>
+      </div>
+      <div class="coverage-grid">
+        {copy.coverage.items.map((item, index) => (
+          <article class="editorial-card">
+            <span>0{index + 1}</span>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
           </article>
         ))}
       </div>

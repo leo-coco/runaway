@@ -19,5 +19,11 @@
     { "source": "/:lang(en|fr)/app/(.*)", "destination": "/app/index.html" },
     { "source": "/app", "destination": "/app/index.html" },
     { "source": "/app/(.*)", "destination": "/app/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(favicon.ico|favicon.png|favicon.svg|apple-touch-icon.png|og-image.png|icons.svg)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    }
   ]
 }
