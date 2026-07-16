@@ -24,7 +24,7 @@ const cadEquity: Holding = {
   monthlyContribution: 135, // 135 CAD/mo
   accountId: null,
   instrument: {
-    id: 'alphavantage:SHOP.TO',
+    id: 'equity:SHOP.TO',
     symbol: 'SHOP.TO',
     name: 'Shopify',
     assetClass: 'ca_equity',

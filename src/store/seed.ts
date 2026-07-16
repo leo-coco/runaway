@@ -23,7 +23,7 @@ interface SeedSpec {
 
 const SEED_HOLDINGS: readonly SeedSpec[] = [
   {
-    id: 'alphavantage:NVDA.TO',
+    id: 'equity:NVDA.TO',
     symbol: 'NVDA.TO',
     name: 'NVIDIA Corporation',
     assetClass: 'ca_equity',
@@ -33,7 +33,7 @@ const SEED_HOLDINGS: readonly SeedSpec[] = [
     cagr: 3,
   },
   {
-    id: 'alphavantage:XEQT.TO',
+    id: 'equity:XEQT.TO',
     symbol: 'XEQT.TO',
     name: 'iShares Core Equity ETF Portfolio',
     assetClass: 'ca_equity',
@@ -44,7 +44,7 @@ const SEED_HOLDINGS: readonly SeedSpec[] = [
     cagr: 7,
   },
   {
-    id: 'alphavantage:VFV.TO',
+    id: 'equity:VFV.TO',
     symbol: 'VFV.TO',
     name: 'Vanguard S&P 500 Index ETF',
     assetClass: 'ca_equity',
@@ -55,7 +55,7 @@ const SEED_HOLDINGS: readonly SeedSpec[] = [
     cagr: 8,
   },
   {
-    id: 'alphavantage:FBTC.TO',
+    id: 'equity:FBTC.TO',
     symbol: 'FBTC.TO',
     name: 'Fidelity Advantage Bitcoin ETF',
     assetClass: 'ca_equity',
@@ -65,7 +65,7 @@ const SEED_HOLDINGS: readonly SeedSpec[] = [
     cagr: 15,
   },
   {
-    id: 'alphavantage:TSLA.TO',
+    id: 'equity:TSLA.TO',
     symbol: 'TSLA.TO',
     name: 'Tesla, Inc.',
     assetClass: 'ca_equity',
@@ -167,7 +167,7 @@ export const createSandboxPlan = (lang: 'en' | 'fr'): Plan => {
     {
       id: newId(),
       instrument: {
-        id: 'alphavantage:VOO',
+        id: 'equity:VOO',
         symbol: 'VOO',
         name: 'Vanguard S&P 500 ETF',
         assetClass: 'us_equity',
