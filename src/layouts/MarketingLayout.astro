@@ -1,5 +1,7 @@
 ---
 import '../styles/marketing.css';
+import geistRegular from '@fontsource/geist-sans/files/geist-sans-latin-400-normal.woff2?url';
+import geistBold from '@fontsource/geist-sans/files/geist-sans-latin-700-normal.woff2?url';
 
 interface Props {
   lang: 'fr' | 'en';
@@ -23,8 +25,16 @@ const {
   kind = 'page',
 } = Astro.props;
 const canonical = new URL(canonicalPath, Astro.site);
+const ogImage = new URL('/og-image.png', Astro.site);
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Runaway',
+  url: new URL('/', Astro.site).href,
+  logo: new URL('/favicon.png', Astro.site).href,
+};
 const schema = kind === 'landing'
-  ? [{
+  ? [organizationSchema, {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Runaway',
@@ -42,7 +52,7 @@ const schema = kind === 'landing'
       acceptedAnswer: { '@type': 'Answer', text: item.answer },
     })),
   }] : [])]
-  : [{
+  : [organizationSchema, {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: title,
@@ -64,14 +74,24 @@ const schema = kind === 'landing'
     <link rel="alternate" hreflang="fr" href={new URL(alternateFrPath, Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL(alternateEnPath, Astro.site)} />
     <link rel="alternate" hreflang="x-default" href={new URL(alternateFrPath, Astro.site)} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href={geistRegular} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={geistBold} as="font" type="font/woff2" crossorigin />
     <meta name="theme-color" content="#0d0d0d" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Runaway" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={lang === 'fr' ? 'fr_FR' : 'en_US'} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImage} />
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   </head>
   <body>
