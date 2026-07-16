@@ -16,6 +16,12 @@ class MockResizeObserver {
 }
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = MockResizeObserver;
 
+// The "see all events" modal virtualizes its list off the scroll element's
+// offsetHeight/offsetWidth, which jsdom otherwise reports as 0 — that would
+// make every row measure as out of view and never render.
+Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 600 });
+Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, value: 800 });
+
 // The component derives events from context + service; mock both so the test
 // drives a fixed event list and never needs the store/network.
 const EVENTS: RunwayEvent[] = [

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/cn';
 import { XIcon } from '@/components/icons';
@@ -17,6 +17,8 @@ interface ModalProps {
   fullscreen?: boolean;
   /** Optional styling hook for a specialised modal layout. */
   className?: string;
+  /** Exposes the scrollable `.modal__body` element, e.g. for a virtualized list. */
+  bodyRef?: Ref<HTMLDivElement>;
 }
 
 export const Modal = ({
@@ -30,6 +32,7 @@ export const Modal = ({
   xl,
   fullscreen,
   className,
+  bodyRef,
 }: ModalProps) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,7 +73,7 @@ export const Modal = ({
             </button>
           </div>
         </div>
-        <div className="modal__body">
+        <div className="modal__body" ref={bodyRef}>
           {description && <p className="modal__desc">{description}</p>}
           {children}
         </div>
