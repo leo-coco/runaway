@@ -590,7 +590,6 @@ export const fr: Resources = {
     modeLabel: 'Profil de dépenses',
     modeLinear: 'Dépenses linéaires',
     modePhased: 'Dépenses par phase',
-    linearNote: 'Un budget constant en termes réels pour toute la retraite.',
     initialBudget: 'Budget initial',
     ageNeeded: 'Renseignez votre âge actuel dans la chronologie pour mapper les phases.',
     goGo: 'Go-Go',

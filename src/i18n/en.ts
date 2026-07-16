@@ -574,7 +574,6 @@ export const en = {
     modeLabel: 'Spending profile',
     modeLinear: 'Linear spending',
     modePhased: 'Spending by phase',
-    linearNote: 'A flat budget held constant in real terms for the whole retirement.',
     initialBudget: 'Initial Budget',
     ageNeeded: 'Set your current age in the timeline so phases can be mapped to ages.',
     goGo: 'Go-Go',

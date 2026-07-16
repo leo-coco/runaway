@@ -307,9 +307,7 @@ export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose
         {errors.annualSpending && <p className="field-error">{errors.annualSpending.message}</p>}
       </div>
 
-      {mode === 'linear' ? (
-        <p className="field__hint">{t('spending.linearNote')}</p>
-      ) : (
+      {mode === 'linear' ? null : (
         <div className="spend-phased">
           {!ageKnown && <p className="field__hint">{t('spending.ageNeeded')}</p>}
 
