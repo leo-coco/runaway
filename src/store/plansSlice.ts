@@ -167,11 +167,26 @@ export const createPlansSlice =
       const source = get().plans.find((p) => p.id === id);
       if (!source) return null;
       const now = new Date().toISOString();
+      const holdingIdMap = new Map(source.holdings.map((h) => [h.id, newId()]));
+      // Correlation overrides are keyed by holding-id pairs, so they must follow
+      // the regenerated ids; keys referencing unknown holdings are dropped.
+      const remapOverrides = (overrides: Record<string, number>): Record<string, number> =>
+        Object.fromEntries(
+          Object.entries(overrides).flatMap(([key, value]) => {
+            const [a, b] = key.split('|');
+            const na = holdingIdMap.get(a ?? '');
+            const nb = holdingIdMap.get(b ?? '');
+            return na && nb ? [[[na, nb].sort().join('|'), value]] : [];
+          }),
+        );
       const copy: Plan = {
         ...source,
         id: newId(),
         name: `${source.name} (copy)`,
-        holdings: source.holdings.map((h) => ({ ...h, id: newId() })),
+        holdings: source.holdings.map((h) => ({ ...h, id: holdingIdMap.get(h.id)! })),
+        ...(source.correlationOverrides
+          ? { correlationOverrides: remapOverrides(source.correlationOverrides) }
+          : {}),
         createdAt: now,
         updatedAt: now,
       };
