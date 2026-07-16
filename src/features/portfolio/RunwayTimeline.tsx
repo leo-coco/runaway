@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { RUNWAY_ICONS } from '@/components/icons';
+import { ChevronDownIcon, RUNWAY_ICONS } from '@/components/icons';
 import { useCurrencyFormatter, type CurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
 import { useLimit } from '@/hooks/useEntitlements';
@@ -21,6 +21,9 @@ const ZONE_CLASS: Record<SuccessZone, string> = {
   borderline: 'runway__marker--borderline',
   weak: 'runway__marker--weak',
 };
+
+const runwayEventTone = (event: RunwayEvent): string =>
+  event.category ? `runway-event--category-${event.category}` : `runway-event--${event.kind}`;
 
 /** The label for an event, formatting any amount param through the currency. */
 const useEventLabel = (fmt: CurrencyFormatter) => {
@@ -50,7 +53,7 @@ const RunwayMarker = ({
   ellipsisBefore?: boolean;
 }) => {
   const { t } = useTranslation();
-  const Icon = RUNWAY_ICONS[event.icon];
+  const Icon = RUNWAY_ICONS[event.icon] ?? RUNWAY_ICONS.wallet;
   const tipParts = [label];
   if (event.amount != null && event.kind !== 'wealth-milestone') {
     tipParts.push(fmt.compact(event.amount));
@@ -82,6 +85,7 @@ const RunwayMarker = ({
           className={cn(
             'runway__marker',
             `runway__marker--${event.kind}`,
+            runwayEventTone(event),
             event.confidence && ZONE_CLASS[event.confidence],
           )}
         >
@@ -166,40 +170,155 @@ const AllEventsModal = ({
   events,
   fmt,
   label,
-  displayMode,
   dateForYear,
+  secondaryDateForYear,
   onClose,
 }: {
   events: readonly RunwayEvent[];
   fmt: CurrencyFormatter;
   label: (e: RunwayEvent) => string;
-  displayMode: DateDisplayMode;
   dateForYear: (year: number) => string;
+  secondaryDateForYear: (year: number) => string | null;
   onClose: () => void;
 }) => {
   const { t } = useTranslation();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const groups = events.reduce<{ year: number; events: RunwayEvent[] }[]>((result, event) => {
+    const current = result.at(-1);
+    if (current?.year === event.year) current.events.push(event);
+    else result.push({ year: event.year, events: [event] });
+    return result;
+  }, []);
+
+  const categoryLabel = (event: RunwayEvent): string | null =>
+    event.category ? t(`expensesIncomes.categories.${event.category}`) : null;
+
+  const familyLabel = (event: RunwayEvent): string => {
+    if (event.kind === 'expense' || event.kind === 'home-buy') {
+      return t('expensesIncomes.typeExpense');
+    }
+    if (event.kind === 'income' || event.kind === 'home-sell') {
+      return t('expensesIncomes.typeIncome');
+    }
+    if (event.kind === 'wealth-milestone') return t('runway.eventTypes.milestone');
+    if (event.kind === 'account-switch') return t('runway.eventTypes.accountSwitch');
+    if (event.kind === 'portfolio-dry') return t('runway.eventTypes.alert');
+    return t('runway.eventTypes.landmark');
+  };
+
+  const description = (event: RunwayEvent): string => {
+    if (event.frequency === 'recurring' && event.kind === 'expense') {
+      return t('runway.eventDescriptions.recurringExpense');
+    }
+    if (event.frequency === 'recurring' && event.kind === 'income') {
+      return t('runway.eventDescriptions.recurringIncome');
+    }
+    if (event.kind === 'account-switch') {
+      return t('runway.eventDescriptions.accountSwitch', { next: event.labelParams?.next });
+    }
+    if (event.kind === 'portfolio-dry' && event.mcRange) {
+      return t('runway.eventDescriptions.portfolioDryRange', {
+        low: dateForYear(event.mcRange.lowYear),
+        high: dateForYear(event.mcRange.highYear),
+      });
+    }
+    return t(`runway.eventDescriptions.${event.kind}`);
+  };
+
+  const amount = (event: RunwayEvent): string | null => {
+    if (event.amount == null) return null;
+    const formatted = fmt.compact(event.amount);
+    if (event.kind === 'expense' || event.kind === 'home-buy') return `− ${formatted}`;
+    if (event.kind === 'income' || event.kind === 'home-sell') return `+ ${formatted}`;
+    return formatted;
+  };
+
   return (
-    <Modal title={t('runway.allEventsTitle')} onClose={onClose} wide>
-      <table className="runway-table">
-        <thead>
-          <tr>
-            <th>{t(displayMode === 'age' ? 'runway.colAge' : 'runway.colYear')}</th>
-            <th>{t('runway.colEvent')}</th>
-            <th className="runway-table__amount">{t('runway.colAmount')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((e) => (
-            <tr key={e.id}>
-              <td>{dateForYear(e.year)}</td>
-              <td>{label(e)}</td>
-              <td className="runway-table__amount">
-                {e.amount != null ? fmt.compact(e.amount) : '—'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <Modal
+      title={t('runway.allEventsTitle')}
+      description={t('runway.allEventsDescription')}
+      onClose={onClose}
+      wide
+      className="runway-events-modal"
+    >
+      <div className="runway-events">
+        {groups.map((group) => {
+          const secondaryDate = secondaryDateForYear(group.year);
+          return (
+            <section className="runway-events__year" key={group.year}>
+              <div className="runway-events__date">
+                <time dateTime={`${group.year}`}>{dateForYear(group.year)}</time>
+                {secondaryDate && <span>{secondaryDate}</span>}
+              </div>
+              <ol className="runway-events__list">
+                {group.events.map((event) => {
+                  const Icon = RUNWAY_ICONS[event.icon] ?? RUNWAY_ICONS.wallet;
+                  const isSelected = selectedEventId === event.id;
+                  const eventAmount = amount(event);
+                  const category = categoryLabel(event);
+                  return (
+                    <li key={event.id}>
+                      <button
+                        type="button"
+                        className={cn(
+                          'runway-event',
+                          runwayEventTone(event),
+                          isSelected && 'is-selected',
+                        )}
+                        aria-expanded={isSelected}
+                        onClick={() => setSelectedEventId(isSelected ? null : event.id)}
+                      >
+                        <span className="runway-event__icon" aria-hidden="true">
+                          <Icon size={20} />
+                        </span>
+                        <span className="runway-event__content">
+                          <span className="runway-event__label">{label(event)}</span>
+                          <span className="runway-event__meta">
+                            {category && <span>{category}</span>}
+                            <span>{familyLabel(event)}</span>
+                            {event.frequency === 'recurring' && (
+                              <span>{t('expensesIncomes.frequencyRecurring')}</span>
+                            )}
+                          </span>
+                        </span>
+                        {eventAmount && (
+                          <span
+                            className={cn(
+                              'runway-event__amount',
+                              (event.kind === 'income' || event.kind === 'home-sell') &&
+                                'runway-event__amount--income',
+                              (event.kind === 'expense' || event.kind === 'home-buy') &&
+                                'runway-event__amount--expense',
+                            )}
+                          >
+                            {eventAmount}
+                          </span>
+                        )}
+                        <ChevronDownIcon className="runway-event__chevron" aria-hidden="true" />
+                      </button>
+                      {isSelected && (
+                        <div
+                          className={cn('runway-event__detail', runwayEventTone(event))}
+                          role="region"
+                        >
+                          <p>{description(event)}</p>
+                          {event.confidence && (
+                            <span
+                              className={cn('runway-event__confidence', `is-${event.confidence}`)}
+                            >
+                              {t(`runway.confidence.${event.confidence}`)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          );
+        })}
+      </div>
     </Modal>
   );
 };
@@ -233,6 +352,12 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
     if (!showAge) return `${year}`;
     const age = ageInYear(plan.settings.currentAge, projection.startYear, year);
     return age === null ? `${year}` : t('runway.ageValue', { age });
+  };
+  const secondaryDateForYear = (year: number): string | null => {
+    if (showAge) return `${year}`;
+    if (!canShowAge) return null;
+    const age = ageInYear(plan.settings.currentAge, projection.startYear, year);
+    return age === null ? null : t('runway.ageValue', { age });
   };
 
   if (plan.holdings.length === 0) {
@@ -322,8 +447,8 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
           events={events}
           fmt={fmt}
           label={label}
-          displayMode={displayMode}
           dateForYear={dateForYear}
+          secondaryDateForYear={secondaryDateForYear}
           onClose={() => setShowAll(false)}
         />
       )}

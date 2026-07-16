@@ -15,7 +15,7 @@
  */
 import { RUNWAY_ICONS, type RunwayIconName } from '@/components/icons';
 import { classifySuccess, type SuccessZone } from '@/domain/successRate';
-import type { ExpenseCategory, ExpenseIncome } from '@/domain/expenseIncome';
+import type { ExpenseCategory, ExpenseIncome, FlowFrequency } from '@/domain/expenseIncome';
 import type { Plan } from '@/domain/plan';
 import type { Projection, ProjectionYear } from '@/domain/projection';
 import type { MonteCarloPercentile, MonteCarloResult } from '@/services/monteCarlo';
@@ -44,6 +44,10 @@ export interface RunwayEvent {
   /** Amount to show (formatted by the caller), when the event has one. */
   readonly amount?: number;
   readonly icon: RunwayIconName;
+  /** User-selected visual category for cashflows and property events. */
+  readonly category?: ExpenseCategory;
+  /** Whether this cashflow is a one-off or one occurrence in a recurring series. */
+  readonly frequency?: FlowFrequency;
   /** Monte-Carlo success tint for uncertain markers (families 3-4). */
   readonly confidence?: SuccessZone;
   /** Monte-Carlo plausible-year band for the portfolio running dry. */
@@ -60,14 +64,23 @@ const CATEGORY_ICON: Record<ExpenseCategory, RunwayIconName> = {
   wedding: 'ring',
   gift: 'gift',
   home: 'home',
+  insurance: 'shield',
+  relocation: 'globe',
+  family: 'family',
+  renovation: 'tools',
+  business: 'briefcase',
+  pension: 'umbrella',
+  debt: 'credit-card',
+  taxLegal: 'tax',
+  salary: 'paycheck',
+  rentalIncome: 'key',
 };
 
 const EPS = 1;
 
 const iconForFlow = (item: ExpenseIncome): RunwayIconName => {
   const cat = item.category ?? 'general';
-  if (cat !== 'general') return CATEGORY_ICON[cat];
-  return item.kind === 'income' ? 'gift' : 'wallet';
+  return CATEGORY_ICON[cat];
 };
 
 /** Net-worth thresholds to watch, from $5K up to $10M. */
@@ -172,19 +185,26 @@ export const buildRunwayEvents = (
 
   // --- Family 2: financial events ---
   for (const item of settings.expensesIncomes ?? []) {
-    events.push({
-      id: `flow:${item.id}`,
-      kind: item.kind === 'income' ? 'income' : 'expense',
-      year: item.year,
-      labelKey: item.name?.trim()
-        ? 'runway.flowNamed'
-        : item.kind === 'income'
-          ? 'runway.flowIncome'
-          : 'runway.flowExpense',
-      labelParams: { name: item.name?.trim() || undefined },
-      amount: item.amount,
-      icon: iconForFlow(item),
-    });
+    const frequency = item.frequency ?? 'once';
+    const finalOccurrenceYear =
+      frequency === 'recurring' ? Math.max(item.year, item.endYear ?? item.year) : item.year;
+    for (let year = item.year; year <= finalOccurrenceYear; year += 1) {
+      events.push({
+        id: frequency === 'recurring' ? `flow:${item.id}:${year}` : `flow:${item.id}`,
+        kind: item.kind === 'income' ? 'income' : 'expense',
+        year,
+        labelKey: item.name?.trim()
+          ? 'runway.flowNamed'
+          : item.kind === 'income'
+            ? 'runway.flowIncome'
+            : 'runway.flowExpense',
+        labelParams: { name: item.name?.trim() || undefined },
+        amount: item.amount,
+        icon: iconForFlow(item),
+        category: item.category ?? 'general',
+        frequency,
+      });
+    }
   }
   if (plan.home?.purchase) {
     events.push({
@@ -194,6 +214,7 @@ export const buildRunwayEvents = (
       labelKey: 'runway.homeBuy',
       amount: plan.home.currentValue,
       icon: 'home',
+      category: 'home',
     });
   }
   if (plan.home?.sale) {
@@ -203,6 +224,7 @@ export const buildRunwayEvents = (
       year: plan.home.sale.year,
       labelKey: 'runway.homeSell',
       icon: 'home',
+      category: 'home',
     });
   }
 
@@ -318,4 +340,4 @@ export const buildRunwayEvents = (
 };
 
 /** Convenience for renderers: the icon component for an event. */
-export const runwayIcon = (event: RunwayEvent) => RUNWAY_ICONS[event.icon];
+export const runwayIcon = (event: RunwayEvent) => RUNWAY_ICONS[event.icon] ?? RUNWAY_ICONS.wallet;

@@ -5558,6 +5558,9 @@ th[title] {
 .flow-card--income {
   border-left-color: var(--success, #34d399);
 }
+.flow-card--readonly {
+  padding: 14px 18px;
+}
 .flow-card.is-highlight {
   box-shadow: 0 0 0 2px var(--accent);
   border-color: var(--accent);
@@ -5574,6 +5577,15 @@ th[title] {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+}
+.flow-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.flow-card--readonly .flow-card__top {
+  margin-bottom: 10px;
 }
 .flow-seg {
   width: auto;
@@ -5711,11 +5723,25 @@ th[title] {
   font-weight: 700;
   font-size: 1.0625rem;
 }
+.flow-card__identity .flow-card__name--readonly {
+  width: auto;
+  min-width: 0;
+  margin: 0;
+}
+.flow-card__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
 .flow-card__detail {
   display: flex;
   align-items: baseline;
   gap: 12px;
   margin-bottom: 8px;
+}
+.flow-card__summary .flow-card__detail {
+  margin: 0;
+  flex-shrink: 0;
 }
 .flow-card__amount {
   font-size: var(--fs-xl);
@@ -5726,6 +5752,10 @@ th[title] {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+}
+.flow-card__top-right .flow-card__badges {
+  justify-content: flex-end;
+  margin: 0;
 }
 .flow-badge {
   display: inline-block;
@@ -5750,6 +5780,31 @@ th[title] {
   .flow-card__grid,
   .flow-card__grid--periodic {
     grid-template-columns: 1fr;
+  }
+  .flow-card--readonly .flow-card__top {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .flow-card--readonly .flow-card__identity,
+  .flow-card--readonly .flow-card__summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .flow-card--readonly .flow-card__identity {
+    gap: 8px;
+  }
+  .flow-card--readonly .flow-card__summary {
+    gap: 8px;
+  }
+  .flow-card--readonly .flow-card__top-right .flow-card__badges {
+    justify-content: flex-start;
+  }
+  .flow-card--readonly .flow-card__top-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .flow-card--readonly .flow-projection {
+    white-space: normal;
   }
 }
 
@@ -6348,6 +6403,7 @@ th[title] {
   opacity: 1;
 }
 .runway__marker {
+  --runway-event-color: var(--text);
   position: relative;
   z-index: 1;
   display: grid;
@@ -6355,34 +6411,28 @@ th[title] {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--bg-card);
-  border: 2px solid var(--border);
-  color: var(--text);
+  background: color-mix(in srgb, var(--runway-event-color) 14%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--runway-event-color) 32%, var(--border));
+  color: var(--runway-event-color);
   margin-bottom: 10px;
 }
 .runway__marker--today {
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--runway-event-color) 32%, var(--border));
+  background: color-mix(in srgb, var(--runway-event-color) 14%, var(--bg-card));
 }
 .runway__marker--today svg {
-  display: none;
+  display: block;
 }
 .runway__marker--today::after {
-  content: '';
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--accent);
+  display: none;
 }
 .runway__marker--retirement,
 .runway__marker--benefits,
 .runway__marker--projection-end {
-  border-color: var(--accent);
-  color: var(--accent);
+  --runway-event-color: var(--runway-landmark);
 }
 .runway__marker--wealth-milestone {
-  border-color: var(--accent-strong);
-  color: var(--accent-strong);
+  --runway-event-color: var(--accent-strong);
 }
 /* Monte-Carlo confidence tint wins for the uncertain markers. */
 .runway__marker--strong {
@@ -6430,6 +6480,355 @@ th[title] {
 }
 .runway__more:hover {
   text-decoration: underline;
+}
+
+/* Full Runway explorer: a scrollable vertical path with one stop per event. */
+.runway-events-modal .modal__body {
+  padding-top: 8px;
+}
+.runway,
+.runway-events {
+  --runway-axis-x: 83px;
+  --runway-general: var(--text-muted);
+  --runway-vehicle: #60a5fa;
+  --runway-travel: #38bdf8;
+  --runway-education: #a78bfa;
+  --runway-health: #fb7185;
+  --runway-wedding: #f472b6;
+  --runway-gift: #fbbf24;
+  --runway-home: #fb923c;
+  --runway-insurance: #22c55e;
+  --runway-relocation: #06b6d4;
+  --runway-family: #f97316;
+  --runway-renovation: #eab308;
+  --runway-business: #818cf8;
+  --runway-pension: #14b8a6;
+  --runway-debt: #f87171;
+  --runway-tax-legal: #94a3b8;
+  --runway-salary: #4ade80;
+  --runway-rental-income: #f59e0b;
+  --runway-landmark: #2dd4bf;
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 2px 0 12px;
+}
+:root[data-theme='light'] .runway,
+:root[data-theme='light'] .runway-events {
+  --runway-vehicle: #2563eb;
+  --runway-travel: #0284c7;
+  --runway-education: #7c3aed;
+  --runway-health: #e11d48;
+  --runway-wedding: #db2777;
+  --runway-gift: #b45309;
+  --runway-home: #c2410c;
+  --runway-insurance: #15803d;
+  --runway-relocation: #0e7490;
+  --runway-family: #ea580c;
+  --runway-renovation: #a16207;
+  --runway-business: #4f46e5;
+  --runway-pension: #0f766e;
+  --runway-debt: #dc2626;
+  --runway-tax-legal: #475569;
+  --runway-salary: #16a34a;
+  --runway-rental-income: #d97706;
+  --runway-landmark: #0f766e;
+}
+.runway-events::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 22px;
+  left: var(--runway-axis-x);
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--border-strong);
+}
+.runway-events__year {
+  position: relative;
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  gap: 32px;
+  padding: 4px 0 14px;
+}
+.runway-events__year::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 17px;
+  left: var(--runway-axis-x);
+  width: 16px;
+  height: 16px;
+  border: 4px solid var(--bg-elev);
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--border-strong);
+  transform: translateX(-50%);
+}
+.runway-events__date {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  padding-top: 8px;
+  background: var(--bg-elev);
+}
+.runway-events__date time {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.runway-events__date span {
+  color: var(--text-muted);
+  font-size: var(--fs-2xs);
+  white-space: nowrap;
+}
+.runway-events__list {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.runway-events__list > li {
+  min-width: 0;
+}
+.runway-event {
+  --runway-event-color: var(--accent);
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+.runway-event:hover {
+  background: var(--overlay-hover-soft);
+}
+.runway-event.is-selected {
+  border-color: color-mix(in srgb, var(--runway-event-color) 45%, var(--border));
+  background: color-mix(in srgb, var(--runway-event-color) 8%, transparent);
+}
+.runway-event__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  color: var(--runway-event-color);
+  background: color-mix(in srgb, var(--runway-event-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--runway-event-color) 28%, transparent);
+}
+.runway-event__content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.runway-event__label {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.runway-event__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--text-muted);
+  font-size: var(--fs-2xs);
+}
+.runway-event__meta span + span::before {
+  content: '•';
+  margin-right: 10px;
+  color: var(--runway-event-color);
+}
+.runway-event__amount {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.runway-event__amount--income {
+  color: var(--success);
+}
+.runway-event__amount--expense {
+  color: var(--danger);
+}
+.runway-event__chevron {
+  color: var(--text-muted);
+  transition: transform 0.16s ease;
+}
+.runway-event.is-selected .runway-event__chevron {
+  transform: rotate(180deg);
+}
+.runway-event__detail {
+  margin: 2px 12px 4px 54px;
+  padding: 12px 14px;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  border-left: 2px solid var(--runway-event-color, var(--accent));
+  background: color-mix(in srgb, var(--runway-event-color, var(--accent)) 5%, transparent);
+}
+.runway-event__detail p {
+  margin: 0;
+  line-height: 1.55;
+}
+.runway-event__confidence {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: var(--fs-2xs);
+  font-weight: 650;
+}
+.runway-event__confidence.is-strong {
+  color: var(--success);
+}
+.runway-event__confidence.is-borderline {
+  color: var(--amber);
+}
+.runway-event__confidence.is-weak {
+  color: var(--danger);
+}
+.runway-event--category-general {
+  --runway-event-color: var(--runway-general);
+}
+.runway-event--category-vehicle {
+  --runway-event-color: var(--runway-vehicle);
+}
+.runway-event--category-travel {
+  --runway-event-color: var(--runway-travel);
+}
+.runway-event--category-education {
+  --runway-event-color: var(--runway-education);
+}
+.runway-event--category-health {
+  --runway-event-color: var(--runway-health);
+}
+.runway-event--category-wedding {
+  --runway-event-color: var(--runway-wedding);
+}
+.runway-event--category-gift {
+  --runway-event-color: var(--runway-gift);
+}
+.runway-event--category-home {
+  --runway-event-color: var(--runway-home);
+}
+.runway-event--category-insurance {
+  --runway-event-color: var(--runway-insurance);
+}
+.runway-event--category-relocation {
+  --runway-event-color: var(--runway-relocation);
+}
+.runway-event--category-family {
+  --runway-event-color: var(--runway-family);
+}
+.runway-event--category-renovation {
+  --runway-event-color: var(--runway-renovation);
+}
+.runway-event--category-business {
+  --runway-event-color: var(--runway-business);
+}
+.runway-event--category-pension {
+  --runway-event-color: var(--runway-pension);
+}
+.runway-event--category-debt {
+  --runway-event-color: var(--runway-debt);
+}
+.runway-event--category-taxLegal {
+  --runway-event-color: var(--runway-tax-legal);
+}
+.runway-event--category-salary {
+  --runway-event-color: var(--runway-salary);
+}
+.runway-event--category-rentalIncome {
+  --runway-event-color: var(--runway-rental-income);
+}
+.runway-event--wealth-milestone {
+  --runway-event-color: var(--accent-strong);
+}
+.runway-event--account-switch {
+  --runway-event-color: var(--runway-education);
+}
+.runway-event--portfolio-dry {
+  --runway-event-color: var(--danger);
+}
+.runway-event--today {
+  --runway-event-color: var(--runway-general);
+}
+.runway-event--retirement,
+.runway-event--benefits,
+.runway-event--projection-end {
+  --runway-event-color: var(--runway-landmark);
+}
+.runway__marker.runway__marker--strong {
+  --runway-event-color: var(--success);
+}
+.runway__marker.runway__marker--borderline {
+  --runway-event-color: var(--amber);
+}
+.runway__marker.runway__marker--weak,
+.runway__marker.runway__marker--portfolio-dry {
+  --runway-event-color: var(--danger);
+}
+
+@media (max-width: 600px) {
+  .runway-events {
+    --runway-axis-x: 15px;
+  }
+  .runway-events::before {
+    left: var(--runway-axis-x);
+  }
+  .runway-events__year {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding-left: 34px;
+  }
+  .runway-events__year::before {
+    top: 17px;
+    left: var(--runway-axis-x);
+  }
+  .runway-events__date {
+    position: static;
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 8px;
+    background: transparent;
+  }
+  .runway-event {
+    grid-template-columns: 38px minmax(0, 1fr) 18px;
+    gap: 9px;
+    padding-inline: 8px;
+  }
+  .runway-event__amount {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .runway-event__chevron {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .runway-event__detail {
+    margin-left: 46px;
+  }
 }
 .runway-table {
   width: 100%;

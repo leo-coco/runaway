@@ -383,6 +383,47 @@ export const ShieldIcon = ({ size = 16, ...p }: IconProps) => (
     <path d="m9 12 2 2 4-4" />
   </svg>
 );
+export const FamilyIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="9" cy="7" r="3" />
+    <circle cx="17" cy="9" r="2" />
+    <path d="M3 20v-2a6 6 0 0 1 12 0v2" />
+    <path d="M14 14.5a4.5 4.5 0 0 1 7 3.7V20" />
+  </svg>
+);
+export const ToolsIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="m14.7 6.3 3-3a4 4 0 0 1-5 5L5 16l-2 5 5-2 7.7-7.7a4 4 0 0 1 5-5l-3 3Z" />
+    <line x1="6.5" y1="17.5" x2="4.5" y2="19.5" />
+  </svg>
+);
+export const BriefcaseIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d="M3 12h18M10 12v2h4v-2" />
+  </svg>
+);
+export const CreditCardIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <line x1="2" y1="10" x2="22" y2="10" />
+    <line x1="6" y1="15" x2="10" y2="15" />
+  </svg>
+);
+export const PaycheckIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <circle cx="12" cy="12" r="3" />
+    <path d="M6 9H5v1M18 15h1v-1" />
+  </svg>
+);
+export const KeyIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="m11 12 8-8M16 7l3 3M14 9l2 2" />
+  </svg>
+);
 
 /** Named icons a runway event can carry (see src/services/runwayEvents.ts). */
 export type RunwayIconName =
@@ -400,7 +441,16 @@ export type RunwayIconName =
   | 'trophy'
   | 'wallet'
   | 'swap'
-  | 'alert';
+  | 'alert'
+  | 'shield'
+  | 'globe'
+  | 'family'
+  | 'tools'
+  | 'briefcase'
+  | 'credit-card'
+  | 'tax'
+  | 'paycheck'
+  | 'key';
 
 export const RUNWAY_ICONS: Record<RunwayIconName, (p: IconProps) => ReactElement> = {
   dot: DotIcon,
@@ -418,4 +468,13 @@ export const RUNWAY_ICONS: Record<RunwayIconName, (p: IconProps) => ReactElement
   wallet: WalletIcon,
   swap: SwapIcon,
   alert: AlertIcon,
+  shield: ShieldIcon,
+  globe: GlobeIcon,
+  family: FamilyIcon,
+  tools: ToolsIcon,
+  briefcase: BriefcaseIcon,
+  'credit-card': CreditCardIcon,
+  tax: TaxIcon,
+  paycheck: PaycheckIcon,
+  key: KeyIcon,
 };
