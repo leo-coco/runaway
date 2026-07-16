@@ -48,7 +48,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const maxAssets = useLimit('maxAssets');
   const { statuses, isFetchingAll, fetchPrice, fetchAll } = usePriceFetcher(plan.id);
   const lang = languageFromPathname(window.location.pathname) ?? 'en';
-  const sandboxAccountHref = sessionData?.user ? `/${lang}/app/` : `/${lang}/app/signup`;
+  const sandboxAccountHref = sessionData?.user ? `/${lang}/app` : `/${lang}/app/signup`;
 
   // Free tier caps assets; adding past the cap opens the paywall instead.
   const onAddAsset = () =>
@@ -140,7 +140,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           </Button>
         )}
         {sandbox ? (
-          <a className="btn btn--accent" href={sandboxAccountHref}>
+          <a className="btn btn--accent action-banner__push-right" href={sandboxAccountHref}>
             <PlusIcon />
             {sessionData?.user
               ? t('portfolio.customizeInAccount')

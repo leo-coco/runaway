@@ -56,7 +56,7 @@ export const AuthMenu = () => {
     const lang =
       languageFromPathname(window.location.pathname) ??
       (i18n.resolvedLanguage === 'fr' ? 'fr' : 'en');
-    window.location.assign(`/${lang}/app/`);
+    window.location.assign(`/${lang}/app`);
   };
 
   useEffect(() => {
