@@ -20,26 +20,12 @@ const sandboxMode = isSandboxPathname(currentPathname);
  */
 export const PLANS_SCHEMA_VERSION = 11;
 
-const initialPlans = sandboxMode
-  ? [createSandboxPlan(currentPathname.startsWith('/fr/') ? 'fr' : 'en')]
-  : undefined;
+const langForPathname = (pathname: string): 'en' | 'fr' =>
+  pathname.startsWith('/fr/') ? 'fr' : 'en';
 
-// Persist the generated seed before Zustand hydrates it. Persist middleware only
-// writes after a mutation, which would otherwise generate a new plan id on every
-// reload when the dedicated Sandbox key is still empty.
-if (sandboxMode && initialPlans && typeof window !== 'undefined') {
-  const sandboxStorageKey = planStorageKeyForPathname(currentPathname);
-  try {
-    if (localStorage.getItem(sandboxStorageKey) === null) {
-      localStorage.setItem(
-        sandboxStorageKey,
-        JSON.stringify({ state: { plans: initialPlans }, version: PLANS_SCHEMA_VERSION }),
-      );
-    }
-  } catch {
-    // The Sandbox still works in-memory if browser storage is unavailable.
-  }
-}
+const initialPlans = sandboxMode
+  ? [createSandboxPlan(langForPathname(currentPathname))]
+  : undefined;
 
 /**
  * Backfill fields added after a plan was first persisted, so older saved plans
@@ -152,3 +138,26 @@ export const useAppStore = create<AppStore>()(
     },
   ),
 );
+
+/**
+ * Seed the Sandbox with its demo plan on first visit, through `persist`'s own
+ * public API rather than by hand-writing its storage envelope.
+ *
+ * Persist only writes after a state mutation, so without an explicit seed the
+ * in-memory default regenerates a new plan id on every reload while the dedicated
+ * Sandbox key stays empty. Driving the seed with `setState` makes persist write
+ * it through its own serializer, so a future Zustand upgrade can't silently
+ * desync the on-disk format. No-op outside the Sandbox and when a plan is already
+ * stored. Call once from the client entry, where the sandbox mode is known.
+ */
+export const seedSandboxIfEmpty = (pathname: string): void => {
+  if (typeof window === 'undefined' || !isSandboxPathname(pathname)) return;
+  const key = planStorageKeyForPathname(pathname);
+  try {
+    if (localStorage.getItem(key) !== null) return;
+    useAppStore.persist.setOptions({ name: key });
+    useAppStore.setState({ plans: [createSandboxPlan(langForPathname(pathname))] });
+  } catch {
+    // The Sandbox still works in-memory if browser storage is unavailable.
+  }
+};
