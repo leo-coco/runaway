@@ -13,16 +13,13 @@ describe('parseInstrumentId', () => {
     });
   });
 
-  it('normalizes the legacy alphavantage alias to equity so saved plans keep resolving', () => {
-    expect(parseInstrumentId('alphavantage:VOO')).toEqual({ provider: 'equity', ref: 'VOO' });
-  });
-
   it('keeps colons in the ref intact', () => {
     expect(parseInstrumentId('equity:BRK:B')).toEqual({ provider: 'equity', ref: 'BRK:B' });
   });
 
   it('returns null for an unknown namespace', () => {
     expect(parseInstrumentId('yahoo:VOO')).toBeNull();
+    expect(parseInstrumentId('alphavantage:VOO')).toBeNull();
   });
 
   it('returns null when there is no namespace separator', () => {
