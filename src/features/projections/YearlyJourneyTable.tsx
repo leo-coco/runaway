@@ -111,244 +111,246 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
 
   return (
     <Card className="journey card--pad" data-tour="journey-table">
-      <table className="jtable">
-        <thead>
-          <tr>
-            <th className="rowlabel">{t('jtable.retirementYear')}</th>
-            {years.map((y) => (
-              <th key={y.year} className="num">
-                {y.year}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="rowlabel">{t('jtable.age')}</td>
-            {years.map((y) => (
-              <td key={y.year} className="num">
-                {plan.settings.currentAge + (y.year - (projection.years[0]?.year ?? y.year))}
-              </td>
-            ))}
-          </tr>
-          {expandableRow(
-            'opening',
-            t('jtable.opening'),
-            (y) => y.openingBalance,
-            (a) => a.opening,
-          )}
-          {expandableRow(
-            'appreciation',
-            t('jtable.appreciation'),
-            (y) => y.appreciation,
-            (a) => a.appreciation,
-          )}
-          <tr>
-            <td className="rowlabel">{t('jtable.afterAppreciation')}</td>
-            {years.map((y) => (
-              <td key={y.year} className="num">
-                {moneySigned(y.balanceAfterAppreciation)}
-              </td>
-            ))}
-          </tr>
-          <Fragment key="totalIncome">
+      <div className="journey__scroll">
+        <table className="jtable">
+          <thead>
             <tr>
-              <td className="rowlabel">
-                <span
-                  className="expand-toggle"
-                  onClick={() => toggle('totalIncome')}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') toggle('totalIncome');
-                  }}
-                >
-                  <span className="chev">
-                    {open.totalIncome ? (
-                      <ChevronUpIcon size={14} />
-                    ) : (
-                      <ChevronDownIcon size={14} />
-                    )}
-                  </span>
-                  {t('jtable.totalIncome')}
-                </span>
-              </td>
-              {years.map((y) => {
-                const total = y.contributionValue + y.flowIncome;
-                return (
-                  <td key={y.year} className="num">
-                    {total <= 0.5 ? '—' : money(total)}
-                  </td>
-                );
-              })}
+              <th className="rowlabel">{t('jtable.retirementYear')}</th>
+              {years.map((y) => (
+                <th key={y.year} className="num">
+                  {y.year}
+                </th>
+              ))}
             </tr>
-            {open.totalIncome && (
-              <>
-                <tr className="asset-detail">
-                  <td>{t('jtable.contributions')}</td>
-                  {years.map((y) => (
+          </thead>
+          <tbody>
+            <tr>
+              <td className="rowlabel">{t('jtable.age')}</td>
+              {years.map((y) => (
+                <td key={y.year} className="num">
+                  {plan.settings.currentAge + (y.year - (projection.years[0]?.year ?? y.year))}
+                </td>
+              ))}
+            </tr>
+            {expandableRow(
+              'opening',
+              t('jtable.opening'),
+              (y) => y.openingBalance,
+              (a) => a.opening,
+            )}
+            {expandableRow(
+              'appreciation',
+              t('jtable.appreciation'),
+              (y) => y.appreciation,
+              (a) => a.appreciation,
+            )}
+            <tr>
+              <td className="rowlabel">{t('jtable.afterAppreciation')}</td>
+              {years.map((y) => (
+                <td key={y.year} className="num">
+                  {moneySigned(y.balanceAfterAppreciation)}
+                </td>
+              ))}
+            </tr>
+            <Fragment key="totalIncome">
+              <tr>
+                <td className="rowlabel">
+                  <span
+                    className="expand-toggle"
+                    onClick={() => toggle('totalIncome')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') toggle('totalIncome');
+                    }}
+                  >
+                    <span className="chev">
+                      {open.totalIncome ? (
+                        <ChevronUpIcon size={14} />
+                      ) : (
+                        <ChevronDownIcon size={14} />
+                      )}
+                    </span>
+                    {t('jtable.totalIncome')}
+                  </span>
+                </td>
+                {years.map((y) => {
+                  const total = y.contributionValue + y.flowIncome;
+                  return (
                     <td key={y.year} className="num">
-                      {y.contributionValue > 0.5 ? money(y.contributionValue) : '—'}
+                      {total <= 0.5 ? '—' : money(total)}
                     </td>
-                  ))}
-                </tr>
-                {flowItems
-                  .filter((item) => item.kind === 'income')
-                  .map((item) => (
-                    <tr key={`income-${item.id}`} className="asset-detail">
-                      <td>{flowLabel(item)}</td>
-                      {years.map((y) => {
-                        const inflationFactor = Math.pow(1 + inflationRate, y.year - startYear);
-                        const amount = expenseIncomeItemAmountForYear(
-                          item,
-                          y.year,
-                          inflationFactor,
-                        );
-                        return (
-                          <td key={y.year} className="num">
-                            {amount <= 0.5 ? '—' : money(amount)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-              </>
-            )}
-          </Fragment>
-          <Fragment key="totalExpense">
-            <tr>
-              <td className="rowlabel">
-                <span
-                  className="expand-toggle"
-                  onClick={() => toggle('totalExpense')}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') toggle('totalExpense');
-                  }}
-                >
-                  <span className="chev">
-                    {open.totalExpense ? (
-                      <ChevronUpIcon size={14} />
-                    ) : (
-                      <ChevronDownIcon size={14} />
-                    )}
+                  );
+                })}
+              </tr>
+              {open.totalIncome && (
+                <>
+                  <tr className="asset-detail">
+                    <td>{t('jtable.contributions')}</td>
+                    {years.map((y) => (
+                      <td key={y.year} className="num">
+                        {y.contributionValue > 0.5 ? money(y.contributionValue) : '—'}
+                      </td>
+                    ))}
+                  </tr>
+                  {flowItems
+                    .filter((item) => item.kind === 'income')
+                    .map((item) => (
+                      <tr key={`income-${item.id}`} className="asset-detail">
+                        <td>{flowLabel(item)}</td>
+                        {years.map((y) => {
+                          const inflationFactor = Math.pow(1 + inflationRate, y.year - startYear);
+                          const amount = expenseIncomeItemAmountForYear(
+                            item,
+                            y.year,
+                            inflationFactor,
+                          );
+                          return (
+                            <td key={y.year} className="num">
+                              {amount <= 0.5 ? '—' : money(amount)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                </>
+              )}
+            </Fragment>
+            <Fragment key="totalExpense">
+              <tr>
+                <td className="rowlabel">
+                  <span
+                    className="expand-toggle"
+                    onClick={() => toggle('totalExpense')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') toggle('totalExpense');
+                    }}
+                  >
+                    <span className="chev">
+                      {open.totalExpense ? (
+                        <ChevronUpIcon size={14} />
+                      ) : (
+                        <ChevronDownIcon size={14} />
+                      )}
+                    </span>
+                    {t('jtable.totalExpense')}
                   </span>
-                  {t('jtable.totalExpense')}
-                </span>
-              </td>
-              {years.map((y) => {
-                const total = y.lifestyleSpending + y.flowExpense;
-                return (
-                  <td key={y.year} className="num spend">
-                    {total <= 0.5 ? '—' : `(${money(total)})`}
-                  </td>
-                );
-              })}
-            </tr>
-            {open.totalExpense && (
-              <>
-                <tr className="asset-detail">
-                  <td>{t('jtable.lifestyleSpending')}</td>
-                  {years.map((y) => (
+                </td>
+                {years.map((y) => {
+                  const total = y.lifestyleSpending + y.flowExpense;
+                  return (
                     <td key={y.year} className="num spend">
-                      {y.lifestyleSpending > 0.5 ? `(${money(y.lifestyleSpending)})` : '—'}
+                      {total <= 0.5 ? '—' : `(${money(total)})`}
                     </td>
-                  ))}
-                </tr>
-                {flowItems
-                  .filter((item) => item.kind === 'expense')
-                  .map((item) => (
-                    <tr key={`expense-${item.id}`} className="asset-detail">
-                      <td>{flowLabel(item)}</td>
-                      {years.map((y) => {
-                        const inflationFactor = Math.pow(1 + inflationRate, y.year - startYear);
-                        const amount = expenseIncomeItemAmountForYear(
-                          item,
-                          y.year,
-                          inflationFactor,
-                        );
-                        return (
-                          <td key={y.year} className="num spend">
-                            {amount <= 0.5 ? '—' : `(${money(amount)})`}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-              </>
+                  );
+                })}
+              </tr>
+              {open.totalExpense && (
+                <>
+                  <tr className="asset-detail">
+                    <td>{t('jtable.lifestyleSpending')}</td>
+                    {years.map((y) => (
+                      <td key={y.year} className="num spend">
+                        {y.lifestyleSpending > 0.5 ? `(${money(y.lifestyleSpending)})` : '—'}
+                      </td>
+                    ))}
+                  </tr>
+                  {flowItems
+                    .filter((item) => item.kind === 'expense')
+                    .map((item) => (
+                      <tr key={`expense-${item.id}`} className="asset-detail">
+                        <td>{flowLabel(item)}</td>
+                        {years.map((y) => {
+                          const inflationFactor = Math.pow(1 + inflationRate, y.year - startYear);
+                          const amount = expenseIncomeItemAmountForYear(
+                            item,
+                            y.year,
+                            inflationFactor,
+                          );
+                          return (
+                            <td key={y.year} className="num spend">
+                              {amount <= 0.5 ? '—' : `(${money(amount)})`}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                </>
+              )}
+            </Fragment>
+            {hasTax && (
+              <tr>
+                <td className="rowlabel tip-host" tabIndex={0}>
+                  {t('jtable.taxOnWithdrawal')}
+                  <span className="tip-bubble" role="tooltip">
+                    {t('jtable.taxOnWithdrawalTip')}
+                  </span>
+                </td>
+                {years.map((y) => (
+                  <td key={y.year} className="num spend">
+                    ({money(y.taxPaid)})
+                  </td>
+                ))}
+              </tr>
             )}
-          </Fragment>
-          {hasTax && (
-            <tr>
-              <td className="rowlabel tip-host" tabIndex={0}>
-                {t('jtable.taxOnWithdrawal')}
-                <span className="tip-bubble" role="tooltip">
-                  {t('jtable.taxOnWithdrawalTip')}
-                </span>
-              </td>
-              {years.map((y) => (
-                <td key={y.year} className="num spend">
-                  ({money(y.taxPaid)})
+            {hasTax && (
+              <tr>
+                <td className="rowlabel tip-host" tabIndex={0}>
+                  {t('jtable.grossWithdrawal')}
+                  <span className="tip-bubble" role="tooltip">
+                    {t('jtable.grossWithdrawalTip')}
+                  </span>
                 </td>
-              ))}
-            </tr>
-          )}
-          {hasTax && (
-            <tr>
-              <td className="rowlabel tip-host" tabIndex={0}>
-                {t('jtable.grossWithdrawal')}
-                <span className="tip-bubble" role="tooltip">
-                  {t('jtable.grossWithdrawalTip')}
-                </span>
-              </td>
-              {years.map((y) => (
-                <td key={y.year} className="num spend">
-                  ({money(y.grossWithdrawal)})
+                {years.map((y) => (
+                  <td key={y.year} className="num spend">
+                    ({money(y.grossWithdrawal)})
+                  </td>
+                ))}
+              </tr>
+            )}
+            {hasTax && (
+              <tr>
+                <td className="rowlabel tip-host" tabIndex={0}>
+                  {t('jtable.effectiveTaxRate')}
+                  <span className="tip-bubble" role="tooltip">
+                    {t('jtable.effectiveTaxRateTip')}
+                  </span>
                 </td>
-              ))}
-            </tr>
-          )}
-          {hasTax && (
+                {years.map((y) => (
+                  <td key={y.year} className="num">
+                    {y.grossWithdrawal > 0.5
+                      ? `${((y.taxPaid / y.grossWithdrawal) * 100).toFixed(1)}%`
+                      : '—'}
+                  </td>
+                ))}
+              </tr>
+            )}
             <tr>
               <td className="rowlabel tip-host" tabIndex={0}>
-                {t('jtable.effectiveTaxRate')}
+                {t('jtable.withdrawalRate')}
                 <span className="tip-bubble" role="tooltip">
-                  {t('jtable.effectiveTaxRateTip')}
+                  {t('jtable.withdrawalRateTip')}
                 </span>
               </td>
               {years.map((y) => (
                 <td key={y.year} className="num">
-                  {y.grossWithdrawal > 0.5
-                    ? `${((y.taxPaid / y.grossWithdrawal) * 100).toFixed(1)}%`
+                  {y.openingBalance > 0.5
+                    ? `${((y.grossWithdrawal / y.openingBalance) * 100).toFixed(1)}%`
                     : '—'}
                 </td>
               ))}
             </tr>
-          )}
-          <tr>
-            <td className="rowlabel tip-host" tabIndex={0}>
-              {t('jtable.withdrawalRate')}
-              <span className="tip-bubble" role="tooltip">
-                {t('jtable.withdrawalRateTip')}
-              </span>
-            </td>
-            {years.map((y) => (
-              <td key={y.year} className="num">
-                {y.openingBalance > 0.5
-                  ? `${((y.grossWithdrawal / y.openingBalance) * 100).toFixed(1)}%`
-                  : '—'}
-              </td>
-            ))}
-          </tr>
-          {expandableRow(
-            'closing',
-            t('jtable.closing'),
-            (y) => y.closingBalance,
-            (a) => a.value,
-          )}
-        </tbody>
-      </table>
+            {expandableRow(
+              'closing',
+              t('jtable.closing'),
+              (y) => y.closingBalance,
+              (a) => a.value,
+            )}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 };

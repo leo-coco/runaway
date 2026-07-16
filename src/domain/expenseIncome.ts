@@ -9,7 +9,9 @@ export type FlowFrequency = 'once' | 'recurring';
 /**
  * Optional tag chosen by the user, purely presentational: it drives which icon a
  * flow shows on the runway timeline. Absent = 'general'. Never affects amounts,
- * tax, or projection maths.
+ * tax, or projection maths. 'home' is reserved for the premium Real Estate
+ * module's own purchase/sale events (see runwayEvents.ts) and is deliberately
+ * excluded from EXPENSE_CATEGORIES so it isn't user-selectable here.
  */
 export type ExpenseCategory =
   | 'general'
@@ -39,7 +41,6 @@ export const EXPENSE_CATEGORIES: readonly ExpenseCategory[] = [
   'health',
   'wedding',
   'gift',
-  'home',
   'insurance',
   'relocation',
   'family',

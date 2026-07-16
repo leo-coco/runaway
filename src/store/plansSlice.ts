@@ -77,6 +77,15 @@ export interface PlansSlice {
     >,
   ) => void;
   removeAccount: (planId: string, accountId: string) => void;
+  /** Atomically commit the accounts/tax-residence draft from the accounts modal. */
+  saveAccountsTaxConfig: (
+    planId: string,
+    config: {
+      accounts: readonly Account[];
+      residenceCountry: Country;
+      residenceProvince: Province;
+    },
+  ) => void;
   setWithdrawalOrder: (planId: string, order: string[]) => void;
   setResidenceCountry: (planId: string, country: Country) => void;
   /** Apply the account tax residence to every saved plan. */
@@ -310,6 +319,38 @@ export const createPlansSlice =
               }))
             : p,
         ),
+      })),
+
+    saveAccountsTaxConfig: (planId, config) =>
+      set((s) => ({
+        plans: s.plans.map((p) => {
+          if (p.id !== planId || config.accounts.length === 0) return p;
+
+          const accounts = config.accounts.map((account) =>
+            sanitizeAccountTaxFields({ ...account }),
+          );
+          const accountIds = new Set(accounts.map((account) => account.id));
+          const retainedOrder = p.withdrawalOrder.filter((id) => accountIds.has(id));
+          const orderedIds = new Set(retainedOrder);
+          const withdrawalOrder = [
+            ...retainedOrder,
+            ...accounts.map((account) => account.id).filter((id) => !orderedIds.has(id)),
+          ];
+
+          return touch(p, (x) => ({
+            ...x,
+            accounts,
+            withdrawalOrder,
+            residenceCountry: config.residenceCountry,
+            residenceProvince:
+              config.residenceCountry === 'CA' ? config.residenceProvince : x.residenceProvince,
+            holdings: x.holdings.map((holding) =>
+              holding.accountId && !accountIds.has(holding.accountId)
+                ? { ...holding, accountId: null }
+                : holding,
+            ),
+          }));
+        }),
       })),
 
     setWithdrawalOrder: (planId, order) =>

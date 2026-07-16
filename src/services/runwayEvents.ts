@@ -14,6 +14,7 @@
  *                   finally running dry.
  */
 import { RUNWAY_ICONS, type RunwayIconName } from '@/components/icons';
+import { EXPENSE_CATEGORY_ICONS } from '@/components/ExpenseCategoryIcon';
 import { classifySuccess, type SuccessZone } from '@/domain/successRate';
 import type { ExpenseCategory, ExpenseIncome, FlowFrequency } from '@/domain/expenseIncome';
 import type { Plan } from '@/domain/plan';
@@ -54,33 +55,11 @@ export interface RunwayEvent {
   readonly mcRange?: { readonly lowYear: number; readonly highYear: number };
 }
 
-/** Icon per expense/income category. */
-const CATEGORY_ICON: Record<ExpenseCategory, RunwayIconName> = {
-  general: 'wallet',
-  vehicle: 'car',
-  travel: 'plane',
-  education: 'graduation',
-  health: 'heart',
-  wedding: 'ring',
-  gift: 'gift',
-  home: 'home',
-  insurance: 'shield',
-  relocation: 'globe',
-  family: 'family',
-  renovation: 'tools',
-  business: 'briefcase',
-  pension: 'umbrella',
-  debt: 'credit-card',
-  taxLegal: 'tax',
-  salary: 'paycheck',
-  rentalIncome: 'key',
-};
-
 const EPS = 1;
 
 const iconForFlow = (item: ExpenseIncome): RunwayIconName => {
   const cat = item.category ?? 'general';
-  return CATEGORY_ICON[cat];
+  return EXPENSE_CATEGORY_ICONS[cat];
 };
 
 /** Net-worth thresholds to watch, from $5K up to $10M. */

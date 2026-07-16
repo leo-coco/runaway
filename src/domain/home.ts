@@ -72,6 +72,14 @@ export interface Home {
 const OPEN_ENDED_OFFSET = 100;
 
 /**
+ * True when `endYear` is the {@link OPEN_ENDED_OFFSET} sentinel rather than a
+ * real date (e.g. a home kept with no planned sale): UIs should show it as
+ * ongoing instead of printing the arbitrary far-future year.
+ */
+export const isOpenEndedYear = (endYear: number, startYear: number): boolean =>
+  endYear >= startYear + OPEN_ENDED_OFFSET;
+
+/**
  * i18n key for each generated home-flow id, so UIs can label the flows (in the
  * projection tables, the modal preview…) instead of showing the raw home name
  * four times. Keyed by the stable ids {@link homeFlows} emits.
@@ -203,10 +211,7 @@ export const homeSaleProceeds = (home: Home, startYear: number): number | null =
  * Ids are stable (`home:*`) so the flows can be re-generated and diffed. The home
  * is never emitted as a portfolio holding, so it can never be drawn down.
  */
-export const homeFlows = (
-  home: Home | undefined,
-  startYear: number,
-): readonly ExpenseIncome[] => {
+export const homeFlows = (home: Home | undefined, startYear: number): readonly ExpenseIncome[] => {
   if (!home) return [];
   const flows: ExpenseIncome[] = [];
   const ownStart = ownershipStartYear(home, startYear);

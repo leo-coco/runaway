@@ -3,11 +3,25 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
-import { InfoIcon, PencilIcon, PlusIcon, SearchIcon, TrashIcon } from '@/components/icons';
+import {
+  BankIcon,
+  BriefcaseIcon,
+  InfoIcon,
+  PencilIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+} from '@/components/icons';
 import { useAppStore } from '@/store';
 import { useLimit } from '@/hooks/useEntitlements';
 import { atLimit } from '@/domain/entitlements';
-import { ACCOUNT_PRESETS, type AccountKind, type AccountPreset } from '@/domain/account';
+import {
+  ACCOUNT_PRESETS,
+  accountFromPreset,
+  type Account,
+  type AccountKind,
+  type AccountPreset,
+} from '@/domain/account';
 import { explainEffectiveRate } from '@/domain/taxExplain';
 import {
   CA_PROVINCES,
@@ -194,27 +208,70 @@ const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => vo
 export const AccountsModal = ({ plan, rates, onClose }: Props) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
-  const addAccount = useAppStore((s) => s.addAccount);
-  const updateAccount = useAppStore((s) => s.updateAccount);
-  const removeAccount = useAppStore((s) => s.removeAccount);
-  const setResidenceCountry = useAppStore((s) => s.setResidenceCountry);
-  const setResidenceProvince = useAppStore((s) => s.setResidenceProvince);
+  const saveAccountsTaxConfig = useAppStore((s) => s.saveAccountsTaxConfig);
   const openPaywall = useAppStore((s) => s.openPaywall);
   const maxAccounts = useLimit('maxAccounts');
+  const [draftAccounts, setDraftAccounts] = useState<Account[]>(() =>
+    plan.accounts.map((account) => ({ ...account })),
+  );
+  const [draftResidence, setDraftResidence] = useState<Country>(plan.residenceCountry ?? 'US');
+  const [draftProvince, setDraftProvince] = useState<Province>(
+    plan.residenceProvince ?? DEFAULT_PROVINCE,
+  );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [infoId, setInfoId] = useState<string | null>(null);
 
   // Free tier caps accounts; adding past the cap opens the paywall instantly instead
-  // of letting the account get created and rejected later by the server round-trip.
-  const onAddAccount = (preset?: AccountPreset) =>
-    atLimit(plan.accounts.length, maxAccounts)
-      ? openPaywall('accounts')
-      : addAccount(plan.id, preset);
+  // of adding it to the local draft.
+  const onAddAccount = (preset?: AccountPreset) => {
+    if (atLimit(draftAccounts.length, maxAccounts)) {
+      openPaywall('accounts');
+      return;
+    }
+    setDraftAccounts((accounts) => [...accounts, accountFromPreset(preset, draftResidence)]);
+  };
+
+  const updateDraftAccount = (
+    accountId: string,
+    patch: Partial<
+      Pick<
+        Account,
+        | 'name'
+        | 'taxRatePct'
+        | 'taxableBasePct'
+        | 'kind'
+        | 'sourceCountry'
+        | 'taxMode'
+        | 'costBasisPct'
+      >
+    >,
+  ) =>
+    setDraftAccounts((accounts) =>
+      accounts.map((account) => (account.id === accountId ? { ...account, ...patch } : account)),
+    );
+
+  const removeDraftAccount = (accountId: string) => {
+    if (draftAccounts.length === 1) return;
+    setDraftAccounts((accounts) => accounts.filter((account) => account.id !== accountId));
+    if (editingId === accountId) setEditingId(null);
+    if (infoId === accountId) setInfoId(null);
+  };
+
+  const handleSave = () => {
+    saveAccountsTaxConfig(plan.id, {
+      accounts: draftAccounts,
+      residenceCountry: draftResidence,
+      residenceProvince: draftProvince,
+    });
+    onClose();
+  };
 
   // Live gain fraction per account (value−basis)/value from the actual holdings,
   // so the displayed rate reflects today's unrealised gains, not a static guess.
   const liveGainByAccount = useMemo(() => {
     const values = valueHoldings(plan.holdings, plan.currency, rates);
     const map = new Map<string, number | undefined>();
-    for (const a of plan.accounts) {
+    for (const a of draftAccounts) {
       const held = values.filter((v) => v.accountId === a.id);
       const totalV = held.reduce((s, v) => s + v.value, 0);
       const totalB = held.reduce(
@@ -224,9 +281,7 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
       map.set(a.id, totalV > 0 ? Math.min(1, Math.max(0, (totalV - totalB) / totalV)) : undefined);
     }
     return map;
-  }, [plan.holdings, plan.accounts, plan.currency, rates]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [infoId, setInfoId] = useState<string | null>(null);
+  }, [plan.holdings, draftAccounts, plan.currency, rates]);
 
   // Hover-tooltip text describing how each account kind (or manual mode) is taxed.
   const kindTitle = (k: AccountKind): string =>
@@ -238,8 +293,8 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
           : 'accounts.kindTaxable',
     );
 
-  const residence = plan.residenceCountry ?? 'US';
-  const province = plan.residenceProvince ?? DEFAULT_PROVINCE;
+  const residence = draftResidence;
+  const province = draftProvince;
   const holdingsInAccount = (accountId: string): number =>
     plan.holdings.filter((h) => h.accountId === accountId).length;
 
@@ -257,38 +312,57 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
     return out;
   };
 
-  // The collapsible "how is this rate calculated" panel for one account.
-  const renderTaxInfo = (
-    accountId: string,
-    explanation: ReturnType<typeof explainEffectiveRate>,
-  ) =>
-    infoId === accountId ? (
-      <div className="acct-explain">
-        <div className="acct-explain__title">{t('taxExplain.title')}</div>
-        <ol className="acct-explain__steps">
-          {explanation.steps.map((s, i) => (
-            <li key={i}>{t(`taxExplain.${s.key}`, fmtVars(s.vars))}</li>
-          ))}
-        </ol>
-        {explanation.calc && (
-          <div className="acct-brackets-wrap">
-            <p className="acct-explain__line">
-              {t('taxExplain.grossLine', {
-                net: fmt.compact(explanation.calc.net),
-                gross: fmt.compact(explanation.calc.gross),
-              })}
-            </p>
-            {explanation.calc.brackets.length > 0 && (
+  // Detailed calculation content shown in the dedicated information modal.
+  const renderTaxInfo = (explanation: ReturnType<typeof explainEffectiveRate>) => (
+    <div className="acct-explain">
+      <div className="acct-explain__copy">
+        {explanation.steps.map((s, i) => (
+          <p key={i}>{t(`taxExplain.${s.key}`, fmtVars(s.vars))}</p>
+        ))}
+      </div>
+      {explanation.calc && (
+        <div className="acct-brackets-wrap">
+          <p className="acct-explain__line">
+            {t('taxExplain.grossLine', {
+              net: fmt.compact(explanation.calc.net),
+              gross: fmt.compact(explanation.calc.gross),
+            })}
+          </p>
+          {explanation.calc.brackets.length > 0 && (
+            <table className="acct-brackets">
+              <thead>
+                <tr>
+                  <th>{t('taxExplain.colIncome')}</th>
+                  <th>{t('taxExplain.colRate')}</th>
+                  <th>{t('taxExplain.colTax')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {explanation.calc.brackets.map((b, i) => (
+                  <tr key={i}>
+                    <td>{fmt.compact(b.amount)}</td>
+                    <td>{Math.round(b.rate * 100)}%</td>
+                    <td>{fmt.compact(b.tax)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {explanation.calc.ltcgBrackets.length > 0 && (
+            <>
+              <p className="acct-explain__line">
+                {t('taxExplain.ltcgLine', { gains: fmt.compact(explanation.calc.gainsIncome) })}
+              </p>
               <table className="acct-brackets">
                 <thead>
                   <tr>
-                    <th>{t('taxExplain.colIncome')}</th>
+                    <th>{t('taxExplain.colGains')}</th>
                     <th>{t('taxExplain.colRate')}</th>
                     <th>{t('taxExplain.colTax')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {explanation.calc.brackets.map((b, i) => (
+                  {explanation.calc.ltcgBrackets.map((b, i) => (
                     <tr key={i}>
                       <td>{fmt.compact(b.amount)}</td>
                       <td>{Math.round(b.rate * 100)}%</td>
@@ -297,55 +371,31 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                   ))}
                 </tbody>
               </table>
-            )}
-            {explanation.calc.ltcgBrackets.length > 0 && (
-              <>
+              {explanation.calc.niitTax > 0 && (
                 <p className="acct-explain__line">
-                  {t('taxExplain.ltcgLine', { gains: fmt.compact(explanation.calc.gainsIncome) })}
+                  {t('taxExplain.niitLine', { tax: fmt.compact(explanation.calc.niitTax) })}
                 </p>
-                <table className="acct-brackets">
-                  <thead>
-                    <tr>
-                      <th>{t('taxExplain.colGains')}</th>
-                      <th>{t('taxExplain.colRate')}</th>
-                      <th>{t('taxExplain.colTax')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {explanation.calc.ltcgBrackets.map((b, i) => (
-                      <tr key={i}>
-                        <td>{fmt.compact(b.amount)}</td>
-                        <td>{Math.round(b.rate * 100)}%</td>
-                        <td>{fmt.compact(b.tax)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {explanation.calc.niitTax > 0 && (
-                  <p className="acct-explain__line">
-                    {t('taxExplain.niitLine', { tax: fmt.compact(explanation.calc.niitTax) })}
-                  </p>
-                )}
-              </>
-            )}
-            <p className="acct-explain__line">
-              {t('taxExplain.effectiveLine', {
-                tax: fmt.compact(explanation.calc.tax),
-                gross: fmt.compact(explanation.calc.gross),
-                result: explanation.effectivePct,
-              })}
-            </p>
-          </div>
-        )}
-        <div className="acct-explain__note">{t('taxExplain.disclaimer')}</div>
-        <div className="acct-explain__note">{t('taxExplain.assumptions')}</div>
-      </div>
-    ) : null;
+              )}
+            </>
+          )}
+          <p className="acct-explain__line">
+            {t('taxExplain.effectiveLine', {
+              tax: fmt.compact(explanation.calc.tax),
+              gross: fmt.compact(explanation.calc.gross),
+              result: explanation.effectivePct,
+            })}
+          </p>
+        </div>
+      )}
+      <div className="acct-explain__note">{t('taxExplain.disclaimer')}</div>
+      <div className="acct-explain__note">{t('taxExplain.assumptions')}</div>
+    </div>
+  );
 
   const infoButton = (accountId: string) => (
     <button
       type="button"
-      className={cn('acct-info-btn', infoId === accountId && 'is-active')}
+      className={cn('acct-info-btn', 'icon-action', infoId === accountId && 'is-active')}
       aria-label={t('taxExplain.title')}
       aria-expanded={infoId === accountId}
       onClick={() => setInfoId(infoId === accountId ? null : accountId)}
@@ -354,46 +404,61 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
     </button>
   );
 
+  const infoAccount = infoId ? draftAccounts.find((account) => account.id === infoId) : undefined;
+  const infoExplanation = infoAccount
+    ? explainEffectiveRate(
+        infoAccount,
+        residence,
+        plan.settings.annualSpending,
+        liveGainByAccount.get(infoAccount.id),
+        plan.residenceProvince,
+      )
+    : undefined;
+
   return (
     <Modal
       title={t('accounts.title')}
-      description={t('accounts.desc')}
-      onClose={onClose}
-      wide
+      onClose={infoId ? () => setInfoId(null) : onClose}
+      xl
+      className="accounts-modal"
       footer={
-        <Button variant="primary" onClick={onClose}>
-          {t('common.done')}
-        </Button>
+        <>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" onClick={handleSave}>
+            {t('common.saveChanges')}
+          </Button>
+        </>
       }
     >
-      <div className="acct-residence" data-tour="tax-residence-select">
-        <label className="field__label" style={{ margin: 0 }} htmlFor="tax-residence-select">
-          {t('accounts.taxResidence')}
-        </label>
-        <select
-          id="tax-residence-select"
-          className="select"
-          aria-label={t('accounts.taxResidence')}
-          value={residence}
-          onChange={(e) => setResidenceCountry(plan.id, e.target.value as Country)}
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c} value={c}>
-              {COUNTRY_FLAG[c]} {COUNTRY_LABEL[c]}
-            </option>
-          ))}
-        </select>
-        {residence === 'CA' && (
-          <>
-            <label className="field__label" style={{ margin: 0 }} htmlFor="tax-province-select">
-              {t('accounts.province')}
-            </label>
+      <section className="accounts-residence-panel" data-tour="tax-residence-select">
+        <span className="accounts-residence-panel__icon" aria-hidden="true">
+          <BankIcon size={19} />
+        </span>
+        <div className="accounts-residence-panel__copy">
+          <label htmlFor="tax-residence-select">{t('accounts.taxResidence')}</label>
+          <span>{t('accounts.taxResidenceHint')}</span>
+        </div>
+        <div className="accounts-residence-panel__controls">
+          <select
+            id="tax-residence-select"
+            className="select"
+            aria-label={t('accounts.taxResidence')}
+            value={residence}
+            onChange={(e) => setDraftResidence(e.target.value as Country)}
+          >
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {COUNTRY_FLAG[c]} {COUNTRY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+          {residence === 'CA' && (
             <select
               id="tax-province-select"
               className="select"
               aria-label={t('accounts.province')}
               value={province}
-              onChange={(e) => setResidenceProvince(plan.id, e.target.value as Province)}
+              onChange={(e) => setDraftProvince(e.target.value as Province)}
             >
               {CA_PROVINCES.map((p) => (
                 <option key={p} value={p}>
@@ -401,237 +466,283 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                 </option>
               ))}
             </select>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
 
       <div className="acct-add" data-tour="account-preset-add">
         <AccountPresetCombobox onAdd={(preset) => onAddAccount(preset)} />
-        <Button variant="ghost" onClick={() => onAddAccount(undefined)}>
+        <Button
+          variant="accent"
+          className="acct-add__button"
+          onClick={() => onAddAccount(undefined)}
+        >
           <PlusIcon size={16} /> {t('accounts.customAccount')}
         </Button>
         {cryptoPreset && (
-          <Button variant="ghost" onClick={() => onAddAccount(cryptoPreset)}>
+          <Button
+            variant="accent"
+            className="acct-add__button"
+            onClick={() => onAddAccount(cryptoPreset)}
+          >
             <PlusIcon size={16} /> {cryptoPreset.name}
           </Button>
         )}
       </div>
 
-      {plan.accounts.length === 0 ? (
+      {draftAccounts.length === 0 ? (
         <div className="state-box">{t('accounts.noAccounts')}</div>
       ) : (
-        <div className="acct-cards">
-          {plan.accounts.map((a) => {
-            // Presets just pre-fill type/country/rate at creation time; every
-            // account can be edited afterwards.
-            const editing = editingId === a.id;
-            const isLastAccount = plan.accounts.length === 1;
-            const auto = a.taxMode === 'auto';
-            const kind = a.kind ?? 'taxable';
-            const source = a.sourceCountry ?? residence;
-            const count = holdingsInAccount(a.id);
-            const badgeLabel = auto ? t(`accountKind.${kind}`) : t('accounts.manual');
-            const badgeClass = auto ? `acct-badge--${kind}` : 'acct-badge--manual';
-            const badgeTitle = auto ? kindTitle(kind) : t('accounts.kindManual');
-            const explanation = explainEffectiveRate(
-              a,
-              residence,
-              plan.settings.annualSpending,
-              liveGainByAccount.get(a.id),
-              plan.residenceProvince,
-            );
-            const eff = explanation.effectivePct;
+        <section className="accounts-list">
+          <div className="accounts-list__title-row">
+            <h3>{t('accounts.listTitle')}</h3>
+            <span>
+              {t('accounts.accountsSummary', {
+                count: draftAccounts.length,
+                assets: plan.holdings.length,
+              })}
+            </span>
+          </div>
+          <div className="accounts-table" role="table" aria-label={t('accounts.listTitle')}>
+            <div className="accounts-table__head" role="row">
+              <span role="columnheader">{t('accounts.accountColumn')}</span>
+              <span role="columnheader">{t('accounts.type')}</span>
+              <span role="columnheader">{t('accounts.countryColumn')}</span>
+              <span role="columnheader">{t('accounts.effectiveColumn')}</span>
+              <span role="columnheader">{t('accounts.actionsColumn')}</span>
+            </div>
+            <div role="rowgroup">
+              {draftAccounts.map((a) => {
+                // Presets just pre-fill type/country/rate at creation time; every
+                // account can be edited afterwards.
+                const editing = editingId === a.id;
+                const isLastAccount = draftAccounts.length === 1;
+                const auto = a.taxMode === 'auto';
+                const kind = a.kind ?? 'taxable';
+                const source = a.sourceCountry ?? residence;
+                const count = holdingsInAccount(a.id);
+                const badgeLabel = auto ? t(`accountKind.${kind}`) : t('accounts.manual');
+                const badgeClass = auto ? `acct-badge--${kind}` : 'acct-badge--manual';
+                const badgeTitle = auto ? kindTitle(kind) : t('accounts.kindManual');
+                const explanation = explainEffectiveRate(
+                  a,
+                  residence,
+                  plan.settings.annualSpending,
+                  liveGainByAccount.get(a.id),
+                  plan.residenceProvince,
+                );
+                const eff = explanation.effectivePct;
 
-            // --- Read-only one-line row (default) ---
-            if (!editing) {
-              return (
-                <div className="acct-item" key={a.id}>
-                  <div className="acct-line">
-                    <span className="acct-line__name">
-                      {a.name}{' '}
-                      <span
-                        className={cn('acct-line__count', count === 0 && 'acct-line__count--empty')}
-                        title={t('accounts.assets', { count })}
-                      >
-                        ({t('accounts.assets', { count })})
-                      </span>
-                    </span>
-                    <span className={cn('acct-badge tip-host', badgeClass)} tabIndex={0}>
-                      {badgeLabel}
-                      <span className="tip-bubble" role="tooltip">
-                        {badgeTitle}
-                      </span>
-                    </span>
-                    <span className="acct-line__src">{COUNTRY_FLAG[source]}</span>
-                    <span className="acct-line__eff">{eff.toFixed(1)}%</span>
-                    {infoButton(a.id)}
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      aria-label={t('accounts.deleteAria', { name: a.name })}
-                      title={isLastAccount ? t('accounts.lastAccount') : undefined}
-                      disabled={isLastAccount}
-                      onClick={() => removeAccount(plan.id, a.id)}
-                    >
-                      <TrashIcon size={16} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('common.edit')}
-                      onClick={() => setEditingId(a.id)}
-                    >
-                      <PencilIcon size={16} />
-                    </Button>
-                  </div>
-                  {renderTaxInfo(a.id, explanation)}
-                </div>
-              );
-            }
-
-            // --- Edit mode ---
-            return (
-              <div className="acct-card" key={a.id}>
-                <div className="acct-card__head">
-                  <input
-                    className="search-input acct-name-input"
-                    value={a.name}
-                    aria-label={t('accounts.accountName')}
-                    onChange={(e) => updateAccount(plan.id, a.id, { name: e.target.value })}
-                  />
-                  <span className="acct-card__eff">
-                    {eff.toFixed(1)}% <span className="ov__sub">{t('accounts.effective')}</span>
-                  </span>
-                  {infoButton(a.id)}
-                  <button type="button" className="ov__link" onClick={() => setEditingId(null)}>
-                    {t('common.done')}
-                  </button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    aria-label={t('accounts.deleteAria', { name: a.name })}
-                    title={isLastAccount ? t('accounts.lastAccount') : undefined}
-                    disabled={isLastAccount}
-                    onClick={() => {
-                      removeAccount(plan.id, a.id);
-                      setEditingId(null);
-                    }}
-                  >
-                    <TrashIcon size={16} />
-                  </Button>
-                </div>
-
-                <div className="acct-card__row">
-                  <label className="acct-field">
-                    <span className="ov__sub">{t('accounts.type')}</span>
-                    <div
-                      className="scenario-pills"
-                      role="group"
-                      aria-label={t('accounts.typeAria', { name: a.name })}
-                    >
-                      {KINDS.map((k) => (
-                        <button
-                          key={k}
-                          type="button"
-                          className={cn('scenario-pill tip-host', kind === k && 'is-active')}
-                          onClick={() => updateAccount(plan.id, a.id, { kind: k, taxMode: 'auto' })}
-                        >
-                          {t(`accountKind.${k}`)}
+                return (
+                  <div className={cn('accounts-table__item', editing && 'is-editing')} key={a.id}>
+                    <div className="accounts-table__row" role="row">
+                      <div className="accounts-table__identity" role="cell">
+                        <span className="accounts-table__account-icon" aria-hidden="true">
+                          <BriefcaseIcon size={15} />
+                        </span>
+                        <span className="accounts-table__account-copy">
+                          <strong title={a.name}>{a.name}</strong>
+                          <small>{t('accounts.assets', { count })}</small>
+                        </span>
+                      </div>
+                      <div role="cell">
+                        <span className={cn('acct-badge tip-host', badgeClass)} tabIndex={0}>
+                          {badgeLabel}
                           <span className="tip-bubble" role="tooltip">
-                            {kindTitle(k)}
+                            {badgeTitle}
                           </span>
-                        </button>
-                      ))}
+                        </span>
+                      </div>
+                      <div className="accounts-table__country" role="cell">
+                        <span aria-hidden="true">{COUNTRY_FLAG[source]}</span>
+                        <span>{COUNTRY_LABEL[source]}</span>
+                      </div>
+                      <div className="accounts-table__rate" role="cell">
+                        <strong>{eff.toFixed(1)}%</strong>
+                        {infoButton(a.id)}
+                      </div>
+                      <div className="accounts-table__actions" role="cell">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="icon-action"
+                          aria-label={t('common.edit')}
+                          aria-expanded={editing}
+                          onClick={() => setEditingId(editing ? null : a.id)}
+                        >
+                          <PencilIcon size={14} />
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="icon-action"
+                          aria-label={t('accounts.deleteAria', { name: a.name })}
+                          title={isLastAccount ? t('accounts.lastAccount') : undefined}
+                          disabled={isLastAccount}
+                          onClick={() => {
+                            removeDraftAccount(a.id);
+                          }}
+                        >
+                          <TrashIcon size={14} />
+                        </Button>
+                      </div>
                     </div>
-                  </label>
 
-                  <label className="acct-field">
-                    <span className="ov__sub">{t('accounts.sourceCountry')}</span>
-                    <select
-                      className="select"
-                      value={source}
-                      onChange={(e) =>
-                        updateAccount(plan.id, a.id, {
-                          sourceCountry: e.target.value as Country,
-                          taxMode: 'auto',
-                        })
-                      }
-                    >
-                      {COUNTRIES.map((c) => (
-                        <option key={c} value={c}>
-                          {COUNTRY_FLAG[c]} {COUNTRY_LABEL[c]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  {auto && kind === 'taxable' && (
-                    <label className="acct-field">
-                      <span className="ov__sub">{t('accounts.costBasis')}</span>
-                      <Stepper
-                        ariaLabel={t('accounts.costBasisAria', { name: a.name })}
-                        value={a.costBasisPct ?? 0}
-                        min={0}
-                        max={100}
-                        step={5}
-                        suffix="%"
-                        onChange={(v) => updateAccount(plan.id, a.id, { costBasisPct: v })}
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {!auto && (
-                  <div className="acct-card__row">
-                    <label className="acct-field">
-                      <span className="ov__sub">{t('accounts.taxRate')}</span>
-                      <Stepper
-                        ariaLabel={t('accounts.taxRateAria', { name: a.name })}
-                        value={a.taxRatePct}
-                        min={0}
-                        max={100}
-                        step={1}
-                        suffix="%"
-                        onChange={(v) => updateAccount(plan.id, a.id, { taxRatePct: v })}
-                      />
-                    </label>
-                    <label className="acct-field">
-                      <span className="ov__sub">{t('accounts.taxableBase')}</span>
-                      <Stepper
-                        ariaLabel={t('accounts.taxableBaseAria', { name: a.name })}
-                        value={a.taxableBasePct}
-                        min={0}
-                        max={100}
-                        step={5}
-                        suffix="%"
-                        onChange={(v) => updateAccount(plan.id, a.id, { taxableBasePct: v })}
-                      />
-                    </label>
+                    {editing && (
+                      <div className="accounts-table__editor">
+                        <div className="accounts-editor__grid">
+                          <label className="acct-field">
+                            <span className="ov__sub">{t('accounts.accountName')}</span>
+                            <input
+                              className="search-input"
+                              value={a.name}
+                              aria-label={t('accounts.accountName')}
+                              onChange={(e) => updateDraftAccount(a.id, { name: e.target.value })}
+                            />
+                          </label>
+                          <label className="acct-field">
+                            <span className="ov__sub">{t('accounts.type')}</span>
+                            <div
+                              className="scenario-pills accounts-type-pills"
+                              role="group"
+                              aria-label={t('accounts.typeAria', { name: a.name })}
+                            >
+                              {KINDS.map((k) => (
+                                <button
+                                  key={k}
+                                  type="button"
+                                  className={cn(
+                                    'scenario-pill tip-host',
+                                    `accounts-type-pill--${k}`,
+                                    auto && kind === k && 'is-active',
+                                  )}
+                                  onClick={() =>
+                                    updateDraftAccount(a.id, { kind: k, taxMode: 'auto' })
+                                  }
+                                >
+                                  {t(`accountKind.${k}`)}
+                                  <span className="tip-bubble" role="tooltip">
+                                    {kindTitle(k)}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </label>
+                          <label className="acct-field">
+                            <span className="ov__sub">{t('accounts.sourceCountry')}</span>
+                            <select
+                              className="select"
+                              value={source}
+                              onChange={(e) =>
+                                updateDraftAccount(a.id, {
+                                  sourceCountry: e.target.value as Country,
+                                  taxMode: 'auto',
+                                })
+                              }
+                            >
+                              {COUNTRIES.map((c) => (
+                                <option key={c} value={c}>
+                                  {COUNTRY_FLAG[c]} {COUNTRY_LABEL[c]}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          {auto && kind === 'taxable' && (
+                            <label className="acct-field">
+                              <span className="ov__sub">{t('accounts.costBasis')}</span>
+                              <Stepper
+                                ariaLabel={t('accounts.costBasisAria', { name: a.name })}
+                                value={a.costBasisPct ?? 0}
+                                min={0}
+                                max={100}
+                                step={5}
+                                suffix="%"
+                                onChange={(v) => updateDraftAccount(a.id, { costBasisPct: v })}
+                              />
+                            </label>
+                          )}
+                        </div>
+                        {!auto && (
+                          <div className="accounts-editor__manual-grid">
+                            <label className="acct-field">
+                              <span className="ov__sub">{t('accounts.taxRate')}</span>
+                              <Stepper
+                                ariaLabel={t('accounts.taxRateAria', { name: a.name })}
+                                value={a.taxRatePct}
+                                min={0}
+                                max={100}
+                                step={1}
+                                suffix="%"
+                                onChange={(v) => updateDraftAccount(a.id, { taxRatePct: v })}
+                              />
+                            </label>
+                            <label className="acct-field">
+                              <span className="ov__sub">{t('accounts.taxableBase')}</span>
+                              <Stepper
+                                ariaLabel={t('accounts.taxableBaseAria', { name: a.name })}
+                                value={a.taxableBasePct}
+                                min={0}
+                                max={100}
+                                step={5}
+                                suffix="%"
+                                onChange={(v) => updateDraftAccount(a.id, { taxableBasePct: v })}
+                              />
+                            </label>
+                          </div>
+                        )}
+                        <div className="accounts-editor__footer">
+                          <button
+                            type="button"
+                            className="acct-mode-link"
+                            onClick={() =>
+                              updateDraftAccount(a.id, { taxMode: auto ? 'manual' : 'auto' })
+                            }
+                          >
+                            {auto ? t('accounts.setManual') : t('accounts.deriveAuto')}
+                          </button>
+                          <span className="accounts-editor__effective">
+                            <span>{t('accounts.effectiveColumn')}</span>
+                            <strong>{eff.toFixed(1)}%</strong>
+                          </span>
+                          <Button size="sm" onClick={() => setEditingId(null)}>
+                            {t('common.done')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                <button
-                  type="button"
-                  className="acct-mode-link"
-                  onClick={() =>
-                    updateAccount(plan.id, a.id, { taxMode: auto ? 'manual' : 'auto' })
-                  }
-                >
-                  {auto ? t('accounts.setManual') : t('accounts.deriveAuto')}
-                </button>
-
-                {renderTaxInfo(a.id, explanation)}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
       )}
 
-      <p className="field__hint" style={{ marginTop: 14 }}>
+      <p className="accounts-effective-hint">
         {t('accounts.effectiveHint', { country: COUNTRY_LABEL[residence] })}
         <b>{t('accounts.effectiveHintBold')}</b>
         {t('accounts.effectiveHintEnd')}
       </p>
+
+      {infoAccount && infoExplanation && (
+        <Modal
+          title={t('taxExplain.title')}
+          description={t('accounts.taxInfoDescription', {
+            name: infoAccount.name,
+            rate: infoExplanation.effectivePct.toFixed(1),
+          })}
+          onClose={() => setInfoId(null)}
+          wide
+          className="accounts-tax-info-modal"
+          footer={
+            <Button variant="primary" onClick={() => setInfoId(null)}>
+              {t('common.close')}
+            </Button>
+          }
+        >
+          {renderTaxInfo(infoExplanation)}
+        </Modal>
+      )}
     </Modal>
   );
 };

@@ -84,6 +84,7 @@ export const AuthForm = ({
           name: displayName,
           language,
           taxResidence: 'US',
+          callbackURL: `/${language}/app`,
         });
         if (error) throw new Error(error.message ?? t('auth.signUpFailed'));
         const normalizedEmail = email.trim();

@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Stepper } from '@/components/ui/Stepper';
 import { Toggle } from '@/components/ui/Toggle';
+import { ChevronDownIcon } from '@/components/icons';
+import { ExpenseCategoryIcon } from '@/components/ExpenseCategoryIcon';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ageInYear } from '@/domain/retirementSettings';
 import { cn } from '@/lib/cn';
@@ -186,7 +188,8 @@ export const ExpenseIncomeFields = ({
         </div>
       </div>
 
-      <div className="field">
+      <label className="field flow-name-field">
+        <span className="ov__sub">{t('expensesIncomes.name')}</span>
         <input
           className={cn('search-input flow-card__name', nameError && 'is-invalid')}
           value={draft.name}
@@ -199,53 +202,44 @@ export const ExpenseIncomeFields = ({
           onChange={(e) => onChange({ name: e.target.value })}
         />
         {nameError && <p className="field__error">{nameError}</p>}
-      </div>
+      </label>
 
       <label className="field flow-category">
         <span className="ov__sub">{t('expensesIncomes.category')}</span>
-        <select
-          className="search-input flow-category__select"
-          value={draft.category}
-          aria-label={t('expensesIncomes.category')}
-          onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
-        >
-          {EXPENSE_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {t(`expensesIncomes.categories.${c}`)}
-            </option>
-          ))}
-        </select>
+        <span className="flow-category__control">
+          <span className={cn('flow-category__icon', isIncome ? 'is-income' : 'is-expense')}>
+            <ExpenseCategoryIcon category={draft.category} size={17} />
+          </span>
+          <select
+            className="search-input flow-category__select"
+            value={draft.category}
+            aria-label={t('expensesIncomes.category')}
+            onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
+          >
+            {EXPENSE_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {t(`expensesIncomes.categories.${c}`)}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon className="flow-category__chevron" size={16} aria-hidden="true" />
+        </span>
       </label>
 
       <div className={cn('flow-card__grid', isRecurring && 'flow-card__grid--periodic')}>
         {isRecurring ? (
           <label className="flow-field flow-field--full">
             <span className="ov__sub">{t('expensesIncomes.amount')}</span>
-            <div className="flow-amount">
-              <div className="flow-amount__field">
-                <span className="flow-amount__unit">{t('common.perMonth')}</span>
-                <Stepper
-                  ariaLabel={t('expensesIncomes.amountMonthly')}
-                  prefix={fmt.symbol}
-                  min={0}
-                  step={100}
-                  value={Math.round(draft.amount / 12)}
-                  onChange={(m) => onChange({ amount: m * 12 })}
-                />
-              </div>
-              <div className="flow-amount__field">
-                <span className="flow-amount__unit">{t('common.perYear')}</span>
-                <Stepper
-                  ariaLabel={t('expensesIncomes.amountYearly')}
-                  prefix={fmt.symbol}
-                  min={0}
-                  step={1000}
-                  value={draft.amount}
-                  invalid={!!amountError}
-                  onChange={(v) => onChange({ amount: v })}
-                />
-              </div>
-            </div>
+            <Stepper
+              ariaLabel={t('expensesIncomes.amountYearly')}
+              prefix={fmt.symbol}
+              suffix={t('common.perYear')}
+              min={0}
+              step={1000}
+              value={draft.amount}
+              invalid={!!amountError}
+              onChange={(v) => onChange({ amount: v })}
+            />
             {amountError && <p className="field__error">{amountError}</p>}
           </label>
         ) : (
@@ -321,10 +315,16 @@ export const ExpenseIncomeFields = ({
             onChange={(v) => onChange({ inflate: v })}
             label={t('expensesIncomes.inflationLabel', { year: inflationUntilYear })}
           />
-          <span className="ov__sub">
+          <span
+            className="ov__sub flow-inflation__label-copy"
+            title={t('expensesIncomes.inflationLabel', { year: inflationUntilYear })}
+          >
             {t('expensesIncomes.inflationLabel', { year: inflationUntilYear })}
           </span>
         </label>
+      </div>
+      <div className="flow-impact">
+        <span className="flow-impact__label">{t('expensesIncomes.estimatedImpact')}</span>
         <span className="flow-projection">
           {isRecurring
             ? t('expensesIncomes.projectionRecurring', {

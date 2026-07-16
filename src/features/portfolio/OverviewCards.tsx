@@ -187,7 +187,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             </span>
           ) : (
             <span className="ov__link" onClick={() => openModal('home')}>
-              {plan.home ? t('common.edit') : t('common.add')}
+              {t('common.edit')}
             </span>
           )}
         </div>
@@ -252,7 +252,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
                 {t('overview.accountsUnit', { count: plan.accounts.length })}
               </span>
             </span>
-            <span className="ov__sub">{t('overview.accountsSub')}</span>
           </div>
         </div>
       </Card>

@@ -86,6 +86,7 @@ export const ConversionsModal = ({ plan, onClose }: Props) => {
                     <Button
                       variant="danger"
                       size="sm"
+                      className="icon-action"
                       aria-label={t('conversions.removeAria')}
                       onClick={() => removeConversion(plan.id, c.id)}
                     >

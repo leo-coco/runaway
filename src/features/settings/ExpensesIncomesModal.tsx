@@ -1,13 +1,13 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
+import { PlusIcon, PencilIcon, TrashIcon, TrendingUpIcon } from '@/components/icons';
+import { ExpenseCategoryIcon } from '@/components/ExpenseCategoryIcon';
 import { useAppStore } from '@/store';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { ageInYear, lifeExpectancyYear } from '@/domain/retirementSettings';
+import { ageInYear } from '@/domain/retirementSettings';
 import { cn } from '@/lib/cn';
-import { EXPENSE_COLOR, INCOME_COLOR } from '@/features/settings/ExpenseIncomeFields';
 import { AddExpenseIncomeDialog } from '@/features/settings/AddExpenseIncomeDialog';
 import type { CurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { ExpenseIncome } from '@/domain/expenseIncome';
@@ -18,203 +18,11 @@ interface Props {
   onClose: () => void;
 }
 
-/** A flow paired with its inflation-projected (nominal) amount in its target
- *  year — and, for a recurring flow, the projected amount in its end year too. */
-interface FlowRow {
-  item: ExpenseIncome;
-  nominal: number;
-  nominalEnd: number | undefined;
-}
-
-/**
- * A compact SVG bar chart of every flow along a year+amount axis. A one-time
- * flow is a single bar at its year; a recurring flow is a horizontal band
- * spanning its start–end range, dashed to stand apart from one-time bars.
- * Expenses drop below the zero line (red), inflows rise above it (green).
- * Clicking a bar/band highlights and scrolls to its card.
- */
-const FlowsTimeline = ({
-  rows,
-  startYear,
-  endYear,
-  fmt,
-  selectedId,
-  onSelect,
-}: {
-  rows: readonly FlowRow[];
-  startYear: number;
-  endYear: number;
-  fmt: CurrencyFormatter;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-}) => {
-  const { t } = useTranslation();
-  const W = 1000;
-  const H = 190;
-  const padLeft = 66; // room for the amount (Y) axis labels
-  const padRight = 28;
-  const zeroY = 100; // the value = 0 baseline
-  const axisY = H - 8; // year labels sit here
-  const barW = 20;
-  const maxBarH = Math.min(zeroY - 24, axisY - 20 - zeroY); // symmetric room up/down
-  const span = Math.max(1, endYear - startYear);
-  const x = (year: number) => padLeft + ((year - startYear) / span) * (W - padLeft - padRight);
-
-  const maxAbs = Math.max(1, ...rows.map((r) => Math.abs(r.nominal)));
-  const yFor = (v: number) => zeroY - (v / maxAbs) * maxBarH;
-  const barHeight = (amount: number) => Math.max(6, (Math.abs(amount) / maxAbs) * maxBarH);
-
-  // Six evenly spaced year ticks along the X axis…
-  const ticks = Array.from({ length: 7 }, (_, i) => Math.round(startYear + (span * i) / 6));
-  // …and symmetric amount ticks for the Y axis (income above 0, expense below).
-  const yTicks = [1, 0.5, 0, -0.5, -1].map((f) => f * maxAbs);
-  const yLabel = (v: number) => (v > 0 ? `+${fmt.compact(v)}` : fmt.compact(v));
-
-  const selectHandlers = (id: string) => ({
-    onClick: () => onSelect(id),
-    role: 'button' as const,
-    tabIndex: 0,
-    onKeyDown: (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') onSelect(id);
-    },
-  });
-
-  return (
-    <div className="flow-timeline">
-      <div className="flow-timeline__head">
-        <span className="wo-section-label">{t('expensesIncomes.timelineTitle')}</span>
-        <span className="flow-timeline__legend">
-          <span className="flow-legend flow-legend--expense">
-            {t('expensesIncomes.legendExpense')}
-          </span>
-          <span className="flow-legend flow-legend--income">
-            {t('expensesIncomes.legendIncome')}
-          </span>
-        </span>
-      </div>
-      <svg className="flow-timeline__svg" viewBox={`0 0 ${W} ${H}`} role="img">
-        {/* Y axis: amount gridlines + labels */}
-        {yTicks.map((v) => {
-          const gy = yFor(v);
-          return (
-            <g key={v}>
-              <line
-                x1={padLeft}
-                x2={W - padRight}
-                y1={gy}
-                y2={gy}
-                stroke="var(--border)"
-                strokeWidth={1}
-                opacity={v === 0 ? 1 : 0.35}
-                strokeDasharray={v === 0 ? undefined : '3 4'}
-              />
-              <text x={padLeft - 10} y={gy + 4} className="flow-timeline__ytick" textAnchor="end">
-                {yLabel(v)}
-              </text>
-            </g>
-          );
-        })}
-        {/* X axis: year ticks */}
-        {ticks.map((year) => (
-          <text
-            key={year}
-            x={x(year)}
-            y={axisY}
-            className="flow-timeline__tick"
-            textAnchor="middle"
-          >
-            {year}
-          </text>
-        ))}
-        {rows.map((r) => {
-          const isIncome = r.item.kind === 'income';
-          const color = isIncome ? INCOME_COLOR : EXPENSE_COLOR;
-          const isRecurring = r.item.frequency === 'recurring';
-          const h = barHeight(r.nominal);
-          const barY = isIncome ? zeroY - h : zeroY;
-          const active = selectedId === r.item.id;
-
-          if (isRecurring) {
-            const endYr = r.item.endYear ?? r.item.year;
-            const x1 = x(r.item.year);
-            const x2 = Math.max(x1 + barW, x(endYr));
-            const labelX = (x1 + x2) / 2;
-            const labelY = isIncome ? barY - 8 : barY + h + 18;
-            const label = `${isIncome ? '+' : '-'}${fmt.compact(Math.abs(r.nominal))}/yr · ${r.item.year}–${endYr}`;
-            return (
-              <g
-                key={r.item.id}
-                className={cn('flow-band', active && 'is-active')}
-                {...selectHandlers(r.item.id)}
-              >
-                <rect
-                  x={x1}
-                  y={barY}
-                  width={x2 - x1}
-                  height={h}
-                  rx={6}
-                  fill={color}
-                  fillOpacity={active ? 0.5 : 0.3}
-                  stroke={color}
-                  strokeWidth={active ? 2 : 1.5}
-                  strokeDasharray="5 3"
-                />
-                <text
-                  x={labelX}
-                  y={labelY}
-                  fill={color}
-                  textAnchor="middle"
-                  className="flow-bar__label"
-                >
-                  {label}
-                </text>
-              </g>
-            );
-          }
-
-          const cx = x(r.item.year);
-          const label = `${isIncome ? '+' : '-'}${fmt.compact(Math.abs(r.nominal))}`;
-          const labelY = isIncome ? barY - 8 : barY + h + 18;
-          return (
-            <g
-              key={r.item.id}
-              className={cn('flow-bar', active && 'is-active')}
-              {...selectHandlers(r.item.id)}
-            >
-              <rect
-                x={cx - barW / 2}
-                y={barY}
-                width={barW}
-                height={h}
-                rx={4}
-                fill={color}
-                fillOpacity={active ? 0.95 : 0.6}
-                stroke={color}
-                strokeWidth={active ? 2 : 0}
-              />
-              <text x={cx} y={labelY} fill={color} textAnchor="middle" className="flow-bar__label">
-                {label}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
-/**
- * A single flow's read-only detail row — name, amount, year(s) and badges —
- * with edit/delete actions. All editing happens in the
- * AddExpenseIncomeDialog; this card never mutates the store directly.
- */
-const FlowCard = ({
+const FlowRow = ({
   item,
   fmt,
   currentYear,
   currentAge,
-  selected,
-  cardRef,
   onEdit,
   onRemove,
 }: {
@@ -222,163 +30,133 @@ const FlowCard = ({
   fmt: CurrencyFormatter;
   currentYear: number;
   currentAge: number;
-  selected: boolean;
-  cardRef: (el: HTMLDivElement | null) => void;
   onEdit: () => void;
   onRemove: () => void;
 }) => {
   const { t } = useTranslation();
   const isIncome = item.kind === 'income';
   const isRecurring = item.frequency === 'recurring';
-  const endYr = item.endYear ?? item.year;
+  const endYear = item.endYear ?? item.year;
   const age = ageInYear(currentAge, currentYear, item.year);
-  const formattedAmount = fmt.compact(item.amount);
+  const category = item.category ?? 'general';
+  const name =
+    item.name ||
+    t(
+      isIncome ? 'expensesIncomes.namePlaceholderIncome' : 'expensesIncomes.namePlaceholderExpense',
+    );
+  const inflationLabel = t('expensesIncomes.inflationLabel', { year: endYear });
 
   return (
-    <div
-      ref={cardRef}
-      className={cn(
-        'flow-card',
-        'flow-card--readonly',
-        isIncome ? 'flow-card--income' : 'flow-card--expense',
-        selected && 'is-highlight',
-      )}
-    >
-      <div className="flow-card__top">
-        <div className="flow-card__identity">
-          <span className={cn('flow-kind-badge', isIncome ? 'is-income' : 'is-expense')}>
-            {isIncome ? '↑' : '↓'}{' '}
-            {t(isIncome ? 'expensesIncomes.typeIncome' : 'expensesIncomes.typeExpense')}
-          </span>
-          <div className="flow-card__name flow-card__name--readonly">
-            {item.name ||
-              t(
-                isIncome
-                  ? 'expensesIncomes.namePlaceholderIncome'
-                  : 'expensesIncomes.namePlaceholderExpense',
-              )}
-          </div>
-        </div>
-        <div className="flow-card__top-right">
-          {((item.inflate ?? true) || (isIncome && !(item.taxable ?? true))) && (
-            <div className="flow-card__badges">
-              {(item.inflate ?? true) && (
-                <span className="flow-badge">
-                  {t('expensesIncomes.inflationLabel', { year: endYr })}
-                </span>
-              )}
-              {isIncome && !(item.taxable ?? true) && (
-                <span className="flow-badge">{t('expensesIncomes.taxableLabel')}</span>
-              )}
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={t('expensesIncomes.editAria', {
-              name: item.name || t('expensesIncomes.name'),
-            })}
-            onClick={onEdit}
-          >
-            <PencilIcon size={16} />
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            aria-label={t('expensesIncomes.removeAria', {
-              name: item.name || t('expensesIncomes.name'),
-            })}
-            onClick={onRemove}
-          >
-            <TrashIcon size={16} />
-          </Button>
-        </div>
+    <div className="flow-table__row" role="row">
+      <div className="flow-table__cell flow-table__flow" role="cell">
+        <span className={cn('flow-table__category-icon', isIncome ? 'is-income' : 'is-expense')}>
+          <ExpenseCategoryIcon category={category} size={15} />
+        </span>
+        <span
+          className="flow-table__flow-label"
+          title={`${name} (${t(`expensesIncomes.categories.${category}`)})`}
+        >
+          <strong>{name}</strong> <span>({t(`expensesIncomes.categories.${category}`)})</span>
+        </span>
       </div>
 
-      <div className="flow-card__summary">
-        <div className="flow-card__detail">
-          <span className="flow-card__amount">
-            {formattedAmount}
-            {isRecurring && t('common.perYear')}
+      <div className="flow-table__cell" role="cell" data-label={t('expensesIncomes.columnType')}>
+        <span className={cn('flow-kind-badge', isIncome ? 'is-income' : 'is-expense')}>
+          {isIncome ? '↑' : '↓'}{' '}
+          {t(isIncome ? 'expensesIncomes.typeIncome' : 'expensesIncomes.typeExpense')}
+        </span>
+      </div>
+
+      <div
+        className="flow-table__cell flow-table__frequency"
+        role="cell"
+        data-label={t('expensesIncomes.columnFrequency')}
+      >
+        <span className="flow-frequency-badge">
+          {t(isRecurring ? 'expensesIncomes.frequencyRecurring' : 'expensesIncomes.frequencyOnce')}
+        </span>
+      </div>
+
+      <div
+        className="flow-table__cell flow-table__amount"
+        role="cell"
+        data-label={t('expensesIncomes.columnAmount')}
+      >
+        <span className={cn(isIncome ? 'is-income' : 'is-expense')}>
+          {isIncome ? '+' : '−'}
+          {fmt.compact(item.amount)}
+          {isRecurring && t('common.perYear')}
+        </span>
+        {(item.inflate ?? true) && (
+          <span className="flow-inflation-pill" tabIndex={0} aria-label={inflationLabel}>
+            <TrendingUpIcon size={13} />
+            <span className="flow-inflation-tooltip" role="tooltip">
+              {inflationLabel}
+            </span>
           </span>
-          <span className="ov__sub">
-            {isRecurring
-              ? `${item.year}–${endYr}`
-              : `${item.year}${age !== null ? ` · ${t('expensesIncomes.ageParen', { age })}` : ''}`}
-          </span>
-        </div>
+        )}
+      </div>
+
+      <div
+        className="flow-table__cell flow-table__period"
+        role="cell"
+        data-label={t('expensesIncomes.columnPeriod')}
+      >
+        {isRecurring
+          ? `${item.year}–${endYear}`
+          : `${item.year}${age !== null ? ` · ${t('expensesIncomes.ageParen', { age })}` : ''}`}
+      </div>
+
+      <div className="flow-table__cell flow-table__actions" role="cell">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="icon-action"
+          aria-label={t('expensesIncomes.editAria', { name })}
+          onClick={onEdit}
+        >
+          <PencilIcon size={14} />
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
+          className="icon-action"
+          aria-label={t('expensesIncomes.removeAria', { name })}
+          onClick={onRemove}
+        >
+          <TrashIcon size={14} />
+        </Button>
       </div>
     </div>
   );
 };
 
-/**
- * Manage cashflows tied to specific year(s) — a property purchase or sale, a
- * big one-time expense, an inheritance received, or a recurring cost like
- * tuition. Each flow is a read-only detail card with edit/delete actions;
- * creating or editing a flow opens a dedicated dialog with validation, and a
- * timeline gives the whole picture at a glance.
- */
 export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
   const addExpenseIncome = useAppStore((s) => s.addExpenseIncome);
   const updateExpenseIncome = useAppStore((s) => s.updateExpenseIncome);
   const removeExpenseIncome = useAppStore((s) => s.removeExpenseIncome);
-
   const currentYear = new Date().getFullYear();
   const currentAge = plan.settings.currentAge;
-  const maxYear = lifeExpectancyYear(currentAge, currentYear, plan.settings.lifeExpectancyAge);
   const items = useMemo(() => plan.settings.expensesIncomes ?? [], [plan.settings.expensesIncomes]);
-
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<ExpenseIncome | 'new' | null>(null);
-  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const inflationFactorFor = (year: number): number =>
     Math.pow(1 + plan.settings.inflationPct / 100, year - currentYear);
-
-  // Each flow with its inflation-projected (nominal) amount, plus the net total
-  // over the period — a recurring flow's contribution sums every year in range.
-  const rows = useMemo<FlowRow[]>(
-    () =>
-      items.map((item) => {
-        const factor = (item.inflate ?? true) ? inflationFactorFor(item.year) : 1;
-        const nominal = item.amount * factor;
-        let nominalEnd: number | undefined;
-        if (item.frequency === 'recurring') {
-          const endYear = item.endYear ?? item.year;
-          const factorEnd = (item.inflate ?? true) ? inflationFactorFor(endYear) : 1;
-          nominalEnd = item.amount * factorEnd;
-        }
-        return { item, nominal, nominalEnd };
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, plan.settings.inflationPct, currentYear],
-  );
-
-  const net = rows.reduce((sum, r) => {
-    const { item } = r;
-    let total = r.nominal;
-    if (item.frequency === 'recurring') {
-      const endYear = item.endYear ?? item.year;
-      total = 0;
-      for (let y = item.year; y <= endYear; y += 1) {
-        total += item.amount * ((item.inflate ?? true) ? inflationFactorFor(y) : 1);
+  const totals = items.reduce(
+    (summary, item) => {
+      const endYear = item.frequency === 'recurring' ? (item.endYear ?? item.year) : item.year;
+      let total = 0;
+      for (let year = item.year; year <= endYear; year += 1) {
+        total += item.amount * ((item.inflate ?? true) ? inflationFactorFor(year) : 1);
       }
-    }
-    return sum + (item.kind === 'income' ? total : -total);
-  }, 0);
-  const endYear = Math.max(
-    maxYear,
-    currentYear + 8,
-    ...items.map((i) => (i.frequency === 'recurring' ? (i.endYear ?? i.year) : i.year)),
+      summary[item.kind] += total;
+      return summary;
+    },
+    { income: 0, expense: 0 },
   );
-
-  const selectFlow = (id: string) => {
-    setSelectedId(id);
-    cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
+  const net = totals.income - totals.expense;
 
   const handleDialogSave = (data: Omit<ExpenseIncome, 'id'>) => {
     if (editing === 'new') addExpenseIncome(plan.id, data);
@@ -389,60 +167,97 @@ export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
     <>
       <Modal
         title={t('expensesIncomes.title')}
-        description={t('expensesIncomes.desc')}
         onClose={onClose}
         wide
-        headerActions={
-          <Button variant="accent" onClick={() => setEditing('new')}>
-            <PlusIcon /> {t('expensesIncomes.add')}
+        className="modal--flows"
+        footer={
+          <Button variant="primary" onClick={onClose}>
+            {t('common.close')}
           </Button>
         }
-        footer={
-          <>
-            <span
-              className={cn('flow-net', net < 0 ? 'is-neg' : net > 0 ? 'is-pos' : undefined)}
-              style={{ marginRight: 'auto' }}
-            >
-              {t('expensesIncomes.netTotal', { amount: fmt.compact(net) })}
-            </span>
-            <Button variant="primary" onClick={onClose}>
-              {t('common.done')}
-            </Button>
-          </>
-        }
       >
-        {rows.length > 0 && (
-          <FlowsTimeline
-            rows={rows}
-            startYear={currentYear}
-            endYear={endYear}
-            fmt={fmt}
-            selectedId={selectedId}
-            onSelect={selectFlow}
-          />
-        )}
-
-        {items.length === 0 ? (
-          <div className="state-box">{t('expensesIncomes.empty')}</div>
-        ) : (
-          <div className="flow-cards">
-            {rows.map(({ item }) => (
-              <FlowCard
-                key={item.id}
-                item={item}
-                fmt={fmt}
-                currentYear={currentYear}
-                currentAge={currentAge}
-                selected={selectedId === item.id}
-                cardRef={(el) => {
-                  cardRefs.current[item.id] = el;
-                }}
-                onEdit={() => setEditing(item)}
-                onRemove={() => removeExpenseIncome(plan.id, item.id)}
-              />
-            ))}
+        <div className="flows-modal-content">
+          <div className="flows-summary" aria-label={t('expensesIncomes.summaryLabel')}>
+            <div className="flows-summary__item">
+              <span className="flows-summary__icon is-income" aria-hidden="true">
+                ↑
+              </span>
+              <span className="flows-summary__copy">
+                <span>{t('expensesIncomes.summaryIncome')}</span>
+                <strong className="is-pos">+{fmt.compact(totals.income)}</strong>
+              </span>
+            </div>
+            <div className="flows-summary__item">
+              <span className="flows-summary__icon is-expense" aria-hidden="true">
+                ↓
+              </span>
+              <span className="flows-summary__copy">
+                <span>{t('expensesIncomes.summaryExpense')}</span>
+                <strong className="is-neg">−{fmt.compact(totals.expense)}</strong>
+              </span>
+            </div>
+            <div className="flows-summary__item">
+              <span className="flows-summary__icon" aria-hidden="true">
+                =
+              </span>
+              <span className="flows-summary__copy">
+                <span>{t('expensesIncomes.summaryNet')}</span>
+                <strong className={cn(net < 0 ? 'is-neg' : net > 0 ? 'is-pos' : undefined)}>
+                  {net > 0 ? '+' : net < 0 ? '−' : ''}
+                  {fmt.compact(Math.abs(net))}
+                </strong>
+              </span>
+            </div>
           </div>
-        )}
+
+          <section className="flow-list-section" aria-label={t('expensesIncomes.listTitle')}>
+            <div className="flow-list__head flow-list__head--action-only">
+              <Button
+                variant="accent"
+                className="flow-list__add-button"
+                onClick={() => setEditing('new')}
+              >
+                <PlusIcon size={15} /> {t('expensesIncomes.add')}
+              </Button>
+            </div>
+
+            <div className="flow-list">
+              {items.length === 0 ? (
+                <div className="state-box flow-list__empty">{t('expensesIncomes.empty')}</div>
+              ) : (
+                <div
+                  className="flow-table"
+                  role="table"
+                  aria-label={t('expensesIncomes.listTitle')}
+                >
+                  <div className="flow-table__header" role="row">
+                    <span role="columnheader">{t('expensesIncomes.columnFlow')}</span>
+                    <span role="columnheader">{t('expensesIncomes.columnType')}</span>
+                    <span role="columnheader">{t('expensesIncomes.columnFrequency')}</span>
+                    <span role="columnheader">{t('expensesIncomes.columnAmount')}</span>
+                    <span role="columnheader">{t('expensesIncomes.columnPeriod')}</span>
+                    <span role="columnheader" className="flow-table__action-heading">
+                      {t('common.action')}
+                    </span>
+                  </div>
+                  <div role="rowgroup">
+                    {items.map((item) => (
+                      <FlowRow
+                        key={item.id}
+                        item={item}
+                        fmt={fmt}
+                        currentYear={currentYear}
+                        currentAge={currentAge}
+                        onEdit={() => setEditing(item)}
+                        onRemove={() => removeExpenseIncome(plan.id, item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </Modal>
 
       {editing !== null && (

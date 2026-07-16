@@ -220,6 +220,35 @@ describe('addAccount / removeAccount', () => {
   });
 });
 
+describe('saveAccountsTaxConfig', () => {
+  it('commits accounts and residence atomically while reconciling dependent data', () => {
+    const store = makeStore();
+    const plan = store.getState().plans[0]!;
+    const removedId = plan.accounts[0]!.id;
+    const affectedHoldingIds = plan.holdings
+      .filter((holding) => holding.accountId === removedId)
+      .map((holding) => holding.id);
+    const retained = { ...plan.accounts[1]!, name: 'Edited account' };
+    const added = { ...plan.accounts[2]!, id: 'draft-account', name: 'Draft account' };
+
+    store.getState().saveAccountsTaxConfig(plan.id, {
+      accounts: [retained, added],
+      residenceCountry: 'CA',
+      residenceProvince: 'QC',
+    });
+
+    const after = store.getState().plans.find((candidate) => candidate.id === plan.id)!;
+    expect(after.accounts.map((account) => account.id)).toEqual([retained.id, added.id]);
+    expect(after.accounts[0]!.name).toBe('Edited account');
+    expect(after.residenceCountry).toBe('CA');
+    expect(after.residenceProvince).toBe('QC');
+    expect(after.withdrawalOrder).toEqual([retained.id, added.id]);
+    for (const holdingId of affectedHoldingIds) {
+      expect(after.holdings.find((holding) => holding.id === holdingId)!.accountId).toBeNull();
+    }
+  });
+});
+
 describe('updateAccount', () => {
   it('clamps out-of-range tax percentages before they reach the engines', () => {
     const store = makeStore();

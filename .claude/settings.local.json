@@ -54,7 +54,30 @@
       "Bash(curl -sv \"http://localhost:8787/\")",
       "Bash(curl -s \"http://localhost:8787/api/market/equities/search?keywords=apple\")",
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
-      "Bash(grep -n \"PlansPage\\\\|'/plans'\\\\|\\\\\"/plans\\\\\"\\\\|/plans\\\\`\" -r \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/src\")"
+      "Bash(grep -n \"PlansPage\\\\|'/plans'\\\\|\\\\\"/plans\\\\\"\\\\|/plans\\\\`\" -r \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/src\")",
+      "Bash(pkill -f \"astro dev\")",
+      "Bash(sips --help)",
+      "Bash(sips -g pixelWidth -g pixelHeight \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/src/assets/runaway-dashboard.png\")",
+      "Bash(sips -g pixelWidth -g pixelHeight \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/public/favicon.png\")",
+      "Bash(sips --formats)",
+      "Bash(mkdir -p /tmp/og-work)",
+      "Bash(sips -c 945 1800 \"src/assets/runaway-dashboard.png\" --out /tmp/og-work/cropped.png)",
+      "Bash(sips -z 630 1200 /tmp/og-work/cropped.png --out public/og-image.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight public/og-image.png)",
+      "Bash(sips -z 180 180 public/favicon.png --out public/apple-touch-icon.png)",
+      "Bash(sips -s format ico public/favicon.png --out public/favicon.ico)",
+      "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model\" && rm -rf /tmp/og-work && git status --short)",
+      "Bash(kill 20106 20108 20151)",
+      "Bash(ps -p 5786,14963,55502,87466 -o pid,ppid,command)",
+      "Bash(kill 14963 55502)",
+      "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model\" && rm -rf node_modules/.vite && echo \"cache cleared\")",
+      "Bash(nohup npm run dev:all)",
+      "Bash(disown)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4321/fr/app/signup)",
+      "Bash(kill 23602 23594 33592)",
+      "Bash(node --env-file=.env.local -e \"console.log\\(process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 'MISSING'\\)\")",
+      "Bash(rm /tmp/check_openended.mjs)"
     ]
   }
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Stepper } from '@/components/ui/Stepper';
 import { Button } from '@/components/ui/Button';
-import { DragHandleIcon, PencilIcon, RefreshIcon, TrashIcon } from '@/components/icons';
+import { DragHandleIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/Spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { colorForSymbol } from '@/lib/assetColors';
@@ -25,9 +25,6 @@ interface AssetRowProps {
   onToggleEdit: () => void;
   rates: RatesTable | undefined;
   fetchState: PriceFetchState | undefined;
-  onFetchPrice: (h: Holding) => void;
-  /** Live market-data calls are disabled in the isolated Sandbox. */
-  canFetchPrice?: boolean;
   onUpdate: (
     holdingId: string,
     patch: Partial<
@@ -48,8 +45,6 @@ export const AssetRow = ({
   onToggleEdit,
   rates,
   fetchState,
-  onFetchPrice,
-  canFetchPrice = true,
   onUpdate,
   onRemove,
   onDragStart,
@@ -97,7 +92,6 @@ export const AssetRow = ({
 
   const effectiveCagr =
     holding.expectedCagrPct + scenarioAdjustmentPts(plan.scenario, plan.scenario.active);
-  const status = fetchState?.status ?? 'idle';
 
   // Finer steps for low-priced assets so sub-dollar prices stay precise.
   const priceStep = holding.pricePerUnit >= 1000 ? 100 : holding.pricePerUnit >= 1 ? 1 : 0.01;
@@ -149,9 +143,7 @@ export const AssetRow = ({
         </div>
       </div>
 
-      {/* Asset price in its native currency (currency is fixed by the market).
-          The live-price refresh stays available in read-only mode; only the
-          editable value collapses to plain text. */}
+      {/* Asset price in its native currency (currency is fixed by the market). */}
       <div>
         <div className="price-cell">
           {editing ? (
@@ -167,33 +159,12 @@ export const AssetRow = ({
           ) : (
             <span className="read-value">{nativeFmt.price(holding.pricePerUnit)}</span>
           )}
-          {canFetchPrice && (
-            <button
-              type="button"
-              className={`fetch-btn ${status === 'error' ? 'is-error' : ''} ${
-                status === 'success' ? 'is-success' : ''
-              }`}
-              onClick={() => onFetchPrice(holding)}
-              aria-label={t('portfolio.fetchAria', { symbol: holding.instrument.symbol })}
-              title={
-                status === 'error'
-                  ? (fetchState?.error?.message ?? t('portfolio.fetchError'))
-                  : status === 'success'
-                    ? t('portfolio.fetchSuccess', {
-                        price: nativeFmt.price(holding.pricePerUnit),
-                      })
-                    : t('portfolio.fetchIdle')
-              }
-            >
-              {status === 'loading' ? <Spinner /> : <RefreshIcon size={14} />}
-            </button>
+          {fetchState?.status === 'loading' && (
+            <span className="price-cell__loading" role="status" aria-label={t('addAsset.fetching')}>
+              <Spinner />
+            </span>
           )}
         </div>
-        {canFetchPrice && status === 'error' && (
-          <div className="fetch-error" role="alert">
-            {fetchState?.error?.message ?? t('portfolio.fetchError')}
-          </div>
-        )}
       </div>
 
       {/* Converted unit price (master currency) */}
@@ -297,7 +268,7 @@ export const AssetRow = ({
       <div className="asset-row__actions" ref={removeRef}>
         <button
           type="button"
-          className={`fetch-btn ${editing ? 'is-active' : ''}`}
+          className={`fetch-btn icon-action ${editing ? 'is-active' : ''}`}
           onClick={onToggleEdit}
           aria-label={t(editing ? 'portfolio.doneAria' : 'portfolio.editAria', {
             symbol: holding.instrument.symbol,
@@ -311,6 +282,7 @@ export const AssetRow = ({
             <Button
               variant="danger"
               size="sm"
+              className="icon-action"
               aria-label={t('portfolio.removeAria', { symbol: holding.instrument.symbol })}
               aria-haspopup="dialog"
               aria-expanded={confirmingRemove}

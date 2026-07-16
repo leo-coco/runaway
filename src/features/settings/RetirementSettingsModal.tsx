@@ -37,9 +37,9 @@ const ZONE_COLOR: Record<SwrZone, string> = {
 };
 
 const PHASE_COLOR = {
-  goGo: 'var(--accent)',
-  slowGo: '#a855f7',
-  noGo: 'var(--amber)',
+  goGo: 'var(--phase-go-go)',
+  slowGo: 'var(--phase-slow-go)',
+  noGo: 'var(--phase-no-go)',
 } as const;
 
 /** Small SVG of the real-spending path across the retirement, with phase bands. */
@@ -89,7 +89,7 @@ const PhaseCurve = ({
           width={Math.max(0, x(b.to) - x(b.from))}
           height={H - 2 * padY}
           fill={PHASE_COLOR[b.key]}
-          opacity={0.07}
+          opacity="var(--phase-band-opacity)"
         />
       ))}
       <line
@@ -102,8 +102,8 @@ const PhaseCurve = ({
         strokeDasharray="4 4"
         opacity={0.5}
       />
-      <path d={areaPath} fill="var(--accent)" opacity={0.12} />
-      <path d={linePath} fill="none" stroke="var(--accent)" strokeWidth={2} />
+      <path d={areaPath} fill="var(--phase-curve)" opacity={0.06} />
+      <path d={linePath} fill="none" stroke="var(--phase-curve)" strokeWidth={2.5} />
     </svg>
   );
 };
