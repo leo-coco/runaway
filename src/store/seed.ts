@@ -167,7 +167,7 @@ export const createSandboxPlan = (lang: 'en' | 'fr'): Plan => {
     {
       id: newId(),
       instrument: {
-        id: 'yahoo:VOO',
+        id: 'alphavantage:VOO',
         symbol: 'VOO',
         name: 'Vanguard S&P 500 ETF',
         assetClass: 'us_equity',
