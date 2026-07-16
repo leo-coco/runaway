@@ -204,14 +204,12 @@ const FlowsTimeline = ({
 };
 
 /**
- * A single flow's read-only detail row — name, amount, year(s), projection
- * and badges — with edit/delete actions. All editing happens in the
+ * A single flow's read-only detail row — name, amount, year(s) and badges —
+ * with edit/delete actions. All editing happens in the
  * AddExpenseIncomeDialog; this card never mutates the store directly.
  */
 const FlowCard = ({
   item,
-  nominal,
-  nominalEnd,
   fmt,
   currentYear,
   currentAge,
@@ -221,8 +219,6 @@ const FlowCard = ({
   onRemove,
 }: {
   item: ExpenseIncome;
-  nominal: number;
-  nominalEnd: number | undefined;
   fmt: CurrencyFormatter;
   currentYear: number;
   currentAge: number;
@@ -236,6 +232,7 @@ const FlowCard = ({
   const isRecurring = item.frequency === 'recurring';
   const endYr = item.endYear ?? item.year;
   const age = ageInYear(currentAge, currentYear, item.year);
+  const formattedAmount = fmt.compact(item.amount);
 
   return (
     <div
@@ -248,14 +245,39 @@ const FlowCard = ({
       )}
     >
       <div className="flow-card__top">
-        <span className={cn('flow-kind-badge', isIncome ? 'is-income' : 'is-expense')}>
-          {isIncome ? '↑' : '↓'} {t(isIncome ? 'expensesIncomes.typeIncome' : 'expensesIncomes.typeExpense')}
-        </span>
+        <div className="flow-card__identity">
+          <span className={cn('flow-kind-badge', isIncome ? 'is-income' : 'is-expense')}>
+            {isIncome ? '↑' : '↓'}{' '}
+            {t(isIncome ? 'expensesIncomes.typeIncome' : 'expensesIncomes.typeExpense')}
+          </span>
+          <div className="flow-card__name flow-card__name--readonly">
+            {item.name ||
+              t(
+                isIncome
+                  ? 'expensesIncomes.namePlaceholderIncome'
+                  : 'expensesIncomes.namePlaceholderExpense',
+              )}
+          </div>
+        </div>
         <div className="flow-card__top-right">
+          {((item.inflate ?? true) || (isIncome && !(item.taxable ?? true))) && (
+            <div className="flow-card__badges">
+              {(item.inflate ?? true) && (
+                <span className="flow-badge">
+                  {t('expensesIncomes.inflationLabel', { year: endYr })}
+                </span>
+              )}
+              {isIncome && !(item.taxable ?? true) && (
+                <span className="flow-badge">{t('expensesIncomes.taxableLabel')}</span>
+              )}
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
-            aria-label={t('expensesIncomes.editAria', { name: item.name || t('expensesIncomes.name') })}
+            aria-label={t('expensesIncomes.editAria', {
+              name: item.name || t('expensesIncomes.name'),
+            })}
             onClick={onEdit}
           >
             <PencilIcon size={16} />
@@ -263,7 +285,9 @@ const FlowCard = ({
           <Button
             variant="danger"
             size="sm"
-            aria-label={t('expensesIncomes.removeAria', { name: item.name || t('expensesIncomes.name') })}
+            aria-label={t('expensesIncomes.removeAria', {
+              name: item.name || t('expensesIncomes.name'),
+            })}
             onClick={onRemove}
           >
             <TrashIcon size={16} />
@@ -271,48 +295,19 @@ const FlowCard = ({
         </div>
       </div>
 
-      <div className="flow-card__name flow-card__name--readonly">
-        {item.name || t(isIncome ? 'expensesIncomes.namePlaceholderIncome' : 'expensesIncomes.namePlaceholderExpense')}
-      </div>
-
-      <div className="flow-card__detail">
-        <span className="flow-card__amount">
-          {fmt.compact(item.amount)}
-          {isRecurring && t('common.perYear')}
-        </span>
-        <span className="ov__sub">
-          {isRecurring
-            ? `${item.year}–${endYr}`
-            : `${item.year}${age !== null ? ` · ${t('expensesIncomes.ageParen', { age })}` : ''}`}
-        </span>
-      </div>
-
-      <span className="flow-projection">
-        {isRecurring
-          ? t('expensesIncomes.projectionRecurring', {
-              from: fmt.compact(item.amount),
-              toStart: fmt.compact(nominal),
-              startYear: item.year,
-              toEnd: fmt.compact(nominalEnd ?? nominal),
-              endYear: endYr,
-            })
-          : t('expensesIncomes.projection', {
-              from: fmt.compact(item.amount),
-              to: fmt.compact(nominal),
-              year: item.year,
-            })}
-      </span>
-
-      {((item.inflate ?? true) || (isIncome && !(item.taxable ?? true))) && (
-        <div className="flow-card__badges">
-          {(item.inflate ?? true) && (
-            <span className="flow-badge">{t('expensesIncomes.inflationLabel', { year: endYr })}</span>
-          )}
-          {isIncome && !(item.taxable ?? true) && (
-            <span className="flow-badge">{t('expensesIncomes.taxableLabel')}</span>
-          )}
+      <div className="flow-card__summary">
+        <div className="flow-card__detail">
+          <span className="flow-card__amount">
+            {formattedAmount}
+            {isRecurring && t('common.perYear')}
+          </span>
+          <span className="ov__sub">
+            {isRecurring
+              ? `${item.year}–${endYr}`
+              : `${item.year}${age !== null ? ` · ${t('expensesIncomes.ageParen', { age })}` : ''}`}
+          </span>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -431,12 +426,10 @@ export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
           <div className="state-box">{t('expensesIncomes.empty')}</div>
         ) : (
           <div className="flow-cards">
-            {rows.map(({ item, nominal, nominalEnd }) => (
+            {rows.map(({ item }) => (
               <FlowCard
                 key={item.id}
                 item={item}
-                nominal={nominal}
-                nominalEnd={nominalEnd}
                 fmt={fmt}
                 currentYear={currentYear}
                 currentAge={currentAge}

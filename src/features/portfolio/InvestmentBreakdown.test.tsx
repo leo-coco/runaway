@@ -72,6 +72,7 @@ describe('InvestmentBreakdown Sandbox controls', () => {
       name: 'Create an account to customize the portfolio',
     });
     expect(cta).toHaveAttribute('href', '/en/app/signup');
+    expect(cta).toHaveClass('action-banner__push-right');
   });
 
   it('returns signed-in Sandbox visitors to their account instead of signup', () => {
@@ -80,7 +81,7 @@ describe('InvestmentBreakdown Sandbox controls', () => {
 
     expect(screen.getByRole('link', { name: 'Customize in my account' })).toHaveAttribute(
       'href',
-      '/en/app/',
+      '/en/app',
     );
   });
 
