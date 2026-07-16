@@ -219,6 +219,9 @@ export const fr: Resources = {
       'Tous vos plans, vos données de compte et les informations associées seront définitivement supprimés de la base de données.',
     deleteConfirmCta: 'Supprimer définitivement mon compte',
     deleting: 'Suppression…',
+    deletePasswordLabel: 'Confirmez votre mot de passe',
+    deletePasswordHint: 'Par sécurité, confirmez votre mot de passe pour supprimer votre compte.',
+    deleteInvalidPassword: 'Mot de passe incorrect.',
   },
   plan: {
     currency: 'Devise',

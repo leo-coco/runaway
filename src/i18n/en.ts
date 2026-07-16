@@ -211,6 +211,9 @@ export const en = {
       'All of your plans, account data and associated information will be permanently deleted from the database.',
     deleteConfirmCta: 'Permanently delete my account',
     deleting: 'Deleting…',
+    deletePasswordLabel: 'Confirm your password',
+    deletePasswordHint: 'For your security, confirm your password to delete your account.',
+    deleteInvalidPassword: 'Incorrect password.',
   },
   plan: {
     currency: 'Currency',
