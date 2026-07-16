@@ -85,8 +85,8 @@ const ProductShell = ({
                 <Routes>
                   <Route path="/" element={<RootRedirect />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/account" element={<AccountPage />} />
+                  {!sandbox && <Route path="/admin" element={<AdminPage />} />}
+                  {!sandbox && <Route path="/account" element={<AccountPage />} />}
                   <Route path="/plan/:id" element={<PlanLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
