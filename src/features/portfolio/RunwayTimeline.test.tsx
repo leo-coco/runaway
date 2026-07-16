@@ -28,6 +28,7 @@ const EVENTS: RunwayEvent[] = [
     labelParams: { name: 'New car' },
     amount: 20000,
     icon: 'car',
+    category: 'vehicle',
   },
   {
     id: 'portfolio-dry',
@@ -76,6 +77,23 @@ beforeEach(async () => {
 });
 
 describe('RunwayTimeline', () => {
+  it('falls back to the wallet icon when an event contains an unknown runtime icon key', () => {
+    vi.mocked(buildRunwayEvents).mockReturnValue([
+      EVENTS[0]!,
+      {
+        id: 'flow:stale',
+        kind: 'expense',
+        year: 2029,
+        labelKey: 'runway.flowNamed',
+        labelParams: { name: 'Stale event' },
+        icon: 'stale-icon' as RunwayEvent['icon'],
+      },
+      EVENTS[2]!,
+    ]);
+
+    expect(() => render(<RunwayTimeline />)).not.toThrow();
+  });
+
   it('keeps today and the terminal point, with the nearest milestones before an ellipsis', () => {
     const events: RunwayEvent[] = [
       { id: 'today', kind: 'today', year: 2026, labelKey: 'runway.today', icon: 'dot' },
@@ -137,17 +155,37 @@ describe('RunwayTimeline', () => {
 
     fireEvent.click(screen.getByText(/See all events/));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByRole('columnheader', { name: 'Age' })).toBeInTheDocument();
-    const ageCells = within(dialog)
-      .getAllByRole('row')
-      .slice(1)
-      .map((row) => row.querySelector('td')?.textContent);
-    expect(ageCells).toEqual(['40 years', '44 years', '47 years']);
+    const ageStops = [...dialog.querySelectorAll('time')].map((time) => time.textContent);
+    expect(ageStops).toEqual(['40 years', '44 years', '47 years']);
+    expect(within(dialog).getByText('2029')).toBeInTheDocument();
   });
 
   it('applies the confidence tint class to uncertain markers', () => {
     const { container } = render(<RunwayTimeline />);
     expect(container.querySelector('.runway__marker--weak')).not.toBeNull();
+  });
+
+  it('reuses the modal category tone on compact runway markers', () => {
+    const { container } = render(<RunwayTimeline />);
+    const marker = container.querySelector('.runway__marker.runway-event--category-vehicle');
+    expect(marker).not.toBeNull();
+  });
+
+  it('defines a distinct runway tone for every added category', () => {
+    for (const category of [
+      'insurance',
+      'relocation',
+      'family',
+      'renovation',
+      'business',
+      'pension',
+      'debt',
+      'taxLegal',
+      'salary',
+      'rentalIncome',
+    ]) {
+      expect(appCss).toContain(`.runway-event--category-${category}`);
+    }
   });
 
   it('uses the same 2px danger border as Monte Carlo when the portfolio runs dry', () => {
@@ -171,23 +209,57 @@ describe('RunwayTimeline', () => {
     expect(container.querySelector('.runway.hero__card--risk')).toBeNull();
   });
 
-  it('opens the "see all events" modal with rows sorted by year', () => {
+  it('opens the "see all events" modal as a vertical path sorted by year', () => {
     render(<RunwayTimeline />);
     fireEvent.click(screen.getByText(/See all events/));
     const dialog = screen.getByRole('dialog');
-    const yearCells = within(dialog)
-      .getAllByRole('row')
-      .slice(1) // skip header
-      .map((row) => row.querySelector('td')?.textContent);
-    expect(yearCells).toEqual(['2025', '2029', '2032']);
-    // The 2029 (car) row shows a formatted amount. Assert only that a numeric
-    // amount is rendered in its last cell, not the exact currency string, which
-    // varies with the runtime's ICU data (symbol, spacing, compact notation).
-    const carRow = within(dialog)
-      .getAllByRole('row')
-      .find((row) => row.querySelector('td')?.textContent === '2029');
-    const amountCell = carRow?.querySelectorAll('td')[2];
-    expect(amountCell?.textContent).toMatch(/\d/);
+    const yearStops = [...dialog.querySelectorAll('time')].map((time) => time.textContent);
+    expect(yearStops).toEqual(['2025', '2029', '2032']);
+
+    const carButton = within(dialog).getByRole('button', { name: /New car/ });
+    expect(carButton).toHaveClass('runway-event--category-vehicle');
+    expect(carButton).toHaveTextContent('Vehicle');
+    expect(carButton).toHaveTextContent(/−.*\d/);
+
+    fireEvent.click(carButton);
+    expect(carButton).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      within(dialog).getByText(/This expense is drawn from your portfolio/),
+    ).toBeInTheDocument();
+  });
+
+  it('stacks multiple events from the same year under one date stop', () => {
+    vi.mocked(buildRunwayEvents).mockReturnValue([
+      ...EVENTS.slice(0, 2),
+      {
+        id: 'flow:gift',
+        kind: 'income',
+        year: 2029,
+        labelKey: 'runway.flowNamed',
+        labelParams: { name: 'Inheritance' },
+        amount: 50000,
+        icon: 'gift',
+        category: 'gift',
+        frequency: 'recurring',
+      },
+      EVENTS[2]!,
+    ]);
+
+    render(<RunwayTimeline />);
+    fireEvent.click(screen.getByText(/See all events/));
+    const dialog = screen.getByRole('dialog');
+    const yearSections = dialog.querySelectorAll('.runway-events__year');
+    expect(yearSections).toHaveLength(3);
+    expect(yearSections[1]?.querySelectorAll('.runway-event')).toHaveLength(2);
+    expect(within(yearSections[1] as HTMLElement).getByText('Inheritance')).toBeInTheDocument();
+    const inheritance = within(yearSections[1] as HTMLElement).getByRole('button', {
+      name: /Inheritance/,
+    });
+    expect(inheritance).toHaveTextContent('Periodic');
+    fireEvent.click(inheritance);
+    expect(
+      within(yearSections[1] as HTMLElement).getByText(/yearly occurrence of the recurring income/),
+    ).toBeInTheDocument();
   });
 
   it('renders localized labels (fr)', async () => {

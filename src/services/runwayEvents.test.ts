@@ -124,9 +124,35 @@ describe('buildRunwayEvents — financial events', () => {
     expect(expense?.year).toBe(2029);
     expect(expense?.icon).toBe('car');
     expect(expense?.amount).toBe(20000);
+    expect(expense?.category).toBe('vehicle');
   });
 
-  it('emits a single marker at the start year for a recurring flow', () => {
+  it.each([
+    ['insurance', 'shield'],
+    ['relocation', 'globe'],
+    ['family', 'family'],
+    ['renovation', 'tools'],
+    ['business', 'briefcase'],
+    ['pension', 'umbrella'],
+    ['debt', 'credit-card'],
+    ['taxLegal', 'tax'],
+    ['salary', 'paycheck'],
+    ['rentalIncome', 'key'],
+  ] as const)('maps the %s category to its runway icon', (category, icon) => {
+    const item: ExpenseIncome = {
+      id: category,
+      name: category,
+      amount: 1000,
+      year: 2029,
+      kind: 'expense',
+      category,
+    };
+    const plan = mkPlan({ settings: { expensesIncomes: [item] } });
+    const events = buildRunwayEvents(plan, mkProjection(baseYears, null), null);
+    expect(find(events, 'expense')[0]?.icon).toBe(icon);
+  });
+
+  it('emits one marker per year for the full duration of a recurring flow', () => {
     const item: ExpenseIncome = {
       id: 'tuition',
       name: 'Tuition',
@@ -140,9 +166,31 @@ describe('buildRunwayEvents — financial events', () => {
     const plan = mkPlan({ settings: { expensesIncomes: [item] } });
     const events = buildRunwayEvents(plan, mkProjection(baseYears, null), null);
     const expenses = find(events, 'expense');
-    expect(expenses).toHaveLength(1);
-    expect(expenses[0]?.year).toBe(2031);
-    expect(expenses[0]?.icon).toBe('graduation');
+    expect(expenses.map((event) => event.year)).toEqual([2031, 2032, 2033, 2034]);
+    expect(expenses.map((event) => event.id)).toEqual([
+      'flow:tuition:2031',
+      'flow:tuition:2032',
+      'flow:tuition:2033',
+      'flow:tuition:2034',
+    ]);
+    expect(expenses.every((event) => event.icon === 'graduation')).toBe(true);
+    expect(expenses.every((event) => event.category === 'education')).toBe(true);
+    expect(expenses.every((event) => event.frequency === 'recurring')).toBe(true);
+  });
+
+  it('stops recurring occurrences at the Runway terminal year', () => {
+    const item: ExpenseIncome = {
+      id: 'pension',
+      name: 'Pension',
+      amount: 12000,
+      year: 2031,
+      endYear: 2040,
+      kind: 'income',
+      frequency: 'recurring',
+    };
+    const plan = mkPlan({ settings: { expensesIncomes: [item] } });
+    const events = buildRunwayEvents(plan, mkProjection(baseYears, 2034), null);
+    expect(find(events, 'income').map((event) => event.year)).toEqual([2031, 2032, 2033, 2034]);
   });
 
   it('emits home-buy and home-sell markers from plan.home', () => {
@@ -159,7 +207,9 @@ describe('buildRunwayEvents — financial events', () => {
     const events = buildRunwayEvents(plan, mkProjection(baseYears, null), null);
     expect(find(events, 'home-buy')[0]?.year).toBe(2032);
     expect(find(events, 'home-buy')[0]?.icon).toBe('home');
+    expect(find(events, 'home-buy')[0]?.category).toBe('home');
     expect(find(events, 'home-sell')[0]?.year).toBe(2034);
+    expect(find(events, 'home-sell')[0]?.category).toBe('home');
   });
 });
 

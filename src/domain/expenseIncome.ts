@@ -19,7 +19,17 @@ export type ExpenseCategory =
   | 'health'
   | 'wedding'
   | 'gift'
-  | 'home';
+  | 'home'
+  | 'insurance'
+  | 'relocation'
+  | 'family'
+  | 'renovation'
+  | 'business'
+  | 'pension'
+  | 'debt'
+  | 'taxLegal'
+  | 'salary'
+  | 'rentalIncome';
 
 export const EXPENSE_CATEGORIES: readonly ExpenseCategory[] = [
   'general',
@@ -30,6 +40,16 @@ export const EXPENSE_CATEGORIES: readonly ExpenseCategory[] = [
   'wedding',
   'gift',
   'home',
+  'insurance',
+  'relocation',
+  'family',
+  'renovation',
+  'business',
+  'pension',
+  'debt',
+  'taxLegal',
+  'salary',
+  'rentalIncome',
 ];
 
 export interface ExpenseIncome {
