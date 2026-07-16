@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
-import { WalletIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { convertOr } from '@/services/currencyService';
@@ -12,6 +11,12 @@ import { scenarioAdjustmentPts } from '@/domain/scenario';
 import type { Holding } from '@/domain/asset';
 import type { Plan } from '@/domain/plan';
 import { colorForSymbol } from '@/lib/assetColors';
+
+const truncate = (text: string, maxLength: number) =>
+  text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
+
+const plainNumberFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const formatPlain = (amount: number): string => plainNumberFmt.format(amount);
 
 interface Props {
   plan: Plan;
@@ -26,7 +31,6 @@ const ContributionRow = ({
   value,
   effectiveCagrPct,
   yearsToRetirement,
-  retirementYear,
   onChange,
 }: {
   holding: Holding;
@@ -34,7 +38,6 @@ const ContributionRow = ({
   value: number;
   effectiveCagrPct: number;
   yearsToRetirement: number;
-  retirementYear: number;
   onChange: (next: number) => void;
 }) => {
   const { t } = useTranslation();
@@ -51,15 +54,9 @@ const ContributionRow = ({
           >
             {holding.instrument.symbol.slice(0, 1)}
           </span>
-          <div>
-            <div className="asset-name">{holding.instrument.name}</div>
-            <div className="asset-ticker">
-              {t('savings.cagrTicker', {
-                symbol: holding.instrument.symbol,
-                exchange: holding.instrument.exchange,
-                cagr: effectiveCagrPct,
-              })}
-            </div>
+          <div className="asset-id__text">
+            <span className="asset-sym">{holding.instrument.symbol}</span>
+            <span className="asset-nm">{truncate(holding.instrument.name, 4)}</span>
           </div>
         </div>
       </div>
@@ -69,18 +66,15 @@ const ContributionRow = ({
           value={value}
           min={0}
           step={50}
-          suffix={t('savings.perMoSuffix', { currency: holding.instrument.nativeCurrency })}
+          suffix={holding.instrument.nativeCurrency}
           onChange={onChange}
         />
       </div>
       <div className="contrib-table__cell contrib-table__annual" role="cell">
-        {t('savings.yearlyShort', { amount: nativeFmt.format(value * 12) })}
+        {nativeFmt.format(value * 12)}
       </div>
       <div className="contrib-table__cell contrib-table__projected" role="cell">
-        {t('savings.projectedByShort', {
-          amount: nativeFmt.compact(projected),
-          year: retirementYear,
-        })}
+        {nativeFmt.format(projected)}
       </div>
     </div>
   );
@@ -88,7 +82,6 @@ const ContributionRow = ({
 
 export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
   const { t } = useTranslation();
-  const planFmt = useCurrencyFormatter(plan.currency);
   const fx = useExchangeRate(plan.currency);
   const [draft, setDraft] = useState<Record<string, number>>(() =>
     Object.fromEntries(plan.holdings.map((h) => [h.id, h.monthlyContribution ?? 0])),
@@ -160,29 +153,14 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
     >
       {plan.holdings.length > 0 && (
         <div className="contrib-spread-section">
-          <div className="contrib-section-head">
-            <div>
-              <div className="contrib-section-title">{t('savings.automaticTitle')}</div>
-            </div>
-            {spread > 0 && (
-              <span className="contrib-spread__hint">
-                {t('savings.spreadEach', {
-                  amount: planFmt.format(spread / plan.holdings.length),
-                })}
-              </span>
-            )}
-          </div>
           <div className="contrib-spread-card">
-            <span className="contrib-spread-card__icon" aria-hidden="true">
-              <WalletIcon size={20} />
-            </span>
             <div className="contrib-spread">
               <Stepper
                 ariaLabel={t('savings.ariaTotalSpread')}
                 value={spread}
                 min={0}
                 step={100}
-                suffix={t('savings.perMoSuffix', { currency: plan.currency })}
+                suffix={plan.currency}
                 onChange={setSpread}
               />
               <div className="contrib-spread__actions">
@@ -207,8 +185,6 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
         </div>
       )}
 
-      <div className="contrib-section-title">{t('savings.contributionsTitle')}</div>
-
       {plan.holdings.length === 0 ? (
         <div className="state-box">{t('savings.addAssetsFirst')}</div>
       ) : (
@@ -228,7 +204,6 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
                 value={draft[h.id] ?? 0}
                 effectiveCagrPct={h.expectedCagrPct + scenarioAdj}
                 yearsToRetirement={yearsToRetirement}
-                retirementYear={plan.settings.retirementYear}
                 onChange={(next) => setDraft((d) => ({ ...d, [h.id]: next }))}
               />
             ))}
@@ -238,18 +213,17 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
 
       <div className="contrib-summary">
         <div className="contrib-summary__item">
-          <span className="ov__sub">{t('savings.annualShort')}</span>
-          <b>{t('savings.perYr', { amount: planFmt.format(totalAnnualNoCagr) })}</b>
+          <span className="ov__sub">{t('savings.annualShort', { currency: plan.currency })}</span>
+          <b>{formatPlain(totalAnnualNoCagr)}</b>
         </div>
         <div className="contrib-summary__item">
           <span className="ov__sub">
-            {t('savings.projectedShort', { year: plan.settings.retirementYear })}
+            {t('savings.projectedShort', {
+              year: plan.settings.retirementYear,
+              currency: plan.currency,
+            })}
           </span>
-          <b className="contrib">{planFmt.format(totalProjectedWithCagr)}</b>
-        </div>
-        <div className="contrib-summary__item">
-          <span className="ov__sub">{t('savings.horizon')}</span>
-          <b>{t('savings.yearsValue', { count: yearsToRetirement })}</b>
+          <b>{formatPlain(totalProjectedWithCagr)}</b>
         </div>
       </div>
     </Modal>

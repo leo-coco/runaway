@@ -6,10 +6,8 @@ import { PlusIcon, PencilIcon, TrashIcon, TrendingUpIcon } from '@/components/ic
 import { ExpenseCategoryIcon } from '@/components/ExpenseCategoryIcon';
 import { useAppStore } from '@/store';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { ageInYear } from '@/domain/retirementSettings';
 import { cn } from '@/lib/cn';
 import { AddExpenseIncomeDialog } from '@/features/settings/AddExpenseIncomeDialog';
-import type { CurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { ExpenseIncome } from '@/domain/expenseIncome';
 import type { Plan } from '@/domain/plan';
 
@@ -18,18 +16,20 @@ interface Props {
   onClose: () => void;
 }
 
+const compactPlainFmt = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 2,
+});
+const formatCompactPlain = (amount: number): string => compactPlainFmt.format(amount);
+
 const FlowRow = ({
   item,
-  fmt,
-  currentYear,
-  currentAge,
+  currency,
   onEdit,
   onRemove,
 }: {
   item: ExpenseIncome;
-  fmt: CurrencyFormatter;
-  currentYear: number;
-  currentAge: number;
+  currency: string;
   onEdit: () => void;
   onRemove: () => void;
 }) => {
@@ -37,7 +37,6 @@ const FlowRow = ({
   const isIncome = item.kind === 'income';
   const isRecurring = item.frequency === 'recurring';
   const endYear = item.endYear ?? item.year;
-  const age = ageInYear(currentAge, currentYear, item.year);
   const category = item.category ?? 'general';
   const name =
     item.name ||
@@ -49,7 +48,7 @@ const FlowRow = ({
   return (
     <div className="flow-table__row" role="row">
       <div className="flow-table__cell flow-table__flow" role="cell">
-        <span className={cn('flow-table__category-icon', isIncome ? 'is-income' : 'is-expense')}>
+        <span className="flow-table__category-icon">
           <ExpenseCategoryIcon category={category} size={15} />
         </span>
         <span
@@ -80,11 +79,10 @@ const FlowRow = ({
       <div
         className="flow-table__cell flow-table__amount"
         role="cell"
-        data-label={t('expensesIncomes.columnAmount')}
+        data-label={t('expensesIncomes.columnAmount', { currency })}
       >
         <span className={cn(isIncome ? 'is-income' : 'is-expense')}>
-          {isIncome ? '+' : '−'}
-          {fmt.compact(item.amount)}
+          {formatCompactPlain(item.amount)}
           {isRecurring && t('common.perYear')}
         </span>
         {(item.inflate ?? true) && (
@@ -102,9 +100,7 @@ const FlowRow = ({
         role="cell"
         data-label={t('expensesIncomes.columnPeriod')}
       >
-        {isRecurring
-          ? `${item.year}–${endYear}`
-          : `${item.year}${age !== null ? ` · ${t('expensesIncomes.ageParen', { age })}` : ''}`}
+        {isRecurring ? `${item.year}–${endYear}` : item.year}
       </div>
 
       <div className="flow-table__cell flow-table__actions" role="cell">
@@ -138,7 +134,6 @@ export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
   const updateExpenseIncome = useAppStore((s) => s.updateExpenseIncome);
   const removeExpenseIncome = useAppStore((s) => s.removeExpenseIncome);
   const currentYear = new Date().getFullYear();
-  const currentAge = plan.settings.currentAge;
   const items = useMemo(() => plan.settings.expensesIncomes ?? [], [plan.settings.expensesIncomes]);
   const [editing, setEditing] = useState<ExpenseIncome | 'new' | null>(null);
 
@@ -177,41 +172,36 @@ export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
         }
       >
         <div className="flows-modal-content">
-          <div className="flows-summary" aria-label={t('expensesIncomes.summaryLabel')}>
-            <div className="flows-summary__item">
-              <span className="flows-summary__icon is-income" aria-hidden="true">
-                ↑
+          <div
+            className="contrib-summary contrib-summary--triple"
+            aria-label={t('expensesIncomes.summaryLabel')}
+          >
+            <div className="contrib-summary__item">
+              <span className="ov__sub">
+                {t('expensesIncomes.summaryIncome', { currency: plan.currency })}
               </span>
-              <span className="flows-summary__copy">
-                <span>{t('expensesIncomes.summaryIncome')}</span>
-                <strong className="is-pos">+{fmt.compact(totals.income)}</strong>
-              </span>
+              <b className="is-pos">+{fmt.format(totals.income)}</b>
             </div>
-            <div className="flows-summary__item">
-              <span className="flows-summary__icon is-expense" aria-hidden="true">
-                ↓
+            <div className="contrib-summary__item">
+              <span className="ov__sub">
+                {t('expensesIncomes.summaryExpense', { currency: plan.currency })}
               </span>
-              <span className="flows-summary__copy">
-                <span>{t('expensesIncomes.summaryExpense')}</span>
-                <strong className="is-neg">−{fmt.compact(totals.expense)}</strong>
-              </span>
+              <b className="is-neg">−{fmt.format(totals.expense)}</b>
             </div>
-            <div className="flows-summary__item">
-              <span className="flows-summary__icon" aria-hidden="true">
-                =
+            <div className="contrib-summary__item">
+              <span className="ov__sub">
+                {t('expensesIncomes.summaryNet', { currency: plan.currency })}
               </span>
-              <span className="flows-summary__copy">
-                <span>{t('expensesIncomes.summaryNet')}</span>
-                <strong className={cn(net < 0 ? 'is-neg' : net > 0 ? 'is-pos' : undefined)}>
-                  {net > 0 ? '+' : net < 0 ? '−' : ''}
-                  {fmt.compact(Math.abs(net))}
-                </strong>
-              </span>
+              <b className={cn(net < 0 ? 'is-neg' : net > 0 ? 'is-pos' : undefined)}>
+                {net > 0 ? '+' : net < 0 ? '−' : ''}
+                {fmt.format(Math.abs(net))}
+              </b>
             </div>
           </div>
 
           <section className="flow-list-section" aria-label={t('expensesIncomes.listTitle')}>
-            <div className="flow-list__head flow-list__head--action-only">
+            <div className="flow-list__head">
+              <h3 className="flow-list__title">{t('expensesIncomes.listTitle')}</h3>
               <Button
                 variant="accent"
                 className="flow-list__add-button"
@@ -234,7 +224,9 @@ export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
                     <span role="columnheader">{t('expensesIncomes.columnFlow')}</span>
                     <span role="columnheader">{t('expensesIncomes.columnType')}</span>
                     <span role="columnheader">{t('expensesIncomes.columnFrequency')}</span>
-                    <span role="columnheader">{t('expensesIncomes.columnAmount')}</span>
+                    <span role="columnheader">
+                      {t('expensesIncomes.columnAmount', { currency: plan.currency })}
+                    </span>
                     <span role="columnheader">{t('expensesIncomes.columnPeriod')}</span>
                     <span role="columnheader" className="flow-table__action-heading">
                       {t('common.action')}
@@ -245,9 +237,7 @@ export const ExpensesIncomesModal = ({ plan, onClose }: Props) => {
                       <FlowRow
                         key={item.id}
                         item={item}
-                        fmt={fmt}
-                        currentYear={currentYear}
-                        currentAge={currentAge}
+                        currency={plan.currency}
                         onEdit={() => setEditing(item)}
                         onRemove={() => removeExpenseIncome(plan.id, item.id)}
                       />

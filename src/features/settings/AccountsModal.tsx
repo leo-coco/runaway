@@ -315,6 +315,11 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
   // Detailed calculation content shown in the dedicated information modal.
   const renderTaxInfo = (explanation: ReturnType<typeof explainEffectiveRate>) => (
     <div className="acct-explain">
+      <div className="acct-explain__note">
+        {t('accounts.effectiveHint', { country: COUNTRY_LABEL[residence] })}
+        <b>{t('accounts.effectiveHintBold')}</b>
+        {t('accounts.effectiveHintEnd')}
+      </div>
       <div className="acct-explain__copy">
         {explanation.steps.map((s, i) => (
           <p key={i}>{t(`taxExplain.${s.key}`, fmtVars(s.vars))}</p>
@@ -404,6 +409,24 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
     </button>
   );
 
+  const accountAddControls = (
+    <div className="acct-add" data-tour="account-preset-add">
+      <AccountPresetCombobox onAdd={(preset) => onAddAccount(preset)} />
+      <Button variant="accent" className="acct-add__button" onClick={() => onAddAccount(undefined)}>
+        <PlusIcon size={16} /> {t('accounts.customAccount')}
+      </Button>
+      {cryptoPreset && (
+        <Button
+          variant="accent"
+          className="acct-add__button"
+          onClick={() => onAddAccount(cryptoPreset)}
+        >
+          <PlusIcon size={16} /> {cryptoPreset.name}
+        </Button>
+      )}
+    </div>
+  );
+
   const infoAccount = infoId ? draftAccounts.find((account) => account.id === infoId) : undefined;
   const infoExplanation = infoAccount
     ? explainEffectiveRate(
@@ -470,42 +493,19 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
         </div>
       </section>
 
-      <div className="acct-add" data-tour="account-preset-add">
-        <AccountPresetCombobox onAdd={(preset) => onAddAccount(preset)} />
-        <Button
-          variant="accent"
-          className="acct-add__button"
-          onClick={() => onAddAccount(undefined)}
-        >
-          <PlusIcon size={16} /> {t('accounts.customAccount')}
-        </Button>
-        {cryptoPreset && (
-          <Button
-            variant="accent"
-            className="acct-add__button"
-            onClick={() => onAddAccount(cryptoPreset)}
-          >
-            <PlusIcon size={16} /> {cryptoPreset.name}
-          </Button>
-        )}
-      </div>
-
       {draftAccounts.length === 0 ? (
-        <div className="state-box">{t('accounts.noAccounts')}</div>
+        <>
+          {accountAddControls}
+          <div className="state-box">{t('accounts.noAccounts')}</div>
+        </>
       ) : (
         <section className="accounts-list">
-          <div className="accounts-list__title-row">
-            <h3>{t('accounts.listTitle')}</h3>
-            <span>
-              {t('accounts.accountsSummary', {
-                count: draftAccounts.length,
-                assets: plan.holdings.length,
-              })}
-            </span>
-          </div>
+          {accountAddControls}
           <div className="accounts-table" role="table" aria-label={t('accounts.listTitle')}>
             <div className="accounts-table__head" role="row">
-              <span role="columnheader">{t('accounts.accountColumn')}</span>
+              <span role="columnheader">
+                {t('accounts.accountColumnWithCount', { count: draftAccounts.length })}
+              </span>
               <span role="columnheader">{t('accounts.type')}</span>
               <span role="columnheader">{t('accounts.countryColumn')}</span>
               <span role="columnheader">{t('accounts.effectiveColumn')}</span>
@@ -717,12 +717,6 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
           </div>
         </section>
       )}
-
-      <p className="accounts-effective-hint">
-        {t('accounts.effectiveHint', { country: COUNTRY_LABEL[residence] })}
-        <b>{t('accounts.effectiveHintBold')}</b>
-        {t('accounts.effectiveHintEnd')}
-      </p>
 
       {infoAccount && infoExplanation && (
         <Modal

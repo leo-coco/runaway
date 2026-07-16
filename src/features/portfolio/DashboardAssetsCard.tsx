@@ -84,7 +84,7 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
             <span className="mini-row__asset">{t('dashboard.colAsset')}</span>
             <span className="mini-row__value">{t('dashboard.colValue')}</span>
             <span className="mini-row__gain">{t('dashboard.colRoi')}</span>
-            <span className="mini-alloc mini-alloc--head">{t('dashboard.allocation')}</span>
+            <span className="mini-alloc">{t('dashboard.allocation')}</span>
           </div>
 
           {groups.map((g) => {

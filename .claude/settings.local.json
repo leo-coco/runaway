@@ -77,7 +77,9 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4321/fr/app/signup)",
       "Bash(kill 23602 23594 33592)",
       "Bash(node --env-file=.env.local -e \"console.log\\(process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 'MISSING'\\)\")",
-      "Bash(rm /tmp/check_openended.mjs)"
+      "Bash(rm /tmp/check_openended.mjs)",
+      "Bash(pkill -f \"concurrently -n web,api\")",
+      "Bash(lsof -iTCP -sTCP:LISTEN -P)"
     ]
   }
 }

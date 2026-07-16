@@ -123,9 +123,6 @@ export const RetirementYearModal = ({ plan, onClose }: Props) => {
                   splitButtons
                 />
               </label>
-              <span className="retirement-timeline__equals" aria-hidden="true">
-                =
-              </span>
               <label className="retirement-timeline-field">
                 <span className="ov__sub">{t('modals.year')}</span>
                 <Stepper
@@ -162,9 +159,6 @@ export const RetirementYearModal = ({ plan, onClose }: Props) => {
                   splitButtons
                 />
               </label>
-              <span className="retirement-timeline__equals" aria-hidden="true">
-                =
-              </span>
               <label className="retirement-timeline-field">
                 <span className="ov__sub">{t('modals.year')}</span>
                 <Stepper
@@ -181,18 +175,14 @@ export const RetirementYearModal = ({ plan, onClose }: Props) => {
           </section>
         </div>
 
-        <div className="hero hero--compact">
-          <div className="hero__card">
-            <small className="hero__label">{t('modals.beforeRetirement')}</small>
-            <strong className="hero__big hero__big--sm">
-              {t('modals.yearsCount', { count: yearsBeforeRetirement })}
-            </strong>
+        <div className="contrib-summary">
+          <div className="contrib-summary__item">
+            <span className="ov__sub">{t('modals.beforeRetirement')}</span>
+            <b>{t('modals.yearsCount', { count: yearsBeforeRetirement })}</b>
           </div>
-          <div className="hero__card">
-            <small className="hero__label">{t('modals.fundedRetirementDuration')}</small>
-            <strong className="hero__big hero__big--sm">
-              {t('modals.yearsCount', { count: fundedRetirementYears })}
-            </strong>
+          <div className="contrib-summary__item">
+            <span className="ov__sub">{t('modals.fundedRetirementDuration')}</span>
+            <b>{t('modals.yearsCount', { count: fundedRetirementYears })}</b>
           </div>
         </div>
       </div>
