@@ -31,7 +31,26 @@ export const marketSearchSchema = z.object({
       name: z.string(),
       exchange: z.string(),
       currency: z.string(),
+      /** Absent for instrument kinds we don't classify (only ETF/MUTUALFUND drive allocation lookups). */
+      type: z.enum(['EQUITY', 'ETF', 'MUTUALFUND']).optional(),
     }),
   ),
 });
 export type MarketSearch = z.infer<typeof marketSearchSchema>;
+
+/**
+ * Fund/ETF composition from Yahoo's topHoldings + fundProfile modules. Absent
+ * (null) for individual equities, which carry neither module.
+ */
+export const marketAllocationSchema = z.object({
+  stockPct: z.number().nullable(),
+  bondPct: z.number().nullable(),
+  cashPct: z.number().nullable(),
+  otherPct: z.number().nullable(),
+  preferredPct: z.number().nullable(),
+  convertiblePct: z.number().nullable(),
+  categoryName: z.string().nullable(),
+  fundFamily: z.string().nullable(),
+  sectorWeightings: z.array(z.object({ sector: z.string(), weightPct: z.number() })),
+});
+export type MarketAllocation = z.infer<typeof marketAllocationSchema>;

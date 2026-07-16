@@ -1,8 +1,10 @@
 import {
   MAX_EQUITY_BATCH_SYMBOLS,
+  marketAllocationSchema,
   marketQuoteSchema,
   marketQuotesSchema,
   marketSearchSchema,
+  type MarketAllocation,
   type MarketQuote,
   type MarketQuotes,
   type MarketSearch,
@@ -17,6 +19,8 @@ export interface MarketClient {
   quote(symbol: string, signal?: AbortSignal): Promise<Result<MarketQuote, AppError>>;
   /** Batch quotes for several symbols in one request. */
   quotes(symbols: readonly string[], signal?: AbortSignal): Promise<Result<MarketQuotes, AppError>>;
+  /** Fund/ETF composition (stock/bond/cash split); null-ish fields for plain equities. */
+  getAllocation(symbol: string, signal?: AbortSignal): Promise<Result<MarketAllocation, AppError>>;
 }
 
 // Same-origin proxy (server owns the upstream vendor). See server/routes/market.ts.
@@ -27,6 +31,10 @@ export const createMarketClient = (): MarketClient => ({
     getJson(`${BASE}/search?keywords=${encodeURIComponent(query)}`, marketSearchSchema, { signal }),
   quote: (symbol, signal) =>
     getJson(`${BASE}/quote?symbol=${encodeURIComponent(symbol)}`, marketQuoteSchema, { signal }),
+  getAllocation: (symbol, signal) =>
+    getJson(`${BASE}/allocation?symbol=${encodeURIComponent(symbol)}`, marketAllocationSchema, {
+      signal,
+    }),
   quotes: async (symbols, signal) => {
     const quotes: MarketQuote[] = [];
     for (let offset = 0; offset < symbols.length; offset += MAX_EQUITY_BATCH_SYMBOLS) {

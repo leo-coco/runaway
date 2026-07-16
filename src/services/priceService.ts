@@ -4,6 +4,7 @@ import type { CurrencyCode } from '@/domain/money';
 import type { CoinGeckoClient } from '@/infrastructure/coinGeckoClient';
 import type { MarketClient } from '@/infrastructure/marketClient';
 import type { ExchangeRateClient } from '@/infrastructure/exchangeRateClient';
+import type { MarketAllocation } from '@/schemas/api/market.schema';
 import type { RatesTable } from './currencyService';
 
 /**
@@ -29,6 +30,8 @@ export interface PriceService {
     signal?: AbortSignal,
   ): Promise<Result<Record<string, number>, AppError>>;
   rates(base: CurrencyCode, signal?: AbortSignal): Promise<Result<RatesTable, AppError>>;
+  /** Fund/ETF composition for a symbol; null-ish fields when the symbol is a plain equity. */
+  allocation(symbol: string, signal?: AbortSignal): Promise<Result<MarketAllocation, AppError>>;
 }
 
 export interface PriceServiceDeps {
@@ -97,4 +100,6 @@ export const createPriceService = (deps: PriceServiceDeps): PriceService => ({
     };
     return ok(table);
   },
+
+  allocation: (symbol, signal) => deps.market.getAllocation(symbol, signal),
 });

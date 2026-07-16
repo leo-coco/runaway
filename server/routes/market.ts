@@ -2,12 +2,17 @@ import { Hono } from 'hono';
 import type { z } from 'zod';
 import YahooFinance from 'yahoo-finance2';
 import type { SearchResult } from 'yahoo-finance2/modules/search';
+import type { QuoteSummaryResult } from 'yahoo-finance2/modules/quoteSummary-iface';
 import { auth } from '../auth.js';
 import { serverEnv } from '../env.js';
 import { getCached, type CacheStatus } from '../lib/cachedFetch.js';
 import { exchangeRateLatestSchema } from '../../src/schemas/api/exchangeRate.schema.js';
 import { MAX_EQUITY_BATCH_SYMBOLS } from '../../src/schemas/api/market.schema.js';
-import type { MarketQuote, MarketSearch } from '../../src/schemas/api/market.schema.js';
+import type {
+  MarketAllocation,
+  MarketQuote,
+  MarketSearch,
+} from '../../src/schemas/api/market.schema.js';
 
 /**
  * Market-data proxy. Keeps the ExchangeRate-API key server-side (it used to be
@@ -39,6 +44,8 @@ import type { MarketQuote, MarketSearch } from '../../src/schemas/api/market.sch
 const FX_TTL_MS = 24 * 60 * 60_000;
 const QUOTE_TTL_MS = 60 * 60_000;
 const SEARCH_TTL_MS = 24 * 60 * 60_000;
+/** A fund's holdings mix moves on a rebalance cadence, not intraday like price. */
+const ALLOCATION_TTL_MS = 30 * 24 * 60 * 60_000;
 
 const UPSTREAM_TIMEOUT_MS = 12_000;
 
@@ -120,6 +127,34 @@ const toMarketQuote = (raw: NonNullable<YahooQuote>): MarketQuote | null => {
   };
 };
 
+const toPct = (fraction: number | null | undefined): number | null =>
+  typeof fraction === 'number' ? Math.round(fraction * 1000) / 10 : null;
+
+/**
+ * Individual equities carry neither module, so every field comes back null/empty
+ * rather than throwing — callers don't need to special-case stocks vs funds.
+ */
+const toMarketAllocation = (raw: QuoteSummaryResult): MarketAllocation => {
+  const holdings = raw.topHoldings;
+  const profile = raw.fundProfile;
+  const sectorWeightings = (holdings?.sectorWeightings ?? []).flatMap((entry) =>
+    Object.entries(entry)
+      .filter((pair): pair is [string, number] => typeof pair[1] === 'number' && pair[1] > 0)
+      .map(([sector, weight]) => ({ sector, weightPct: Math.round(weight * 1000) / 10 })),
+  );
+  return {
+    stockPct: toPct(holdings?.stockPosition),
+    bondPct: toPct(holdings?.bondPosition),
+    cashPct: toPct(holdings?.cashPosition),
+    otherPct: toPct(holdings?.otherPosition),
+    preferredPct: toPct(holdings?.preferredPosition),
+    convertiblePct: toPct(holdings?.convertiblePosition),
+    categoryName: profile?.categoryName ?? null,
+    fundFamily: profile?.family ?? null,
+    sectorWeightings,
+  };
+};
+
 /** One upstream call for many symbols. Unknown symbols are simply absent. */
 const fetchQuotes = async (symbols: readonly string[]): Promise<Map<string, MarketQuote>> => {
   const raws = await yf.quote([...symbols]);
@@ -175,6 +210,8 @@ marketRoutes.get('/equities/search', async (c) => {
               name: m.shortname ?? m.longname ?? m.symbol,
               exchange: m.exchDisp ?? quote.exchange,
               currency: quote.currency,
+              // Narrowed by the SEARCHABLE_TYPES filter above.
+              type: m.quoteType as 'EQUITY' | 'ETF' | 'MUTUALFUND',
             },
           ];
         });
@@ -205,6 +242,26 @@ marketRoutes.get('/equities/quote', async (c) => {
     return c.json(value, 200, cacheHeader(status));
   } catch (cause) {
     return c.json({ error: 'Quote unavailable' }, errorStatus(cause));
+  }
+});
+
+// Fund/ETF composition (stock/bond/cash split, sector weightings, category).
+// Null-ish for individual equities, which carry neither upstream module.
+marketRoutes.get('/equities/allocation', async (c) => {
+  const symbol = (c.req.query('symbol') ?? '').trim().toUpperCase();
+  if (symbol.length === 0) return c.json({ error: 'symbol is required' }, 400);
+  try {
+    const { value, status } = await getCached<MarketAllocation>(
+      `allocation:${symbol}`,
+      ALLOCATION_TTL_MS,
+      async () => {
+        const raw = await yf.quoteSummary(symbol, { modules: ['topHoldings', 'fundProfile'] });
+        return toMarketAllocation(raw);
+      },
+    );
+    return c.json(value, 200, cacheHeader(status));
+  } catch (cause) {
+    return c.json({ error: 'Allocation unavailable' }, errorStatus(cause));
   }
 });
 

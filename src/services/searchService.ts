@@ -144,6 +144,7 @@ export const createSearchService = (deps: SearchServiceDeps): SearchService => (
           assetClass,
           exchange,
           nativeCurrency,
+          quoteType: m.type,
         });
       }
     }

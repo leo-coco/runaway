@@ -2,6 +2,23 @@ import type { AssetClass } from './assetClass';
 import type { CurrencyCode } from './money';
 
 /**
+ * Fund/ETF composition snapshotted when a holding is added, for later use (e.g.
+ * a portfolio-wide stock/bond/cash view). Not refreshed afterward. Null-ish
+ * fields mean the instrument is a plain equity, not a fund.
+ */
+export interface AssetAllocation {
+  readonly stockPct: number | null;
+  readonly bondPct: number | null;
+  readonly cashPct: number | null;
+  readonly otherPct: number | null;
+  readonly preferredPct: number | null;
+  readonly convertiblePct: number | null;
+  readonly categoryName: string | null;
+  readonly fundFamily: string | null;
+  readonly sectorWeightings: readonly { readonly sector: string; readonly weightPct: number }[];
+}
+
+/**
  * A tradable instrument that can be held in a plan.
  * `id` is a stable provider id (e.g. CoinGecko id or `SYMBOL:EXCHANGE`).
  */
@@ -12,6 +29,9 @@ export interface Instrument {
   readonly assetClass: AssetClass;
   readonly exchange: string; // e.g. "TSX", "NASDAQ", "Crypto"
   readonly nativeCurrency: CurrencyCode;
+  /** Yahoo's instrument kind, when the search result carried one. Gates allocation lookups. */
+  readonly quoteType?: 'EQUITY' | 'ETF' | 'MUTUALFUND';
+  readonly assetAllocation?: AssetAllocation;
 }
 
 /**

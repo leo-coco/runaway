@@ -32,6 +32,19 @@ const mockServices: Services = {
     stockPrice: vi.fn(async () => ok(50)),
     stockPrices: vi.fn(async () => ok({})),
     rates: vi.fn(async () => ok({ base: 'USD', rates: { USD: 1, CAD: 1.35 }, asOf: 0 })),
+    allocation: vi.fn(async () =>
+      ok({
+        stockPct: null,
+        bondPct: null,
+        cashPct: null,
+        otherPct: null,
+        preferredPct: null,
+        convertiblePct: null,
+        categoryName: null,
+        fundFamily: null,
+        sectorWeightings: [],
+      }),
+    ),
   },
   search: { search: vi.fn(async () => ok([])) },
 };
