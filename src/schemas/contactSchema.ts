@@ -17,6 +17,9 @@ export const createContactFormSchema = (t: TFunction) =>
       .trim()
       .min(10, t('validation.contact.tellUsMore'))
       .max(2000, t('validation.contact.messageTooLong')),
+    // Honeypot: kept empty by real users, filled by naive bots. The server drops
+    // any submission that carries a value. Not shown, so no validation message.
+    website: z.string().optional(),
   });
 
 export type ContactForm = z.infer<ReturnType<typeof createContactFormSchema>>;

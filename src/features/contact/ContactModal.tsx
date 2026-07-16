@@ -126,6 +126,16 @@ export const ContactModal = ({ onClose }: Props) => {
         />
         {errors.message && <p className="field-error">{errors.message.message}</p>}
       </div>
+      {/* Honeypot: hidden from users, a spam trap for bots. Kept out of the tab
+          order and the accessibility tree so only automated fillers reach it. */}
+      <input
+        type="text"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
+        {...register('website')}
+      />
       {failed && <p className="field-error">{t('contact.error')}</p>}
     </Modal>
   );
