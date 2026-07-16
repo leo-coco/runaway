@@ -24,7 +24,7 @@ import { AccountPage } from '@/features/auth/AccountPage';
 import { useSession } from '@/lib/authClient';
 import i18n, { languageFromPathname, type Lang } from '@/i18n';
 import { AppModeProvider, useAppMode } from '@/providers/AppModeContext';
-import type { Country } from '@/domain/country';
+import { asCountry } from '@/domain/country';
 
 const RootRedirect = () => {
   const { t } = useTranslation();
@@ -33,9 +33,7 @@ const RootRedirect = () => {
   const canAccountsTax = useFeature('accountsTax');
   const { data: sessionData } = useSession();
   const { sandbox } = useAppMode();
-  const taxResidence = sandbox
-    ? undefined
-    : (sessionData?.user?.taxResidence as Country | undefined);
+  const taxResidence = sandbox ? undefined : asCountry(sessionData?.user?.taxResidence);
 
   if (firstId) return <Navigate to={`/plan/${firstId}/dashboard`} replace />;
 

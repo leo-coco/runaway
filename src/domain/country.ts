@@ -2,6 +2,10 @@
 export const COUNTRIES = ['FR', 'US', 'CA'] as const;
 export type Country = (typeof COUNTRIES)[number];
 
+/** Narrows an untrusted value (e.g. from a session or API response) to a Country, or undefined. */
+export const asCountry = (value: string | null | undefined): Country | undefined =>
+  COUNTRIES.includes(value as Country) ? (value as Country) : undefined;
+
 export const COUNTRY_LABEL: Record<Country, string> = {
   FR: 'France',
   US: 'United States',

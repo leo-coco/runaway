@@ -7,10 +7,9 @@ import { Modal } from '@/components/ui/Modal';
 import { AlertIcon, TrashIcon } from '@/components/icons';
 import { authClient, useSession } from '@/lib/authClient';
 import { useAppStore } from '@/store';
-import { COUNTRIES, COUNTRY_FLAG, COUNTRY_LABEL, type Country } from '@/domain/country';
+import { asCountry, COUNTRIES, COUNTRY_FLAG, COUNTRY_LABEL, type Country } from '@/domain/country';
 
-const validResidence = (value: string | undefined): Country =>
-  COUNTRIES.includes(value as Country) ? (value as Country) : 'US';
+const validResidence = (value: string | undefined): Country => asCountry(value) ?? 'US';
 
 /** Account identity, tax residence and irreversible account-deletion controls. */
 export const AccountPage = () => {

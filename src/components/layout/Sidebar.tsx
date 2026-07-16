@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { TourGuideModal } from '@/features/tour/TourGuideModal';
 import runawayLogo from '@/assets/runaway-logo.png';
 import type { Plan } from '@/domain/plan';
-import type { Country } from '@/domain/country';
+import { asCountry } from '@/domain/country';
 import { useAppMode } from '@/providers/AppModeContext';
 
 const DOTS = ['#6aa3e0', '#c084fc', '#5dcaa5', '#e0a85d', '#f0768b'];
@@ -221,9 +221,7 @@ export const Sidebar = () => {
       openPaywall('plans');
       return;
     }
-    const taxResidence = sandbox
-      ? undefined
-      : (sessionData?.user?.taxResidence as Country | undefined);
+    const taxResidence = sandbox ? undefined : asCountry(sessionData?.user?.taxResidence);
     const newId = createPlan('My plan', !canAccountsTax, taxResidence);
     navigate(`/plan/${newId}/dashboard`);
   };

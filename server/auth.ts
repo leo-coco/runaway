@@ -7,6 +7,12 @@ import { authSchema, verification } from './db/schema.js';
 import { serverEnv } from './env.js';
 import { sendResetPasswordEmail, sendVerificationEmail } from './email.js';
 
+const languageSchema = z.enum(['en', 'fr']);
+
+/** Reads the additionalFields `language` off a Better Auth user via the same schema that validates it on input. */
+const userLanguage = (user: Record<string, unknown>): 'en' | 'fr' | undefined =>
+  languageSchema.safeParse(user.language).data;
+
 /**
  * Better Auth server instance. Owns auth logic (tokens, sessions, verification);
  * email delivery is delegated to Resend via the send* callbacks. Sessions are
@@ -29,7 +35,7 @@ export const auth = betterAuth({
         required: false,
         defaultValue: 'en',
         input: true,
-        validator: { input: z.enum(['en', 'fr']) },
+        validator: { input: languageSchema },
       },
       taxResidence: {
         type: 'string',
@@ -56,14 +62,14 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
-      await sendResetPasswordEmail(user.email, url, (user as { language?: string }).language);
+      await sendResetPasswordEmail(user.email, url, userLanguage(user));
     },
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmail(user.email, url, (user as { language?: string }).language);
+      await sendVerificationEmail(user.email, url, userLanguage(user));
     },
   },
 });
