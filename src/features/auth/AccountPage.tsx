@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { AlertIcon, TrashIcon } from '@/components/icons';
 import { authClient, useSession } from '@/lib/authClient';
+import { BillingCard } from '@/features/billing/BillingCard';
 import { useAppStore } from '@/store';
 import { asCountry, COUNTRIES, COUNTRY_FLAG, COUNTRY_LABEL, type Country } from '@/domain/country';
 
@@ -161,6 +162,8 @@ export const AccountPage = () => {
           </div>
         </form>
       </Card>
+
+      <BillingCard />
 
       <Card padded className="account-card account-card--danger">
         <div className="account-danger">

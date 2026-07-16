@@ -48,6 +48,7 @@
     "react-router-dom": "^7.17.0",
     "recharts": "^3.8.1",
     "resend": "^6.17.2",
+    "stripe": "^22.3.2",
     "yahoo-finance2": "^4.0.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"

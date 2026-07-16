@@ -4,6 +4,7 @@ import { plansRoutes } from './routes/plans.js';
 import { marketRoutes } from './routes/market.js';
 import { entitlementsRoutes } from './routes/entitlements.js';
 import { adminRoutes } from './routes/admin.js';
+import { billingRoutes } from './routes/billing.js';
 import { contactRoutes } from './routes/contact.js';
 
 /** The single Hono app, shared by the Vercel function and the local dev server. */
@@ -20,6 +21,9 @@ app.route('/api/entitlements', entitlementsRoutes);
 
 // Admin: tier config + manual tier grants (admin-gated inside).
 app.route('/api/admin', adminRoutes);
+
+// Billing: Stripe checkout, customer portal, and the subscription webhook.
+app.route('/api/billing', billingRoutes);
 
 // Market-data proxy (keeps provider API keys server-side).
 app.route('/api/market', marketRoutes);

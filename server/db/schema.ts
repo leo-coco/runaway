@@ -27,6 +27,11 @@ export const user = pgTable('user', {
   role: text('role').notNull().default('user'),
   tier: text('tier').notNull().default('free'),
   premiumUntil: timestamp('premium_until'),
+  // Stripe linkage, written only by the billing webhook/checkout (server/billing).
+  // `stripeCustomerId` lets checkout reuse a customer and the portal open for the
+  // right account; `stripeSubscriptionId` maps subscription events back to the user.
+  stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

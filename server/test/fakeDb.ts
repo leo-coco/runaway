@@ -168,14 +168,20 @@ export const createFakeDb = () => {
 
     update: (table: object) => ({
       set: (patch: Row) => ({
-        where: (cond: Condition) => ({
-          returning: (fields?: Projection) =>
-            thenable(() => {
-              const hits = rowsOf(table).filter((row) => matches(table, row, cond));
-              for (const row of hits) Object.assign(row, patch);
-              return project(table, hits, fields);
-            }),
-        }),
+        // Real Drizzle runs the UPDATE when the builder is awaited, with or without
+        // a `.returning()`. So the where-result is itself thenable (awaiting it
+        // performs the write) and also exposes `.returning()`.
+        where: (cond: Condition) => {
+          const run = (fields?: Projection) => {
+            const hits = rowsOf(table).filter((row) => matches(table, row, cond));
+            for (const row of hits) Object.assign(row, patch);
+            return project(table, hits, fields);
+          };
+          return {
+            returning: (fields?: Projection) => thenable(() => run(fields)),
+            ...thenable(() => run()),
+          };
+        },
       }),
     }),
 
