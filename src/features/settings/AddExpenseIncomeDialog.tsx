@@ -69,11 +69,12 @@ export const AddExpenseIncomeDialog = ({ plan, initial, onSave, onClose }: Props
     <Modal
       title={t(initial ? 'expensesIncomes.editTitle' : 'expensesIncomes.addTitle')}
       onClose={onClose}
+      className="flow-editor-modal"
       footer={
         <>
           <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" onClick={handleSave} disabled={attempted && !canSave}>
-            {t('common.ok')}
+            {t('common.save')}
           </Button>
         </>
       }

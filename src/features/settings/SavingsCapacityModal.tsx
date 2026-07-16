@@ -12,6 +12,12 @@ import type { Holding } from '@/domain/asset';
 import type { Plan } from '@/domain/plan';
 import { colorForSymbol } from '@/lib/assetColors';
 
+const truncate = (text: string, maxLength: number) =>
+  text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
+
+const plainNumberFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const formatPlain = (amount: number): string => plainNumberFmt.format(amount);
+
 interface Props {
   plan: Plan;
   onSave: (contributions: Record<string, number>) => void;
@@ -25,7 +31,6 @@ const ContributionRow = ({
   value,
   effectiveCagrPct,
   yearsToRetirement,
-  retirementYear,
   onChange,
 }: {
   holding: Holding;
@@ -33,7 +38,6 @@ const ContributionRow = ({
   value: number;
   effectiveCagrPct: number;
   yearsToRetirement: number;
-  retirementYear: number;
   onChange: (next: number) => void;
 }) => {
   const { t } = useTranslation();
@@ -41,45 +45,36 @@ const ContributionRow = ({
   const projected = contributionFutureValue(value, effectiveCagrPct, yearsToRetirement);
 
   return (
-    <div className="contrib-row">
-      <div className="asset-id">
-        <span
-          className="asset-badge"
-          style={{ background: colorForSymbol(holding.instrument.symbol, index) }}
-        >
-          {holding.instrument.symbol.slice(0, 1)}
-        </span>
-        <div>
-          <div className="asset-name">{holding.instrument.name}</div>
-          <div className="asset-ticker">
-            {t('savings.cagrTicker', {
-              symbol: holding.instrument.symbol,
-              exchange: holding.instrument.exchange,
-              cagr: effectiveCagrPct,
-            })}
+    <div className="contrib-table__row" role="row">
+      <div className="contrib-table__cell contrib-table__asset" role="cell">
+        <div className="asset-id">
+          <span
+            className="asset-badge"
+            style={{ background: colorForSymbol(holding.instrument.symbol, index) }}
+          >
+            {holding.instrument.symbol.slice(0, 1)}
+          </span>
+          <div className="asset-id__text">
+            <span className="asset-sym">{holding.instrument.symbol}</span>
+            <span className="asset-nm">{truncate(holding.instrument.name, 4)}</span>
           </div>
         </div>
       </div>
-      <div>
+      <div className="contrib-table__cell contrib-table__monthly" role="cell">
         <Stepper
           ariaLabel={t('savings.ariaMonthly', { symbol: holding.instrument.symbol })}
           value={value}
           min={0}
           step={50}
-          suffix={t('savings.perMoSuffix', { currency: holding.instrument.nativeCurrency })}
+          suffix={holding.instrument.nativeCurrency}
           onChange={onChange}
         />
-        <div className="contrib-values">
-          <span className="cagr-note">
-            {t('savings.yearlyNoCagr', { amount: nativeFmt.format(value * 12) })}
-          </span>
-          <span className="cagr-note contrib">
-            {t('savings.projectedBy', {
-              amount: nativeFmt.compact(projected),
-              year: retirementYear,
-            })}
-          </span>
-        </div>
+      </div>
+      <div className="contrib-table__cell contrib-table__annual" role="cell">
+        {nativeFmt.format(value * 12)}
+      </div>
+      <div className="contrib-table__cell contrib-table__projected" role="cell">
+        {nativeFmt.format(projected)}
       </div>
     </div>
   );
@@ -87,13 +82,13 @@ const ContributionRow = ({
 
 export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
   const { t } = useTranslation();
-  const planFmt = useCurrencyFormatter(plan.currency);
   const fx = useExchangeRate(plan.currency);
   const [draft, setDraft] = useState<Record<string, number>>(() =>
     Object.fromEntries(plan.holdings.map((h) => [h.id, h.monthlyContribution ?? 0])),
   );
   // A lump monthly amount (plan currency) the user can split equally across assets.
   const [spread, setSpread] = useState(0);
+  const [automaticDistributionApplied, setAutomaticDistributionApplied] = useState(false);
 
   const scenarioAdj = scenarioAdjustmentPts(plan.scenario, plan.scenario.active);
   const yearsToRetirement = Math.max(0, plan.settings.retirementYear - new Date().getFullYear());
@@ -118,6 +113,15 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
         ]),
       ),
     );
+    setAutomaticDistributionApplied(true);
+  };
+
+  // Undo only the automatic distribution and restore the values that were
+  // already saved when the modal opened.
+  const resetAutomaticDistribution = () => {
+    setSpread(0);
+    setDraft(Object.fromEntries(plan.holdings.map((h) => [h.id, h.monthlyContribution ?? 0])));
+    setAutomaticDistributionApplied(false);
   };
 
   // Totals in the plan currency: annual cash (no CAGR) vs projected at retirement (with CAGR).
@@ -137,6 +141,7 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
       description={t('savings.desc')}
       onClose={onClose}
       wide
+      className="savings-modal"
       footer={
         <>
           <Button onClick={onClose}>{t('common.cancel')}</Button>
@@ -147,67 +152,78 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
       }
     >
       {plan.holdings.length > 0 && (
-        <>
-          <div className="eyebrow">{t('savings.spreadTitle')}</div>
-          <div className="contrib-spread">
-            <Stepper
-              ariaLabel={t('savings.ariaTotalSpread')}
-              value={spread}
-              min={0}
-              step={100}
-              suffix={t('savings.perMoSuffix', { currency: plan.currency })}
-              onChange={setSpread}
-            />
-            <Button onClick={spreadEvenly} disabled={spread <= 0}>
-              {t('savings.spreadButton', { count: plan.holdings.length })}
-            </Button>
-            <span className="cagr-note">
-              {t('savings.spreadEach', {
-                amount: planFmt.format(spread / plan.holdings.length),
-              })}
-            </span>
+        <div className="contrib-spread-section">
+          <div className="contrib-spread-card">
+            <div className="contrib-spread">
+              <Stepper
+                ariaLabel={t('savings.ariaTotalSpread')}
+                value={spread}
+                min={0}
+                step={100}
+                suffix={plan.currency}
+                onChange={setSpread}
+              />
+              <div className="contrib-spread__actions">
+                <Button
+                  className="contrib-spread__button"
+                  onClick={spreadEvenly}
+                  disabled={spread <= 0}
+                >
+                  {t('savings.spreadAction')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="contrib-spread__reset"
+                  onClick={resetAutomaticDistribution}
+                  disabled={spread <= 0 && !automaticDistributionApplied}
+                >
+                  {t('savings.resetAutomatic')}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="divider" />
-        </>
+        </div>
       )}
-
-      <div className="eyebrow">{t('savings.perAssetTitle')}</div>
 
       {plan.holdings.length === 0 ? (
         <div className="state-box">{t('savings.addAssetsFirst')}</div>
       ) : (
-        <div className="contrib-list">
-          {plan.holdings.map((h, i) => (
-            <ContributionRow
-              key={h.id}
-              holding={h}
-              index={i}
-              value={draft[h.id] ?? 0}
-              effectiveCagrPct={h.expectedCagrPct + scenarioAdj}
-              yearsToRetirement={yearsToRetirement}
-              retirementYear={plan.settings.retirementYear}
-              onChange={(next) => setDraft((d) => ({ ...d, [h.id]: next }))}
-            />
-          ))}
+        <div className="contrib-list" role="table" aria-label={t('savings.contributionsTitle')}>
+          <div className="contrib-table__header" role="row">
+            <span role="columnheader">{t('savings.columnAsset')}</span>
+            <span role="columnheader">{t('savings.columnMonthly')}</span>
+            <span role="columnheader">{t('savings.columnAnnual')}</span>
+            <span role="columnheader">{t('savings.columnProjected')}</span>
+          </div>
+          <div role="rowgroup">
+            {plan.holdings.map((h, i) => (
+              <ContributionRow
+                key={h.id}
+                holding={h}
+                index={i}
+                value={draft[h.id] ?? 0}
+                effectiveCagrPct={h.expectedCagrPct + scenarioAdj}
+                yearsToRetirement={yearsToRetirement}
+                onChange={(next) => setDraft((d) => ({ ...d, [h.id]: next }))}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="divider" />
-
       <div className="contrib-summary">
-        <div>
-          <span className="ov__sub">{t('savings.annualNoCagr')}</span>
-          <b>{t('savings.perYr', { amount: planFmt.format(totalAnnualNoCagr) })}</b>
+        <div className="contrib-summary__item">
+          <span className="ov__sub">{t('savings.annualShort', { currency: plan.currency })}</span>
+          <b>{formatPlain(totalAnnualNoCagr)}</b>
         </div>
-        <div>
+        <div className="contrib-summary__item">
           <span className="ov__sub">
-            {t('savings.projectedAt', { year: plan.settings.retirementYear })}
+            {t('savings.projectedShort', {
+              year: plan.settings.retirementYear,
+              currency: plan.currency,
+            })}
           </span>
-          <b className="contrib">{planFmt.format(totalProjectedWithCagr)}</b>
-        </div>
-        <div>
-          <span className="ov__sub">{t('savings.yearsToRetirement')}</span>
-          <b>{yearsToRetirement}</b>
+          <b>{formatPlain(totalProjectedWithCagr)}</b>
         </div>
       </div>
     </Modal>

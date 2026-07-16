@@ -60,12 +60,6 @@ describe('InvestmentBreakdown Sandbox controls', () => {
     renderPortfolio(true);
 
     expect(screen.queryByRole('button', { name: 'Fetch Latest Prices' })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Fetch latest price for VOO' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Fetch latest price for BTC' }),
-    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add New Asset' })).not.toBeInTheDocument();
 
     const cta = screen.getByRole('link', {
@@ -89,8 +83,6 @@ describe('InvestmentBreakdown Sandbox controls', () => {
     renderPortfolio(false);
 
     expect(screen.getByRole('button', { name: 'Fetch Latest Prices' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Fetch latest price for VOO' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Fetch latest price for BTC' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add New Asset' })).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Create an account to customize the portfolio' }),

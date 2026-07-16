@@ -26,7 +26,7 @@ export const PortfolioValueCard = () => {
       : null;
 
   return (
-    <div className="hero hero--triple">
+    <div className="hero hero--triple projection-summary">
       <div className="hero__card">
         <div className="hero__row">
           <span className="hero__label">{t('dashboard.portfolioToday')}</span>

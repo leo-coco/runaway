@@ -6,7 +6,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Toggle } from '@/components/ui/Toggle';
 import { Spinner } from '@/components/ui/Spinner';
 import { InlineError } from '@/components/InlineError';
-import { SearchIcon } from '@/components/icons';
+import { InfoIcon, SearchIcon } from '@/components/icons';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAssetSearch } from '@/hooks/useAssetSearch';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -156,6 +156,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [customAssetClass, setCustomAssetClass] = useState<'other' | 'cash'>('other');
   // Illiquid custom assets (a home, a car…) should not be drawn down for spending.
   const [customDrawable, setCustomDrawable] = useState(true);
+  const [infoTopic, setInfoTopic] = useState<'type' | 'drawable' | null>(null);
 
   const nativeFmt = useCurrencyFormatter(selected?.nativeCurrency ?? plan.currency);
 
@@ -250,8 +251,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   return (
     <Modal
       title={t('addAsset.title')}
-      description={t('addAsset.desc')}
-      onClose={onClose}
+      onClose={infoTopic ? () => setInfoTopic(null) : onClose}
       wide
       footer={
         <>
@@ -268,17 +268,22 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         </>
       }
     >
-      <div className="addasset-tabs" data-tour="addasset-tabs">
+      <div
+        className="seg-tabs"
+        data-tour="addasset-tabs"
+        role="tablist"
+        aria-label={t('addAsset.title')}
+      >
         <button
           type="button"
-          className={cn('addasset-tab', mode === 'search' && 'active')}
+          className={cn('seg-tab', mode === 'search' && 'is-active')}
           onClick={() => setMode('search')}
         >
           {t('addAsset.tabSearch')}
         </button>
         <button
           type="button"
-          className={cn('addasset-tab', mode === 'custom' && 'active')}
+          className={cn('seg-tab', mode === 'custom' && 'is-active')}
           onClick={() => setMode('custom')}
         >
           {t('addAsset.tabCustom')}
@@ -301,7 +306,18 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
             />
           </div>
           <div className="field">
-            <span className="field__label">{t('addAsset.assetType')}</span>
+            <span className="field__label field__label-row">
+              {t('addAsset.assetType')}
+              <button
+                type="button"
+                className="acct-info-btn"
+                aria-label={t('addAsset.typeInfoAria')}
+                aria-expanded={infoTopic === 'type'}
+                onClick={() => setInfoTopic(infoTopic === 'type' ? null : 'type')}
+              >
+                <InfoIcon size={13} />
+              </button>
+            </span>
             <select
               className="select"
               aria-label={t('addAsset.assetType')}
@@ -316,13 +332,27 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 {t('addAsset.assetTypeCashHint')}
               </p>
             )}
-            <label className="flow-inflation__toggle" style={{ marginTop: 8 }}>
+          </div>
+          <div className="field">
+            <label className="flow-inflation__toggle">
               <Toggle
                 checked={customDrawable}
                 onChange={setCustomDrawable}
                 label={t('addAsset.drawableLabel')}
               />
               <span className="ov__sub">{t('addAsset.drawableLabel')}</span>
+              <button
+                type="button"
+                className="acct-info-btn"
+                aria-label={t('addAsset.drawableInfoAria')}
+                aria-expanded={infoTopic === 'drawable'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setInfoTopic(infoTopic === 'drawable' ? null : 'drawable');
+                }}
+              >
+                <InfoIcon size={13} />
+              </button>
             </label>
             {!customDrawable && (
               <p className="field__hint" style={{ marginTop: 4 }}>
@@ -492,6 +522,64 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
             </>
           )}
         </>
+      )}
+
+      {infoTopic === 'type' && (
+        <Modal
+          title={t('addAsset.typeInfoTitle')}
+          description={t('addAsset.typeInfoDesc')}
+          onClose={() => setInfoTopic(null)}
+          className="asset-info-modal"
+          footer={
+            <Button variant="primary" onClick={() => setInfoTopic(null)}>
+              {t('common.close')}
+            </Button>
+          }
+        >
+          <div className="acct-explain">
+            <p className="acct-explain__line" style={{ marginTop: 0 }}>
+              {t('addAsset.typeInfoIntro')}
+            </p>
+            <ul className="acct-explain__steps">
+              <li>{t('addAsset.typeInfoOther')}</li>
+              <li>{t('addAsset.typeInfoCash')}</li>
+            </ul>
+            <div className="acct-explain__note">{t('addAsset.typeInfoNote')}</div>
+          </div>
+        </Modal>
+      )}
+
+      {infoTopic === 'drawable' && (
+        <Modal
+          title={t('addAsset.drawableInfoTitle')}
+          description={t('addAsset.drawableInfoDesc')}
+          onClose={() => setInfoTopic(null)}
+          className="asset-info-modal"
+          footer={
+            <Button variant="primary" onClick={() => setInfoTopic(null)}>
+              {t('common.close')}
+            </Button>
+          }
+        >
+          <div className="acct-explain">
+            <p className="acct-explain__line" style={{ marginTop: 0 }}>
+              {t('addAsset.drawableInfoIntro')}
+            </p>
+            <ul className="acct-explain__steps">
+              <li>{t('addAsset.drawableInfoExample1')}</li>
+              <li>{t('addAsset.drawableInfoExample2')}</li>
+              <li>{t('addAsset.drawableInfoExample3')}</li>
+            </ul>
+            <p className="acct-explain__line">{t('addAsset.drawableInfoImpactsTitle')}</p>
+            <ul className="acct-explain__steps">
+              <li>{t('addAsset.drawableInfoImpact1')}</li>
+              <li>{t('addAsset.drawableInfoImpact2')}</li>
+              <li>{t('addAsset.drawableInfoImpact3')}</li>
+              <li>{t('addAsset.drawableInfoImpact4')}</li>
+              <li>{t('addAsset.drawableInfoImpact5')}</li>
+            </ul>
+          </div>
+        </Modal>
       )}
     </Modal>
   );

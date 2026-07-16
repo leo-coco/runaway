@@ -46,7 +46,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const openModal = useAppStore((s) => s.openModal);
   const openPaywall = useAppStore((s) => s.openPaywall);
   const maxAssets = useLimit('maxAssets');
-  const { statuses, isFetchingAll, fetchPrice, fetchAll } = usePriceFetcher(plan.id);
+  const { statuses, isFetchingAll, fetchAll } = usePriceFetcher(plan.id);
   const lang = languageFromPathname(window.location.pathname) ?? 'en';
   const sandboxAccountHref = sessionData?.user ? `/${lang}/app` : `/${lang}/app/signup`;
 
@@ -129,7 +129,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
         </div>
       </div>
 
-      <div className="action-banner">
+      <div className="action-banner portfolio-actions">
         {!sandbox && (
           <Button
             data-tour="fetch-prices-btn"
@@ -210,8 +210,6 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                     onToggleEdit={() => toggleEditing(h.id)}
                     rates={rates}
                     fetchState={statuses[h.id]}
-                    onFetchPrice={fetchPrice}
-                    canFetchPrice={!sandbox}
                     onUpdate={updateHolding.bind(null, plan.id)}
                     onRemove={removeHolding.bind(null, plan.id)}
                     onDragStart={() => setDraggingId(h.id)}

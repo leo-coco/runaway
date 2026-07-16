@@ -18,6 +18,8 @@ interface StepperProps {
   /** Shrink to content so the value sits right next to the suffix (e.g. "8%"). */
   compact?: boolean;
   disabled?: boolean;
+  /** Place the decrement button before the value and the increment button after it. */
+  splitButtons?: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export const Stepper = ({
   hideButtons = false,
   compact = false,
   disabled = false,
+  splitButtons = false,
 }: StepperProps) => {
   const [draft, setDraft] = useState(String(value));
   // Sync the editable draft when the controlled value changes externally,
@@ -67,10 +70,23 @@ export const Stepper = ({
       className={cn(
         'stepper',
         compact && 'stepper--plain',
+        splitButtons && 'stepper--split',
+        splitButtons && prefix && 'stepper--split-prefixed',
+        splitButtons && suffix && 'stepper--split-suffixed',
         invalid && 'is-invalid',
         disabled && 'is-disabled',
       )}
     >
+      {!hideButtons && !disabled && splitButtons && (
+        <button
+          type="button"
+          className="stepper__btn"
+          onClick={() => nudge(-1)}
+          aria-label="Decrease"
+        >
+          <MinusIcon size={14} />
+        </button>
+      )}
       {prefix && <span className="stepper__prefix">{prefix}</span>}
       <input
         inputMode="decimal"
@@ -86,14 +102,16 @@ export const Stepper = ({
       {suffix && <span className="stepper__suffix">{suffix}</span>}
       {!hideButtons && !disabled && (
         <>
-          <button
-            type="button"
-            className="stepper__btn"
-            onClick={() => nudge(-1)}
-            aria-label="Decrease"
-          >
-            <MinusIcon size={14} />
-          </button>
+          {!splitButtons && (
+            <button
+              type="button"
+              className="stepper__btn"
+              onClick={() => nudge(-1)}
+              aria-label="Decrease"
+            >
+              <MinusIcon size={14} />
+            </button>
+          )}
           <button
             type="button"
             className="stepper__btn"

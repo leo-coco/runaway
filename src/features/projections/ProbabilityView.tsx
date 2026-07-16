@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Stepper } from '@/components/ui/Stepper';
-import { GridIcon, InfoIcon, RefreshIcon } from '@/components/icons';
+import { InfoIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
 import {
@@ -457,7 +457,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                         setShowTrialExplorer(true);
                       }}
                     >
-                      <GridIcon size={12} /> {t('mc.visualizeSimulation')}
+                      {t('mc.visualizeSimulation')}
                     </Button>
                   </div>
                 )}
@@ -683,7 +683,6 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
 
                 <div className="mc-params-actions">
                   <Button onClick={() => monteCarlo.rerun()} disabled={status === 'running'}>
-                    <RefreshIcon size={14} />{' '}
                     {status === 'running' ? t('mc.running2') : t('mc.runNew')}
                   </Button>
                   <Button data-tour="mc-viewdata" onClick={() => setShowData(true)}>
