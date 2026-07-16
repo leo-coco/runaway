@@ -96,7 +96,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const services = useServices();
   const [mode, setMode] = useState<Mode>('search');
   const [query, setQuery] = useState('');
-  const debounced = useDebouncedValue(query, 350);
+  const debounced = useDebouncedValue(query, 500);
   const search = useAssetSearch(debounced);
 
   const results = useMemo(() => search.data ?? [], [search.data]);
