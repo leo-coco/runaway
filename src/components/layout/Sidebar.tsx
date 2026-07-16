@@ -21,7 +21,7 @@ import { useSession } from '@/lib/authClient';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { TourGuideModal } from '@/features/tour/TourGuideModal';
-import runawayLogo from '@/assets/runaway-logo.png?url';
+import runawayLogo from '@/assets/runaway-logo.png';
 import type { Plan } from '@/domain/plan';
 import type { Country } from '@/domain/country';
 import { useAppMode } from '@/providers/AppModeContext';
@@ -260,7 +260,13 @@ export const Sidebar = () => {
             <MenuIcon size={18} />
           </button>
           <Link to="/" className="sb-brand" aria-label="Runaway — home">
-            <img className="sb-brand__mark" src={runawayLogo} alt="" />
+            <img
+              className="sb-brand__mark"
+              src={runawayLogo.src}
+              width={runawayLogo.width}
+              height={runawayLogo.height}
+              alt=""
+            />
             <span className="sb-brand__name">Runaway</span>
           </Link>
         </div>
