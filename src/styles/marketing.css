@@ -458,6 +458,9 @@ blockquote {
 .solution {
   padding-block: 70px 150px;
 }
+.coverage {
+  padding-block: 70px 150px;
+}
 .section-intro {
   max-width: 760px;
   margin-bottom: 65px;
