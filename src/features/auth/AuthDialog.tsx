@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { authClient, signIn, signUp } from '@/lib/authClient';
-import authBrand from '@/assets/auth-brand.png?url';
+import authBrand from '@/assets/auth-brand.png';
 
 export type AuthMode = 'signin' | 'signup' | 'forgot';
 
@@ -195,7 +195,7 @@ export const AuthDialog = ({
     <Modal title={t('auth.account')} onClose={onClose} wide className="auth-dialog">
       <div className="auth-dialog__content">
         <div className="auth-dialog__visual" aria-hidden="true">
-          <img src={authBrand} alt="" />
+          <img src={authBrand.src} width={authBrand.width} height={authBrand.height} alt="" />
         </div>
         <AuthForm onSignedIn={onSignedIn} showTitle />
       </div>

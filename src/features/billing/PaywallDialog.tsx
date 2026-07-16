@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import premiumMountain from '@/assets/premium-mountain.png?url';
+import premiumMountain from '@/assets/premium-mountain.png';
 import { useAppStore } from '@/store';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';
@@ -38,7 +38,12 @@ export const PaywallDialog = () => {
       }
     >
       <div className="paywall__banner" aria-hidden="true">
-        <img src={premiumMountain} alt="" />
+        <img
+          src={premiumMountain.src}
+          width={premiumMountain.width}
+          height={premiumMountain.height}
+          alt=""
+        />
       </div>
       <div className="paywall__content">
         <p className="paywall__eyebrow">{t('billing.unlock')}</p>

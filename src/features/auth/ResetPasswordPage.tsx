@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import authBrand from '@/assets/auth-brand.png?url';
+import authBrand from '@/assets/auth-brand.png';
 import { Button } from '@/components/ui/Button';
 import { authClient } from '@/lib/authClient';
 
@@ -41,7 +41,13 @@ export const ResetPasswordPage = () => {
   return (
     <main className="auth-screen">
       <section className="auth-screen__hero" aria-label="Runaway">
-        <img className="auth-screen__brand-image" src={authBrand} alt="Runaway" />
+        <img
+          className="auth-screen__brand-image"
+          src={authBrand.src}
+          width={authBrand.width}
+          height={authBrand.height}
+          alt="Runaway"
+        />
       </section>
 
       <section className="auth-screen__panel" aria-label={t('auth.resetCta')}>

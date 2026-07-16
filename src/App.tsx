@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import emptyPlansIllustration from '@/assets/empty-plans.png?url';
+import emptyPlansIllustration from '@/assets/empty-plans.png';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { TourProvider } from '@/features/tour/TourProvider';
@@ -43,7 +43,12 @@ const RootRedirect = () => {
     <section className="empty-plans" aria-labelledby="empty-plans-title">
       <div className="empty-plans__card">
         <div className="empty-plans__banner">
-          <img src={emptyPlansIllustration} alt="" />
+          <img
+            src={emptyPlansIllustration.src}
+            width={emptyPlansIllustration.width}
+            height={emptyPlansIllustration.height}
+            alt=""
+          />
         </div>
         <div className="empty-plans__content">
           <h1 id="empty-plans-title">{t('plans.emptyTitle')}</h1>
