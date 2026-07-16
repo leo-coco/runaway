@@ -329,13 +329,14 @@ export const buildRunwayEvents = (
   // Keep Today first and the terminal marker last when events share a year.
   // Array.prototype.sort is stable in modern engines, so all other same-year
   // markers retain their meaningful construction order.
+  const sameYearRank = (event: RunwayEvent): number => {
+    if (event.kind === 'today') return 0;
+    if (event.kind === terminalKind) return 2;
+    return 1;
+  };
   return withinRunway.sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
-    if (a.kind === 'today') return -1;
-    if (b.kind === 'today') return 1;
-    if (a.kind === terminalKind) return 1;
-    if (b.kind === terminalKind) return -1;
-    return 0;
+    return sameYearRank(a) - sameYearRank(b);
   });
 };
 

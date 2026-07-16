@@ -186,7 +186,7 @@ export const sendContactEmail = async (msg: ContactMessage): Promise<boolean> =>
     from: serverEnv().EMAIL_FROM,
     to: serverEnv().CONTACT_EMAIL_TO,
     replyTo: msg.email,
-    subject: `[Contact · ${SUBJECT_LABEL[msg.subject]}] ${msg.name}`,
+    subject: `[Contact · ${SUBJECT_LABEL[msg.subject]}] ${msg.name.replace(/\s+/g, ' ')}`,
     html: shell(
       `${SUBJECT_LABEL[msg.subject]} from ${escapeHtml(msg.name)}`,
       `<p style="margin:0 0 4px"><b>From:</b> ${escapeHtml(msg.name)} &lt;${escapeHtml(msg.email)}&gt;</p>
