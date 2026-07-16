@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const quoteMock = vi.fn();
 const searchMock = vi.fn();
+const quoteSummaryMock = vi.fn();
 const getSession = vi.fn();
 
 vi.mock('../auth.js', () => ({ auth: { api: { getSession } } }));
@@ -10,6 +11,7 @@ vi.mock('yahoo-finance2', () => ({
   default: class {
     quote = quoteMock;
     search = searchMock;
+    quoteSummary = quoteSummaryMock;
   },
 }));
 
@@ -58,6 +60,7 @@ beforeEach(() => {
   store.clear();
   quoteMock.mockReset();
   searchMock.mockReset();
+  quoteSummaryMock.mockReset();
   fetchMock.mockReset();
   getSession.mockReset();
   getSession.mockResolvedValue({ user: { id: 'user-1' } });
@@ -68,6 +71,7 @@ describe('equity authentication', () => {
     '/equities/search?keywords=vfv',
     '/equities/quote?symbol=VFV.TO',
     '/equities/quotes?symbols=VFV.TO',
+    '/equities/allocation?symbol=VFV.TO',
   ])('rejects anonymous requests to %s', async (path) => {
     getSession.mockResolvedValue(null);
 
@@ -77,6 +81,7 @@ describe('equity authentication', () => {
     await expect(res.json()).resolves.toEqual({ error: 'Unauthorized' });
     expect(searchMock).not.toHaveBeenCalled();
     expect(quoteMock).not.toHaveBeenCalled();
+    expect(quoteSummaryMock).not.toHaveBeenCalled();
   });
 });
 
@@ -307,7 +312,13 @@ describe('GET /equities/search', () => {
 
     await expect(res.json()).resolves.toEqual({
       results: [
-        { symbol: 'VFV.TO', name: 'Vanguard S&P 500', exchange: 'Toronto', currency: 'CAD' },
+        {
+          symbol: 'VFV.TO',
+          name: 'Vanguard S&P 500',
+          exchange: 'Toronto',
+          currency: 'CAD',
+          type: 'ETF',
+        },
       ],
     });
   });
@@ -343,5 +354,75 @@ describe('GET /equities/search', () => {
 
     await expect(res.json()).resolves.toEqual({ results: [] });
     expect(searchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /equities/allocation', () => {
+  it('maps topHoldings + fundProfile fractions to percentages', async () => {
+    quoteSummaryMock.mockResolvedValue({
+      topHoldings: {
+        stockPosition: 0.9931,
+        bondPosition: 0,
+        cashPosition: 0.0054,
+        otherPosition: 0.0015,
+        preferredPosition: 0,
+        convertiblePosition: 0,
+        sectorWeightings: [{ technology: 0.3607 }, { healthcare: 0 }, { energy: 0.03 }],
+      },
+      fundProfile: { categoryName: 'Large Blend', family: 'Vanguard' },
+    });
+
+    const res = await marketRoutes.request('/equities/allocation?symbol=VTI');
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      stockPct: 99.3,
+      bondPct: 0,
+      cashPct: 0.5,
+      otherPct: 0.2,
+      preferredPct: 0,
+      convertiblePct: 0,
+      categoryName: 'Large Blend',
+      fundFamily: 'Vanguard',
+      // The zero-weight sector is dropped.
+      sectorWeightings: [
+        { sector: 'technology', weightPct: 36.1 },
+        { sector: 'energy', weightPct: 3 },
+      ],
+    });
+  });
+
+  it('returns null-ish fields for a plain equity, which carries neither module', async () => {
+    quoteSummaryMock.mockResolvedValue({});
+
+    const res = await marketRoutes.request('/equities/allocation?symbol=AAPL');
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      stockPct: null,
+      bondPct: null,
+      cashPct: null,
+      otherPct: null,
+      preferredPct: null,
+      convertiblePct: null,
+      categoryName: null,
+      fundFamily: null,
+      sectorWeightings: [],
+    });
+  });
+
+  it('reports a genuine upstream failure as 502', async () => {
+    quoteSummaryMock.mockRejectedValue(new Error('socket hang up'));
+
+    const res = await marketRoutes.request('/equities/allocation?symbol=VTI');
+
+    expect(res.status).toBe(502);
+  });
+
+  it('requires a symbol', async () => {
+    const res = await marketRoutes.request('/equities/allocation?symbol=');
+
+    expect(res.status).toBe(400);
+    expect(quoteSummaryMock).not.toHaveBeenCalled();
   });
 });

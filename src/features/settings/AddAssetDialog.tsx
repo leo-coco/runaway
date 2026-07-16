@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +17,7 @@ import { matchPseudoAssets } from '@/domain/pseudoAssets';
 import { colorForSymbol } from '@/lib/assetColors';
 import { newId } from '@/lib/id';
 import { MASTER_CURRENCIES, type CurrencyCode } from '@/domain/money';
-import type { Instrument, Holding } from '@/domain/asset';
+import type { Instrument, Holding, AssetAllocation } from '@/domain/asset';
 import type { Plan } from '@/domain/plan';
 import type { AppError } from '@/domain/errors';
 import { cn } from '@/lib/cn';
@@ -145,6 +145,10 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [price, setPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<AppError | null>(null);
+  // Fund/ETF composition, fetched alongside price but never blocks adding the
+  // holding — id-guarded so a slow response can't attach to a later selection.
+  const [allocation, setAllocation] = useState<AssetAllocation | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
 
   const [customName, setCustomName] = useState('');
   const [customCurrency, setCustomCurrency] = useState<CurrencyCode>(plan.currency);
@@ -158,6 +162,15 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const selectInstrument = async (instrument: Instrument) => {
     setSelected(instrument);
     setPriceError(null);
+    setAllocation(null);
+    selectedIdRef.current = instrument.id;
+
+    if (instrument.quoteType === 'ETF' || instrument.quoteType === 'MUTUALFUND') {
+      // Fire-and-forget: supplementary metadata, must never block adding the asset.
+      void services.price.allocation(instrument.symbol).then((result) => {
+        if (selectedIdRef.current === instrument.id && result.ok) setAllocation(result.value);
+      });
+    }
 
     // Reuse the live price already fetched for the list when available.
     const known = prices.get(instrument.id);
@@ -189,7 +202,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     if (!selected) return;
     onAdd({
       id: newId(),
-      instrument: selected,
+      instrument: allocation ? { ...selected, assetAllocation: allocation } : selected,
       quantity,
       pricePerUnit: price ?? 0,
       expectedCagrPct: cagr,
