@@ -35,6 +35,15 @@ vi.mock('../lib/cachedFetch.js', () => ({
   },
 }));
 
+// FX needs the server env only for the upstream key; keep the rest of env
+// parsing out of the test.
+vi.mock('../env.js', () => ({
+  serverEnv: () => ({ EXCHANGERATE_API_KEY: 'test-fx-key' }),
+}));
+
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
+
 const { marketRoutes } = await import('./market.js');
 
 const yahooQuote = (symbol: string, price: number, currency: string) => ({
@@ -49,6 +58,7 @@ beforeEach(() => {
   store.clear();
   quoteMock.mockReset();
   searchMock.mockReset();
+  fetchMock.mockReset();
   getSession.mockReset();
   getSession.mockResolvedValue({ user: { id: 'user-1' } });
 });
@@ -211,6 +221,73 @@ describe('GET /equities/quotes', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { quotes: { symbol: string }[] };
     expect(body.quotes.map((q) => q.symbol)).toEqual(['VOO']);
+  });
+});
+
+describe('GET /fx/latest/:base', () => {
+  const ratesDto = {
+    result: 'success',
+    base_code: 'USD',
+    conversion_rates: { USD: 1, CAD: 1.35, EUR: 0.92 },
+  };
+  const jsonResponse = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'content-type': 'application/json' },
+    });
+
+  it('serves rates without a session (public route) and keeps the key server-side', async () => {
+    getSession.mockResolvedValue(null);
+    fetchMock.mockResolvedValue(jsonResponse(ratesDto));
+
+    const res = await marketRoutes.request('/fx/latest/usd');
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual(ratesDto);
+    // The key rides in the upstream URL only; the base is uppercased.
+    const url = String(fetchMock.mock.calls[0]![0]);
+    expect(url).toBe('https://v6.exchangerate-api.com/v6/test-fx-key/latest/USD');
+  });
+
+  it('caches per base currency', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(ratesDto));
+    await marketRoutes.request('/fx/latest/USD');
+    fetchMock.mockClear();
+
+    const res = await marketRoutes.request('/fx/latest/USD');
+
+    expect(res.headers.get('x-cache')).toBe('hit');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('treats a provider error DTO as an upstream failure and does not cache it', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ ...ratesDto, result: 'error', 'error-type': 'invalid-key' }),
+    );
+
+    const res = await marketRoutes.request('/fx/latest/USD');
+
+    expect(res.status).toBe(502);
+    expect(store.has('fx:USD')).toBe(false);
+  });
+
+  it('maps an upstream 429 to 429', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}, 429));
+
+    const res = await marketRoutes.request('/fx/latest/USD');
+
+    expect(res.status).toBe(429);
+  });
+
+  it('replays the last good rates when upstream fails', async () => {
+    store.set('fx:USD', { payload: ratesDto, expiresAt: 0 }); // expired but known-good
+    fetchMock.mockRejectedValue(new Error('provider down'));
+
+    const res = await marketRoutes.request('/fx/latest/USD');
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-cache')).toBe('stale');
+    await expect(res.json()).resolves.toEqual(ratesDto);
   });
 });
 
