@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -181,6 +182,7 @@ const AllEventsModal = ({
   secondaryDateForYear: (year: number) => string | null;
   onClose: () => void;
 }) => {
+  'use no memo';
   const { t } = useTranslation();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const groups = events.reduce<{ year: number; events: RunwayEvent[] }[]>((result, event) => {
@@ -189,6 +191,15 @@ const AllEventsModal = ({
     else result.push({ year: event.year, events: [event] });
     return result;
   }, []);
+
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library -- opted out via 'use no memo' above
+  const virtualizer = useVirtualizer({
+    count: groups.length,
+    getScrollElement: () => bodyRef.current,
+    estimateSize: (index) => 44 + (groups[index]?.events.length ?? 1) * 56,
+    overscan: 4,
+  });
 
   const categoryLabel = (event: RunwayEvent): string | null =>
     event.category ? t(`expensesIncomes.categories.${event.category}`) : null;
@@ -240,12 +251,29 @@ const AllEventsModal = ({
       onClose={onClose}
       wide
       className="runway-events-modal"
+      bodyRef={bodyRef}
     >
-      <div className="runway-events">
-        {groups.map((group) => {
+      <div
+        className="runway-events"
+        style={{ position: 'relative', height: virtualizer.getTotalSize() }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const group = groups[virtualRow.index]!;
           const secondaryDate = secondaryDateForYear(group.year);
           return (
-            <section className="runway-events__year" key={group.year}>
+            <section
+              className="runway-events__year"
+              key={group.year}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
               <div className="runway-events__date">
                 <time dateTime={`${group.year}`}>{dateForYear(group.year)}</time>
                 {secondaryDate && <span>{secondaryDate}</span>}
