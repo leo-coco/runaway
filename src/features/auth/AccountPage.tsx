@@ -30,6 +30,7 @@ export const AccountPage = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
 
   // Seed (or refresh) the editable fields when the authenticated user changes.
   if (user && userKey !== seededUserKey) {
@@ -62,12 +63,28 @@ export const AccountPage = () => {
     }
   };
 
+  const closeConfirm = () => {
+    setConfirmOpen(false);
+    setDeletePassword('');
+    setDeleteError(null);
+  };
+
   const deleteAccount = async () => {
+    if (!deletePassword) return;
     setDeleting(true);
     setDeleteError(null);
     try {
-      const { error } = await authClient.deleteUser();
-      if (error) throw new Error(error.message);
+      // Passing the password re-authenticates the request, so Better Auth skips
+      // its session-freshness check (sessions older than 24h would otherwise be
+      // rejected with SESSION_EXPIRED). It also gates this irreversible action.
+      const { error } = await authClient.deleteUser({ password: deletePassword });
+      if (error) {
+        throw new Error(
+          error.code === 'INVALID_PASSWORD'
+            ? t('account.deleteInvalidPassword')
+            : (error.message ?? t('auth.errorGeneric')),
+        );
+      }
       // Do not leave a local copy of financial data available after deletion.
       hydratePlans([]);
       navigate('/signin', { replace: true });
@@ -165,16 +182,16 @@ export const AccountPage = () => {
         <Modal
           title={t('account.deleteConfirmTitle')}
           description={t('account.deleteConfirmDescription')}
-          onClose={() => !deleting && setConfirmOpen(false)}
+          onClose={() => !deleting && closeConfirm()}
           footer={
             <>
-              <Button disabled={deleting} onClick={() => setConfirmOpen(false)}>
+              <Button disabled={deleting} onClick={closeConfirm}>
                 {t('common.cancel')}
               </Button>
               <Button
                 variant="danger"
                 className="account-delete-confirm"
-                disabled={deleting}
+                disabled={deleting || !deletePassword}
                 onClick={() => void deleteAccount()}
               >
                 {deleting ? t('account.deleting') : t('account.deleteConfirmCta')}
@@ -186,6 +203,28 @@ export const AccountPage = () => {
             <AlertIcon size={19} aria-hidden="true" />
             <p>{t('account.deleteConfirmWarning')}</p>
           </div>
+          <form
+            className="field"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void deleteAccount();
+            }}
+          >
+            <label className="field__label" htmlFor="account-delete-password">
+              {t('account.deletePasswordLabel')}
+            </label>
+            <input
+              id="account-delete-password"
+              className="search-input"
+              type="password"
+              value={deletePassword}
+              onChange={(event) => setDeletePassword(event.target.value)}
+              autoComplete="current-password"
+              disabled={deleting}
+              autoFocus
+            />
+            <p className="field__hint">{t('account.deletePasswordHint')}</p>
+          </form>
           {deleteError && <p className="field-error">{deleteError}</p>}
         </Modal>
       )}
