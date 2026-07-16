@@ -4,13 +4,17 @@ import type { Instrument } from '@/domain/asset';
  * Instrument ids are namespaced `provider:ref`. These helpers decode them so the
  * price layer knows whether to call CoinGecko or the equities proxy.
  *
- * `alphavantage` predates the move off Alpha Vantage and now just means
- * "equity". It is baked into every saved plan (encrypted at rest, so not
- * rewritable server-side) and must keep parsing forever: an unknown provider
- * makes parseInstrumentId return null, which strands the holding with
- * "no linked data provider" in usePriceFetcher.
+ * Two providers exist: `coingecko` and `equity`. `alphavantage` is a legacy
+ * alias for `equity` — it predates the move off Alpha Vantage and is baked into
+ * every plan saved before the rename (encrypted at rest, so not rewritable
+ * server-side). parseInstrumentId normalizes it to `equity` so those holdings
+ * keep resolving forever; an unknown namespace returns null, which strands the
+ * holding with "no linked data provider" in usePriceFetcher.
  */
-export type InstrumentProvider = 'coingecko' | 'alphavantage';
+export type InstrumentProvider = 'coingecko' | 'equity';
+
+/** Legacy namespace kept parseable forever; normalized to `equity`. */
+const LEGACY_EQUITY_NAMESPACE = 'alphavantage';
 
 export interface InstrumentRef {
   readonly provider: InstrumentProvider;
@@ -20,10 +24,16 @@ export interface InstrumentRef {
 export const parseInstrumentId = (id: string): InstrumentRef | null => {
   const idx = id.indexOf(':');
   if (idx === -1) return null;
-  const provider = id.slice(0, idx);
+  const namespace = id.slice(0, idx);
   const ref = id.slice(idx + 1);
-  if (provider !== 'coingecko' && provider !== 'alphavantage') return null;
   if (ref.length === 0) return null;
+  const provider: InstrumentProvider | null =
+    namespace === 'coingecko'
+      ? 'coingecko'
+      : namespace === 'equity' || namespace === LEGACY_EQUITY_NAMESPACE
+        ? 'equity'
+        : null;
+  if (provider === null) return null;
   return { provider, ref };
 };
 

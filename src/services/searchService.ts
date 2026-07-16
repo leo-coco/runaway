@@ -138,9 +138,9 @@ export const createSearchService = (deps: SearchServiceDeps): SearchService => (
         if (!nativeCurrency) continue;
         const { assetClass, exchange } = classifyEquity(m.exchange, nativeCurrency);
         results.push({
-          // `alphavantage:` is the historical prefix for equities and is baked
-          // into saved plans; see instrumentRef.ts.
-          id: `alphavantage:${m.symbol}`,
+          // New equity ids use the `equity:` namespace. Legacy `alphavantage:`
+          // ids in older saved plans still resolve; see instrumentRef.ts.
+          id: `equity:${m.symbol}`,
           symbol: m.symbol,
           name: m.name,
           assetClass,

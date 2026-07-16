@@ -49,7 +49,7 @@ describe('createSearchService', () => {
     expect(res.value[0]?.assetClass).toBe(expected);
   });
 
-  it('keeps the legacy `alphavantage:` id prefix so saved plans keep resolving', async () => {
+  it('namespaces new equity ids under `equity:`', async () => {
     const service = createSearchService({
       coinGecko,
       market: marketWith([result('VOO', 'NYSEArca', 'USD')]),
@@ -59,7 +59,7 @@ describe('createSearchService', () => {
 
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    expect(res.value[0]?.id).toBe('alphavantage:VOO');
+    expect(res.value[0]?.id).toBe('equity:VOO');
   });
 
   it('drops instruments in unsupported currencies rather than mislabelling them USD', async () => {
