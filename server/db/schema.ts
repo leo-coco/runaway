@@ -128,6 +128,24 @@ export const tierConfig = pgTable('tier_config', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+/**
+ * Fixed-window rate-limit counters, shared across serverless instances (an
+ * in-memory counter would reset on every cold start and not span horizontally).
+ * One row per bucket key (e.g. `contact:1.2.3.4`); `count` is the hits so far in
+ * the current window and `expiresAt` when that window ends. The window resets
+ * lazily: the next hit after `expiresAt` rewrites both columns. See
+ * server/lib/rateLimit.ts.
+ */
+export const rateLimit = pgTable(
+  'rate_limit',
+  {
+    key: text('key').primaryKey(),
+    count: integer('count').notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+  },
+  (t) => [index('rate_limit_expires_at_idx').on(t.expiresAt)],
+);
+
 export const authSchema = { user, session, account, verification };
 export type PlanRow = typeof plans.$inferSelect;
 export type ApiCacheRow = typeof apiCache.$inferSelect;
