@@ -4,7 +4,10 @@ import sitemap from '@astrojs/sitemap';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
-  // Localized application URLs are internally served by src/middleware.ts.
+  // Localized app URLs (/en/app/*) are rewritten to /app by vercel.json in
+  // production. src/middleware.ts mirrors that rule for `astro dev` only:
+  // static-output middleware does not run at request time once deployed.
+  // Keep the two in sync; the dev server is the only place middleware fires.
   site: 'https://runaway.money',
   output: 'static',
   trailingSlash: 'never',
