@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createSandboxPlan } from './seed';
+import { parseInstrumentId } from '@/services/instrumentRef';
 
 describe('createSandboxPlan', () => {
   it('creates the French $150,000 two-asset starter plan', () => {
@@ -41,5 +42,11 @@ describe('createSandboxPlan', () => {
     const plan = createSandboxPlan('en');
     expect(plan.name).toBe('My retirement');
     expect(plan.accounts[0]?.name).toBe('My account');
+  });
+
+  it('creates holdings whose instrument ids resolve to a provider', () => {
+    for (const holding of createSandboxPlan('en').holdings) {
+      expect(parseInstrumentId(holding.instrument.id), holding.instrument.symbol).not.toBeNull();
+    }
   });
 });
