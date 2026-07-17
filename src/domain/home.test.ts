@@ -146,7 +146,7 @@ describe('homeFlows', () => {
     expect(mortgage.amount).toBeCloseTo(21_045.3, 0);
   });
 
-  it('emits a purchase outlay = down payment + closing costs, inflated', () => {
+  it('emits a purchase outlay = down payment + closing costs, appreciated to the purchase year', () => {
     const home: Home = {
       ...ownedHome,
       ownershipCostPct: 0,
@@ -155,8 +155,34 @@ describe('homeFlows', () => {
     const purchase = homeFlows(home, START).find((f) => f.id === 'home:purchase')!;
     expect(purchase.kind).toBe('expense');
     expect(purchase.frequency).toBeUndefined(); // one-off
-    expect(purchase.inflate).toBe(true);
-    expect(purchase.amount).toBeCloseTo(100_000 + 0.02 * 500_000, 4); // 110k
+    // Already nominal: both parts are pinned to the home's price, so they ride
+    // its 3%/yr appreciation over the 3 years to purchase rather than CPI.
+    expect(purchase.inflate).toBe(false);
+    const factor = 1.03 ** 3;
+    expect(purchase.amount).toBeCloseTo((100_000 + 0.02 * 500_000) * factor, 4);
+  });
+
+  it('sizes a future purchase mortgage on the price at purchase, not today', () => {
+    const home: Home = {
+      ...ownedHome,
+      ownershipCostPct: 0,
+      purchase: { year: START + 10, downPayment: 100_000 },
+      mortgage: { balance: 400_000, ratePct: 5, termYearsRemaining: 25 },
+    };
+    const mortgage = homeFlows(home, START).find((f) => f.id === 'home:mortgage')!;
+    // The loan funds a home that costs 1.03^10 more by then, so the payment is on
+    // the grown balance. Still nominal once drawn: a fixed rate does not index.
+    expect(mortgage.inflate).toBe(false);
+    expect(mortgage.amount).toBeCloseTo(mortgageAnnualPayment(400_000 * 1.03 ** 10, 5, 25), 4);
+  });
+
+  it('leaves an already-owned home mortgage on its today balance', () => {
+    const home: Home = {
+      ...ownedHome,
+      mortgage: { balance: 300_000, ratePct: 5, termYearsRemaining: 25 },
+    };
+    const mortgage = homeFlows(home, START).find((f) => f.id === 'home:mortgage')!;
+    expect(mortgage.amount).toBeCloseTo(mortgageAnnualPayment(300_000, 5, 25), 4);
   });
 
   it('emits a non-taxable sale income and stops ownership costs the year before', () => {

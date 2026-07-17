@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { bracketFxFactor, convert, convertOr, type RatesTable } from './currencyService';
+import {
+  bracketFxFactor,
+  convert,
+  convertChecked,
+  missingRates,
+  type RatesTable,
+} from './currencyService';
 
 const table: RatesTable = {
   base: 'USD',
@@ -30,8 +36,26 @@ describe('currencyService.convert', () => {
     if (!r.ok) expect(r.error.kind).toBe('not_found');
   });
 
-  it('convertOr falls back to the raw amount on failure', () => {
-    expect(convertOr(100, 'USD', 'JPY', table)).toBe(100);
+  it('convertChecked throws rather than returning an unconverted amount', () => {
+    expect(convertChecked(100, 'USD', 'CAD', table)).toBeCloseTo(135, 6);
+    // Returning the raw 100 here would read as a real CAD figure. Callers sit
+    // behind the missingRates guard, so this can only be a broken invariant.
+    expect(() => convertChecked(100, 'USD', 'JPY', table)).toThrow();
+  });
+});
+
+describe('missingRates', () => {
+  it('is empty when the table covers every currency', () => {
+    expect(missingRates(['USD', 'CAD', 'EUR'], 'USD', table)).toEqual([]);
+  });
+
+  it('reports only the uncovered currencies, without duplicates', () => {
+    expect(missingRates(['USD', 'JPY', 'CAD', 'JPY'], 'USD', table)).toEqual(['JPY']);
+  });
+
+  it('checks convertibility into the plan currency, not just presence', () => {
+    const zero: RatesTable = { base: 'USD', rates: { USD: 1, CAD: 0 }, asOf: 0 };
+    expect(missingRates(['CAD'], 'USD', zero)).toEqual(['CAD']);
   });
 });
 

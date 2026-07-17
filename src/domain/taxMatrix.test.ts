@@ -104,10 +104,22 @@ describe('accountEffectiveRate — foreign accounts apply max(residence, withhol
     expect(accountEffectiveRate(peaAbroad, 'CA')).toBeGreaterThan(0);
   });
 
-  it('withholding binds when it exceeds the residence tax (high cost basis)', () => {
-    // US taxable for an FR resident: gain tax ≈ 31.4%×5% = 1.6% < 15% withholding.
+  it('withholding on a taxable account follows the gain, not the gross', () => {
+    // US taxable for an FR resident, 95% basis. Withholding at source is a tax on
+    // the income a sale throws off — the 5% gain — not on the investor's own basis
+    // coming back. So both sides of the max scale with the gain and the residence
+    // rate (31.4%) keeps winning; the account is NOT flat-taxed at 15% of gross.
     const a = acct({ kind: 'taxable', sourceCountry: 'US', costBasisPct: 95 });
-    expect(accountEffectiveRate(a, 'FR')).toBeCloseTo(WITHHOLDING.US.taxable, 6);
+    expect(accountEffectiveRate(a, 'FR')).toBeCloseTo(CAPITAL_GAINS_FLAT.FR * 0.05, 6);
+    expect(accountEffectiveRate(a, 'FR')).toBeLessThan(WITHHOLDING.US.taxable);
+  });
+
+  it('withholding still binds on a foreign tax-deferred account, whatever the basis', () => {
+    // CA RRSP for a US resident: Part XIII withholds 25% of the WHOLE withdrawal
+    // (it is all ordinary income, there is no basis to return), above the 24% US
+    // rate — so the treaty rate sets it and cost basis is irrelevant.
+    const a = acct({ kind: 'tax_deferred', sourceCountry: 'CA', costBasisPct: 95 });
+    expect(accountEffectiveRate(a, 'US')).toBeCloseTo(WITHHOLDING.CA.tax_deferred, 6);
   });
 });
 

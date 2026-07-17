@@ -564,10 +564,12 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
 
     const closingBalance = state.reduce((sum, a) => sum + a.value, 0);
 
-    // Deplete when the portfolio can no longer fund its share of the net lifestyle.
+    // Deplete when the portfolio can no longer fund what is asked of it. Not
+    // gated on retirement: a pre-retirement flow the portfolio cannot cover (a
+    // home purchase, say) is a shortfall the Monte Carlo already counts as a
+    // failure, and the two engines must not disagree on what "funded" means.
     if (
       depletionYear === null &&
-      isRetired &&
       needFromPortfolio > 0 &&
       withdrawal.net < needFromPortfolio - 0.5
     ) {

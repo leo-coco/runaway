@@ -68,11 +68,34 @@ export const effectiveTaxRate = (
 const clampRate = (r: number): number => Math.min(Math.max(Number.isFinite(r) ? r : 0, 0), 0.99);
 
 /**
+ * Foreign withholding expressed as a rate on the GROSS withdrawal — the shape
+ * every consumer applies it in (`gross × withholding`). A tax-deferred
+ * withdrawal is income in full, so the treaty rate bites on all of it. For a
+ * gain-taxed bucket the withheld income is only the gain share: a sale returns
+ * the investor's own basis, which no treaty taxes.
+ */
+const withholdingOnGross = (
+  source: Country,
+  residence: Country,
+  kind: AccountKind,
+  gainFraction: number,
+): number => {
+  if (source === residence) return 0;
+  const rate = WITHHOLDING[source][kind];
+  return kind === 'tax_deferred' ? rate : rate * gainFraction;
+};
+
+/**
  * Effective withdrawal tax rate given the plan's tax residence. Residence drives
  * the rate (it taxes worldwide income); a foreign account is also withheld at
  * source, and the total is `max(residence tax, foreign withholding)` — a capped
  * foreign tax credit. `tax_free` is honoured at home and, abroad, only when a
  * tax treaty preserves the status (see TAX_FREE_TREATY_RECOGNITION).
+ *
+ * Both sides of the max are rates on the GROSS withdrawal, so the withholding is
+ * scaled by the gain share for gain-taxed buckets: a treaty rate applies to the
+ * income a sale throws off, not to the return of the investor's own basis. Only
+ * a tax-deferred withdrawal is withheld on its full amount (it is all income).
  */
 export const accountEffectiveRate = (account: Account, residence: Country): number => {
   if (account.taxMode !== 'auto') return effectiveTaxRate(account);
@@ -101,7 +124,7 @@ export const accountEffectiveRate = (account: Account, residence: Country): numb
   }
 
   // Foreign withholding at source (credited against residence tax, capped).
-  const withholding = source === residence ? 0 : WITHHOLDING[source][kind];
+  const withholding = withholdingOnGross(source, residence, kind, gainFraction);
 
   return clampRate(Math.max(residenceRate, withholding));
 };
@@ -116,7 +139,8 @@ export const accountEffectiveRate = (account: Account, residence: Country): numb
  *    Gain fraction for a US-resident taxable account; 0 otherwise.
  *  - `flatRate`   : a flat tax on the gross (capital-gains flat for FR, or the
  *    legacy manual rate). 0 when the bucket is taxed progressively.
- *  - `withholding`: foreign withholding rate, credited against residence tax.
+ *  - `withholding`: foreign withholding as a rate on the gross, credited against
+ *    residence tax. Gain-scaled for gain-taxed buckets (see {@link withholdingOnGross}).
  */
 export interface AccountTaxProfile {
   readonly incomeCoef: number;
@@ -140,7 +164,7 @@ export const accountTaxProfile = (
     gainFractionOverride !== undefined
       ? Math.min(Math.max(gainFractionOverride, 0), 1)
       : 1 - clampRate((account.costBasisPct ?? 0) / 100);
-  const withholding = source === residence ? 0 : WITHHOLDING[source][kind];
+  const withholding = withholdingOnGross(source, residence, kind, gainFraction);
 
   // Home-country special rate (assurance-vie, PEE, PEA social charges…) — only at
   // home, and applied to the GAIN portion (basis returns tax-free on a withdrawal).

@@ -87,6 +87,81 @@ describe('applyLevers', () => {
     expect(stable.startValue).toBeCloseTo(300_000, 2);
     expect(input.correlation).toHaveLength(3); // matrix rebuilt to match
   });
+
+  it('routes new capital and savings only to drawable assets', () => {
+    const withIlliquid = (): MonteCarloInput => {
+      const b = baseInput();
+      return {
+        ...b,
+        assets: [
+          ...b.assets.map((a) => ({ ...a, startValue: 500_000 })),
+          {
+            startValue: 500_000,
+            driftPct: 3,
+            sigmaPct: 5,
+            annualContribution: 0,
+            accountId: 'a',
+            drawable: false,
+            assetClass: 'other' as const,
+            symbol: 'ART',
+          },
+        ],
+        correlation: [
+          [1, 0.45, 0],
+          [0.45, 1, 0],
+          [0, 0, 1],
+        ],
+      };
+    };
+    const { input } = applyLevers(
+      withIlliquid(),
+      baseOpts,
+      lev({ extraCapital: 300_000, extraMonthlySavings: 1_000 }),
+    );
+    const illiquid = input.assets.find((a) => a.drawable === false)!;
+    // Money the user commits must be able to fund retirement: none of it may
+    // land in an asset the engine will never draw down.
+    expect(illiquid.startValue).toBeCloseTo(500_000, 2);
+    expect(illiquid.annualContribution).toBeCloseTo(0, 6);
+    // It is all still there, split across the two drawable assets (500k each).
+    expect(sumStart(input)).toBeCloseTo(1_800_000, 2);
+    for (const a of input.assets.filter((x) => x.drawable !== false)) {
+      expect(a.startValue).toBeCloseTo(650_000, 2);
+      expect(a.annualContribution).toBeCloseTo(6_000, 2);
+    }
+  });
+
+  it('keeps de-risked crypto in the account it came from', () => {
+    const twoAccounts = (): MonteCarloInput => {
+      const b = baseInput();
+      return {
+        ...b,
+        assets: [
+          { ...b.assets[0]!, accountId: 'taxable', startValue: 400_000 },
+          { ...b.assets[0]!, accountId: 'roth', startValue: 200_000, symbol: 'BTC2' },
+          { ...b.assets[1]!, accountId: 'taxable' },
+        ],
+        correlation: [
+          [1, 1, 0.45],
+          [1, 1, 0.45],
+          [0.45, 0.45, 1],
+        ],
+        accounts: [
+          { id: 'taxable', effectiveTaxRate: 0 },
+          { id: 'roth', effectiveTaxRate: 0 },
+        ],
+        accountOrder: ['taxable', 'roth'],
+      };
+    };
+    const { input } = applyLevers(twoAccounts(), baseOpts, lev({ deriskFraction: 1 }));
+    const stable = input.assets.filter((a) => a.symbol === 'Stable');
+    // Selling BTC inside a Roth does not move the proceeds to a taxable account:
+    // one stable bucket per source account, each holding that account's crypto.
+    expect(stable).toHaveLength(2);
+    expect(stable.find((s) => s.accountId === 'taxable')!.startValue).toBeCloseTo(400_000, 2);
+    expect(stable.find((s) => s.accountId === 'roth')!.startValue).toBeCloseTo(200_000, 2);
+    expect(sumStart(input)).toBeCloseTo(1_000_000, 2);
+  });
 });
 
 describe('evalSuccess monotonicity (common random numbers)', () => {

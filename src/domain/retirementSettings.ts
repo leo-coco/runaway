@@ -41,6 +41,15 @@ export type MonteCarloModel =
   | 'historical-real'
   | 'historical-real-centered';
 
+/**
+ * Whether the model draws its co-movements from the correlation matrix. The
+ * bootstrap and historical models replay real calendar years across every asset
+ * class at once, so their co-movements come from history itself and a hand-edited
+ * matrix has no effect — the UI must say so rather than offer a dead control.
+ */
+export const usesCorrelationMatrix = (model: MonteCarloModel): boolean =>
+  model === 'normal' || model === 'fat-tails' || model === 'crash-aware';
+
 export const MONTE_CARLO_MODEL_LABEL: Record<MonteCarloModel, string> = {
   normal: 'Normal',
   'fat-tails': 'Fat tails',

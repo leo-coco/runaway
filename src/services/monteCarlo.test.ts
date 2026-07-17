@@ -13,6 +13,7 @@ import {
   sampleMonteCarloPath,
   sampleRandomScenario,
   sampleScenarioPaths,
+  sampleTrials,
   type MonteCarloInput,
 } from './monteCarlo';
 
@@ -1013,7 +1014,9 @@ describe('bracket FX wiring', () => {
       residenceCountry: 'FR' as const,
       currency: 'USD' as const,
     };
-    const rates = { base: 'USD', rates: { USD: 1, EUR: 0.8 }, asOf: 0 };
+    // Must quote every currency the seed plan's holdings use, not just EUR/USD:
+    // conversion now fails loudly instead of passing native amounts through.
+    const rates = { base: 'USD', rates: { USD: 1, EUR: 0.8, CAD: 1.35 }, asOf: 0 };
     // 1 EUR = 1.25 USD → EUR thresholds scaled ×1.25 for USD amounts.
     expect(buildMonteCarloInput(plan, rates, 2026, 30).taxFxFactor).toBeCloseTo(1.25, 6);
     // Plan currency = residence currency → factor 1.
@@ -1249,5 +1252,55 @@ describe('one-off expenses / income', () => {
     // And the surplus must actually have been reinvested, not dropped.
     const without = sampleMonteCarloPath(zeroVolInput({ rmdEnabled: false }), opts);
     expect(yr(rmdOff, 2035).closingTotal).toBeGreaterThan(yr(without, 2035).closingTotal + 250_000);
+  });
+});
+
+describe('sampleTrials agrees with runMonteCarlo on what counts as funded', () => {
+  // A portfolio that is mostly an illiquid asset: the drawable pool is far too
+  // small to fund spending, but the illiquid holding keeps growing, so the total
+  // balance never approaches zero. Judging success by the closing balance would
+  // call these runs funded while the aggregate counts every one as a failure.
+  const propped = (): MonteCarloInput =>
+    baseInput({
+      assets: [
+        { startValue: 20_000, driftPct: 5, sigmaPct: 0, annualContribution: 0, accountId: 'a' },
+        {
+          startValue: 5_000_000,
+          driftPct: 5,
+          sigmaPct: 0,
+          annualContribution: 0,
+          accountId: 'a',
+          drawable: false,
+        },
+      ],
+      correlation: [
+        [1, 0],
+        [0, 1],
+      ],
+      annualSpending: 200_000,
+    });
+  const opts = { ...DEFAULT_MC_OPTIONS, retirementHorizon: 30, model: 'normal' as const };
+
+  it('counts the propped-up runs as failures in the aggregate', () => {
+    expect(runMonteCarlo(propped(), opts).successRate).toBe(0);
+  });
+
+  it('reports every trial as unfunded despite a large closing balance', () => {
+    const trials = sampleTrials(propped(), opts, 5);
+    expect(trials).toHaveLength(5);
+    for (const t of trials) {
+      expect(t.funded).toBe(false);
+      expect(t.dryYear).not.toBeNull();
+      // The balance test the explorer used to rely on never fires here.
+      expect(t.terminalBalance).toBeGreaterThan(1_000_000);
+    }
+  });
+
+  it('still reports a comfortably funded plan as funded', () => {
+    const trials = sampleTrials(baseInput({ annualSpending: 1_000 }), opts, 5);
+    for (const t of trials) {
+      expect(t.funded).toBe(true);
+      expect(t.dryYear).toBeNull();
+    }
   });
 });
