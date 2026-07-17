@@ -11,8 +11,14 @@
 - When making the first commit for a feature branch, open the PR automatically right after the commit (no need to ask).
 
 ## Premium features in local dev
-- If a task requires exercising a feature gated behind the `premium` tier (see `src/domain/entitlements.ts`), do not permanently upgrade an account. Apply a local override in sandbox mode only (e.g. your own dev account's `tier`/`premiumUntil` via the admin panel or a local DB update) to unlock it for the duration of the task.
-- Once the task is done, always revert the sandbox back to its prior state (re-lock the account to its original tier/premiumUntil) and verify the restore actually took effect (the feature is gated again, values match what they were before the override) before wrapping up.
+- If a task needs to render/exercise a feature gated behind the `premium` tier (see `src/domain/entitlements.ts`), don't touch real accounts or `tier_config`. Instead, temporarily patch `src/hooks/useEntitlements.ts` so sandbox mode (`useAppMode().sandbox`) resolves to premium, e.g.:
+  ```ts
+  // TEMP(<task-name>): unlock premium in sandbox to render Pro surfaces. REMOVE.
+  const SANDBOX_PREMIUM: Entitlements = resolveEntitlements('premium', null, DEFAULT_TIER_CONFIG);
+  ```
+  and swap it in for the sandbox branch of `useEntitlements`/`useEntitlementsReady` (currently `sandbox ? GUEST_FALLBACK : ...`).
+- Tag the override with a `TEMP(<task-name>): ... REMOVE.` comment so it's greppable and clearly not meant to ship.
+- Before wrapping up the task, remove the override entirely (`git diff` on `useEntitlements.ts` should come back empty relative to the base branch) and re-verify sandbox mode renders the free tier again.
 
 ## Database migrations
 - Migrations run automatically on deploy (`vercel-build` runs `drizzle-kit migrate` before the app build), so they must be safe to apply against a running prod instance with no downtime.
