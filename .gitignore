@@ -30,3 +30,8 @@ coverage
 .husky/_
 .vercel
 .astro
+
+# Playwright
+test-results
+playwright-report
+/playwright/.cache

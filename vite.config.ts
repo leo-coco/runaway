@@ -29,7 +29,9 @@ export default defineConfig({
     // Other agent worktrees live under .claude/worktrees/** as separate git
     // checkouts; without this they get scanned too and their stale test
     // files fail the run (and thus the pre-push hook).
-    exclude: [...configDefaults.exclude, '**/.claude/**'],
+    // Playwright specs under e2e/** match Vitest's default *.spec.ts glob; they
+    // run via `npm run test:e2e`, not Vitest, so keep them out of this run.
+    exclude: [...configDefaults.exclude, '**/.claude/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       include: ['src/services/**', 'src/hooks/**', 'src/domain/**'],
