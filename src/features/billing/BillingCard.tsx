@@ -1,40 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StarIcon } from '@/components/icons';
-import { useSession } from '@/lib/authClient';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';
-import { queryKeys } from '@/providers/queryKeys';
 import { startCheckout, openBillingPortal, BillingUnavailableError } from './billingApi';
 
 /**
  * Subscription management on the Account page: shows the current tier and either an
  * Upgrade (free) or Manage-billing (premium) action, both redirecting to Stripe.
- * Also reconciles the client after a checkout return: Stripe sends the user back to
- * `/account?checkout=success`, and since the tier is written asynchronously by the
- * webhook we invalidate the cached entitlements so the new tier appears once it lands.
  */
 export const BillingCard = () => {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
   const { tier, pricing } = useEntitlements();
   const [busy, setBusy] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const userId = session?.user?.id;
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('checkout') !== 'success') return;
-    if (userId) void queryClient.invalidateQueries({ queryKey: queryKeys.entitlements(userId) });
-    // Drop the marker so a refresh doesn't re-trigger the refetch.
-    window.history.replaceState({}, '', window.location.pathname);
-  }, [queryClient, userId]);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);

@@ -6,7 +6,7 @@ import { db } from '../db/client.js';
 import { user as userTable } from '../db/schema.js';
 import { auth } from '../auth.js';
 import { serverEnv } from '../env.js';
-import { toAuthUser, loadTierConfig, type AuthUser } from '../entitlements.js';
+import { toAuthUser, type AuthUser } from '../entitlements.js';
 import { isBillingConfigured, billingEnv } from '../billing/env.js';
 import { stripe } from '../billing/stripe.js';
 import {
@@ -37,22 +37,39 @@ billingRoutes.use('/portal', requireSession);
  * client invalidate its cached entitlements on landing. */
 const appUrl = (path: string) => new URL(path, serverEnv().BETTER_AUTH_URL).toString();
 
+/** The SPA is served below a locale-aware Astro route. Only accept the two
+ * supported locales rather than trusting an arbitrary redirect path from the client. */
+const accountPath = (locale: unknown): string => `/${locale === 'en' ? 'en' : 'fr'}/app/account`;
+
+const appPath = (locale: unknown): string => `/${locale === 'en' ? 'en' : 'fr'}/app`;
+
+const checkoutLocale = async (c: { req: { json: () => Promise<unknown> } }): Promise<unknown> => {
+  try {
+    const body = await c.req.json();
+    return body && typeof body === 'object' ? (body as { locale?: unknown }).locale : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 // Start a subscription: create/reuse the customer, open a Checkout Session.
 billingRoutes.post('/checkout', async (c) => {
   const user = c.get('user');
-  const config = await loadTierConfig();
   const customerId = await getOrCreateCustomer({ id: user.id, email: user.email });
+  const locale = await checkoutLocale(c);
+  const path = appPath(locale);
 
   const session = await stripe().checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
-    line_items: [{ price: priceIdForCheckout(config), quantity: 1 }],
+    line_items: [{ price: priceIdForCheckout(), quantity: 1 }],
+    allow_promotion_codes: true,
     // Carried onto the subscription so its lifecycle events map back to the user
     // without a customer lookup.
     subscription_data: { metadata: { userId: user.id } },
     metadata: { userId: user.id },
-    success_url: appUrl('/account?checkout=success'),
-    cancel_url: appUrl('/account?checkout=cancel'),
+    success_url: appUrl(`${path}?checkout=success`),
+    cancel_url: appUrl(`${path}?checkout=cancel`),
   });
 
   if (!session.url) return c.json({ error: 'Checkout unavailable' }, 502);
@@ -62,6 +79,7 @@ billingRoutes.post('/checkout', async (c) => {
 // Open the Stripe-hosted billing portal to manage/cancel the subscription.
 billingRoutes.post('/portal', async (c) => {
   const user = c.get('user');
+  const path = accountPath(await checkoutLocale(c));
   const [row] = await db
     .select({ stripeCustomerId: userTable.stripeCustomerId })
     .from(userTable)
@@ -70,7 +88,7 @@ billingRoutes.post('/portal', async (c) => {
 
   const session = await stripe().billingPortal.sessions.create({
     customer: row.stripeCustomerId,
-    return_url: appUrl('/account'),
+    return_url: appUrl(path),
   });
   return c.json({ url: session.url });
 });

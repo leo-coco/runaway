@@ -1,18 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type Stripe from 'stripe';
 import type * as DrizzleOrm from 'drizzle-orm';
-import { DEFAULT_TIER_CONFIG, type TierConfig } from '../../src/domain/entitlements.js';
 
 /**
  * Unit-tests the Stripe→DB mapping (subscription status/period → tier/premiumUntil)
- * and the intro price toggle, against the in-memory fake db. The Stripe client is
+ * and the Checkout price selection, against the in-memory fake db. The Stripe client is
  * mocked; only customer creation touches it.
  */
 
 process.env.STRIPE_SECRET_KEY = 'sk_test_x';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_x';
 process.env.STRIPE_PRICE_ID = 'price_regular';
-process.env.STRIPE_INTRO_PRICE_ID = 'price_intro';
 
 vi.mock('drizzle-orm', async (importOriginal) => {
   const actual = await importOriginal<typeof DrizzleOrm>();
@@ -92,17 +90,8 @@ describe('applySubscriptionState', () => {
 });
 
 describe('priceIdForCheckout', () => {
-  const config = (introActive: boolean): TierConfig => ({
-    ...DEFAULT_TIER_CONFIG,
-    pricing: { ...DEFAULT_TIER_CONFIG.pricing, introActive },
-  });
-
-  it('uses the intro price while the intro is active', () => {
-    expect(priceIdForCheckout(config(true))).toBe('price_intro');
-  });
-
-  it('uses the regular price when the intro is off', () => {
-    expect(priceIdForCheckout(config(false))).toBe('price_regular');
+  it('uses the regular price; Stripe applies any promotion code separately', () => {
+    expect(priceIdForCheckout()).toBe('price_regular');
   });
 });
 

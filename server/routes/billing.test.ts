@@ -12,7 +12,6 @@ import type * as DrizzleOrm from 'drizzle-orm';
 process.env.STRIPE_SECRET_KEY = 'sk_test_x';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_x';
 process.env.STRIPE_PRICE_ID = 'price_regular';
-process.env.STRIPE_INTRO_PRICE_ID = 'price_intro';
 
 vi.mock('drizzle-orm', async (importOriginal) => {
   const actual = await importOriginal<typeof DrizzleOrm>();
@@ -112,10 +111,25 @@ describe('POST /checkout', () => {
     expect(stripeMock.customers.create).toHaveBeenCalledOnce();
     expect(fakeDb.rows(userTable)[0]!.stripeCustomerId).toBe('cus_new');
 
-    // Default config has the intro active, so checkout charges the intro price.
     const arg = stripeMock.checkout.sessions.create.mock.calls[0]![0];
-    expect(arg.line_items[0].price).toBe('price_intro');
+    expect(arg.line_items[0].price).toBe('price_regular');
+    expect(arg.allow_promotion_codes).toBe(true);
     expect(arg.metadata).toEqual({ userId: 'user-1' });
+    expect(arg.success_url).toBe('http://localhost:5173/fr/app?checkout=success');
+    expect(arg.cancel_url).toBe('http://localhost:5173/fr/app?checkout=cancel');
+  });
+
+  it('returns the customer to the English app route when checkout specifies English', async () => {
+    stripeMock.customers.create.mockResolvedValue({ id: 'cus_new' });
+    stripeMock.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe/x' });
+
+    await post('/checkout', {
+      body: JSON.stringify({ locale: 'en' }),
+      headers: { 'content-type': 'application/json' },
+    });
+
+    const arg = stripeMock.checkout.sessions.create.mock.calls[0]![0];
+    expect(arg.success_url).toBe('http://localhost:5173/en/app?checkout=success');
   });
 
   it('reuses an existing customer', async () => {

@@ -2,7 +2,6 @@ import type Stripe from 'stripe';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { user as userTable } from '../db/schema.js';
-import type { TierConfig } from '../../src/domain/entitlements.js';
 import { billingEnv } from './env.js';
 import { stripe } from './stripe.js';
 
@@ -30,9 +29,8 @@ const periodEnd = (sub: Stripe.Subscription): Date | null => {
 export const customerIdOf = (sub: Stripe.Subscription): string =>
   typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
 
-/** Which Stripe Price checkout charges: the intro price while the intro is active. */
-export const priceIdForCheckout = (config: TierConfig): string =>
-  config.pricing.introActive ? billingEnv().STRIPE_INTRO_PRICE_ID : billingEnv().STRIPE_PRICE_ID;
+/** The single regular Premium price; Stripe promotion codes supply any discount. */
+export const priceIdForCheckout = (): string => billingEnv().STRIPE_PRICE_ID;
 
 /** Resolve the app user linked to a Stripe customer, or null if none is stored. */
 export const findUserIdByCustomer = async (customerId: string): Promise<string | null> => {

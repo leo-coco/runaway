@@ -15,8 +15,6 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
   /** Recurring Price id for the regular annual Premium subscription. */
   STRIPE_PRICE_ID: z.string().min(1),
-  /** Recurring Price id charged while the intro offer is active (pricing.introActive). */
-  STRIPE_INTRO_PRICE_ID: z.string().min(1),
 });
 
 export type BillingEnv = z.infer<typeof schema>;

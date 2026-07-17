@@ -35,8 +35,6 @@ const tierConfigSchema = z.object({
   pricing: z.object({
     annual: z.number().nonnegative(),
     currency: z.string().trim().min(1).max(8),
-    introPrice: z.number().nonnegative(),
-    introActive: z.boolean(),
   }),
 });
 
