@@ -8885,6 +8885,72 @@ th[title] {
   .total-row {
     flex-wrap: wrap;
   }
+
+  /* Projection chart header: stack the view selector under the title so the
+     select takes the full card width instead of overflowing to the right. */
+  .chart-card__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .chart-view {
+    align-items: stretch;
+  }
+  .chart-view .select {
+    width: 100%;
+  }
+
+  /* Dashboard mini assets table: drop the horizontal scroll and lay each row
+     out as a compact 2x2 card (asset + value on top, gain + allocation below),
+     matching the stacked-card treatment used by the full portfolio table. */
+  .dash-assets-card {
+    max-height: none;
+  }
+  .mini-assets-scroll {
+    overflow-x: visible;
+  }
+  .mini-assets {
+    min-width: 0;
+  }
+  .mini-row--head {
+    display: none;
+  }
+  .mini-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'asset value'
+      'gain alloc';
+    row-gap: 6px;
+    padding: 12px 6px;
+  }
+  .mini-row__asset {
+    grid-area: asset;
+  }
+  .mini-row__value {
+    grid-area: value;
+    text-align: right;
+    align-self: center;
+  }
+  .mini-row__gain {
+    grid-area: gain;
+    text-align: left;
+  }
+  .mini-row__gain .ret-cell {
+    justify-content: flex-start;
+  }
+  .mini-alloc {
+    grid-area: alloc;
+    justify-content: flex-end;
+  }
+  /* Account subtotal header: collapse its mirrored 4-column grid to name | gain. */
+  .mini-acct {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .mini-acct__main {
+    grid-column: 1;
+  }
+  .mini-acct__right {
+    grid-column: 2;
+  }
 }
 
 /* ---------- real-estate editor ---------- */
