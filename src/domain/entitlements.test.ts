@@ -75,7 +75,7 @@ describe('resolveEntitlements', () => {
         },
       },
       premium: DEFAULT_TIER_CONFIG.premium,
-      pricing: { annual: 99, currency: 'EUR', introPrice: 49, introActive: false },
+      pricing: { annual: 99, currency: 'EUR' },
     };
     const ent = resolveEntitlements('free', null, custom);
     expect(ent.limits.maxPlans).toBe(3);
@@ -106,13 +106,11 @@ describe('atLimit', () => {
 });
 
 describe('effectivePrice', () => {
-  it('returns the intro price when the intro is active', () => {
-    expect(effectivePrice(DEFAULT_TIER_CONFIG.pricing)).toBe(20);
+  it('returns the standard annual price', () => {
+    expect(effectivePrice(DEFAULT_TIER_CONFIG.pricing)).toBe(69);
   });
 
-  it('returns the annual price when the intro is not active', () => {
-    expect(
-      effectivePrice({ annual: 59, currency: 'USD', introPrice: 20, introActive: false }),
-    ).toBe(59);
+  it('uses the annual price supplied by Stripe or the fallback config', () => {
+    expect(effectivePrice({ annual: 69, currency: 'USD' })).toBe(69);
   });
 });

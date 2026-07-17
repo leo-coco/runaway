@@ -18,6 +18,7 @@ import { MethodologyPage } from '@/features/methodology/MethodologyPage';
 import { PlanSyncManager } from '@/features/auth/PlanSyncManager';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { PaywallDialog } from '@/features/billing/PaywallDialog';
+import { CheckoutSuccessDialog } from '@/features/billing/CheckoutSuccessDialog';
 import { AdminPage } from '@/features/admin/AdminPage';
 import { SignInPage } from '@/features/auth/SignInPage';
 import { AccountPage } from '@/features/auth/AccountPage';
@@ -75,6 +76,7 @@ const ProductShell = ({
       <TourProvider>
         {syncPlans && <PlanSyncManager />}
         <PaywallDialog />
+        {!sandbox && <CheckoutSuccessDialog />}
         <div className="app-shell">
           <Sidebar />
           <main className="app-main">

@@ -40,10 +40,6 @@ export interface TierPricing {
   /** Regular annual price. */
   readonly annual: number;
   readonly currency: string;
-  /** Introductory/launch price. */
-  readonly introPrice: number;
-  /** When true, the intro price is the live price. */
-  readonly introActive: boolean;
 }
 
 export interface TierDefinition {
@@ -86,12 +82,11 @@ export const DEFAULT_TIER_CONFIG: TierConfig = {
       realEstate: true,
     },
   },
-  pricing: { annual: 59, currency: 'USD', introPrice: 20, introActive: true },
+  pricing: { annual: 69, currency: 'USD' },
 };
 
-/** The price a user actually pays today (intro price when the intro is active). */
-export const effectivePrice = (pricing: TierPricing): number =>
-  pricing.introActive ? pricing.introPrice : pricing.annual;
+/** The standard annual price; Stripe promotion codes may lower it at Checkout. */
+export const effectivePrice = (pricing: TierPricing): number => pricing.annual;
 
 /** A premiumUntil in the past means the grant has lapsed back to free. */
 const isLapsed = (premiumUntil: string | Date | null | undefined): boolean => {

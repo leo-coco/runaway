@@ -11,7 +11,13 @@ export class BillingUnavailableError extends Error {
 }
 
 const postForUrl = async (path: string): Promise<string> => {
-  const res = await fetch(path, { method: 'POST', credentials: 'include' });
+  const locale = window.location.pathname.match(/^\/(en|fr)\/app(?:\/|$)/)?.[1] ?? 'fr';
+  const res = await fetch(path, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ locale }),
+  });
   if (res.status === 503) throw new BillingUnavailableError();
   if (!res.ok) throw new Error(`API ${res.status}`);
   const { url } = (await res.json()) as { url?: string };

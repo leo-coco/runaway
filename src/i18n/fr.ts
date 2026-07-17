@@ -1508,6 +1508,10 @@ export const fr: Resources = {
     priceCta: 'Passer à Premium — {{price}} {{currency}}/an',
     redirecting: 'Redirection…',
     checkoutError: 'Impossible de démarrer le paiement. Veuillez réessayer.',
+    checkoutSuccessTitle: 'Bienvenue dans Premium',
+    checkoutSuccessBody:
+      'Votre paiement est confirmé. Votre accès Premium est en cours d’activation et sera disponible dans quelques instants.',
+    checkoutSuccessCta: 'Découvrir Premium',
     subscriptionTitle: 'Abonnement',
     currentPlan: 'Offre actuelle',
     manageBilling: 'Gérer l’abonnement',

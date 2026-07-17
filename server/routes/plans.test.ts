@@ -61,7 +61,7 @@ const ent = (limits: TierLimits): Entitlements => ({
     phasedSpending: false,
     realEstate: false,
   },
-  pricing: { annual: 59, currency: 'USD', introPrice: 20, introActive: true },
+  pricing: { annual: 69, currency: 'USD' },
 });
 
 const FREE_LIMITS: TierLimits = { maxPlans: 1, maxAssets: 2, maxAccounts: 1 };

@@ -8540,6 +8540,34 @@ th[title] {
   padding: 14px 20px;
   background: color-mix(in srgb, var(--bg-card) 64%, var(--bg-elev));
 }
+.modal--checkout-success {
+  max-width: 460px;
+}
+.modal--checkout-success .modal__body {
+  padding: 0;
+}
+.checkout-success__banner {
+  height: 172px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  background: #faf7f3;
+  border-bottom: 1px solid var(--border);
+}
+.checkout-success__banner img {
+  display: block;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.checkout-success__content {
+  padding: 24px 28px 28px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.checkout-success__content p {
+  margin: 0;
+}
 @media (max-width: 520px) {
   .overlay {
     padding: 12px;

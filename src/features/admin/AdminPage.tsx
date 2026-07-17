@@ -70,9 +70,6 @@ const TierConfigEditor = () => {
       free: { ...draft.free, features: { ...draft.free.features, [key]: on } },
     });
 
-  const setPricing = (patch: Partial<TierConfig['pricing']>) =>
-    setDraft({ ...draft, pricing: { ...draft.pricing, ...patch } });
-
   return (
     <Card padded className="admin-card">
       <h2 className="section__title">{t('admin.tierConfig')}</h2>
@@ -109,55 +106,6 @@ const TierConfigEditor = () => {
             {t(`admin.feature.${key}`)}
           </label>
         ))}
-      </div>
-
-      <h3 className="admin-sub">{t('admin.pricing')}</h3>
-      <div className="admin-grid">
-        <div className="field">
-          <label className="field__label" htmlFor="price-annual">
-            {t('admin.annual')}
-          </label>
-          <input
-            id="price-annual"
-            className="search-input"
-            type="number"
-            min={0}
-            value={draft.pricing.annual}
-            onChange={(e) => setPricing({ annual: Number(e.target.value) || 0 })}
-          />
-        </div>
-        <div className="field">
-          <label className="field__label" htmlFor="price-intro">
-            {t('admin.introPrice')}
-          </label>
-          <input
-            id="price-intro"
-            className="search-input"
-            type="number"
-            min={0}
-            value={draft.pricing.introPrice}
-            onChange={(e) => setPricing({ introPrice: Number(e.target.value) || 0 })}
-          />
-        </div>
-        <div className="field">
-          <label className="field__label" htmlFor="price-currency">
-            {t('admin.currency')}
-          </label>
-          <input
-            id="price-currency"
-            className="search-input"
-            value={draft.pricing.currency}
-            onChange={(e) => setPricing({ currency: e.target.value })}
-          />
-        </div>
-        <label className="admin-check">
-          <input
-            type="checkbox"
-            checked={draft.pricing.introActive}
-            onChange={(e) => setPricing({ introActive: e.target.checked })}
-          />
-          {t('admin.introActive')}
-        </label>
       </div>
 
       <div className="admin-actions">

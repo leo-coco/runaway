@@ -1475,6 +1475,10 @@ export const en = {
     priceCta: 'Upgrade — {{price}} {{currency}}/yr',
     redirecting: 'Redirecting…',
     checkoutError: 'Could not start checkout. Please try again.',
+    checkoutSuccessTitle: 'Welcome to Premium',
+    checkoutSuccessBody:
+      'Your payment is confirmed. Your Premium access is being activated and will be available shortly.',
+    checkoutSuccessCta: 'Explore Premium',
     subscriptionTitle: 'Subscription',
     currentPlan: 'Current plan',
     manageBilling: 'Manage billing',

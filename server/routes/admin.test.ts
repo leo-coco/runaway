@@ -119,7 +119,7 @@ describe('PUT /config', () => {
   it('persists and returns the new config', async () => {
     const next: TierConfig = {
       ...DEFAULT_TIER_CONFIG,
-      pricing: { annual: 79, currency: 'EUR', introPrice: 29, introActive: false },
+      pricing: { annual: 79, currency: 'EUR' },
     };
     const res = await putConfig(next);
     expect(res.status).toBe(200);
