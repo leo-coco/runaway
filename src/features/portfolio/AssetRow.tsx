@@ -144,7 +144,7 @@ export const AssetRow = ({
       </div>
 
       {/* Asset price in its native currency (currency is fixed by the market). */}
-      <div>
+      <div data-label={t('portfolio.colPrice')}>
         <div className="price-cell">
           {editing ? (
             <Stepper
@@ -168,7 +168,7 @@ export const AssetRow = ({
       </div>
 
       {/* Converted unit price (master currency) */}
-      <div>
+      <div data-label={t('portfolio.colConverted', { currency: plan.currency })}>
         <div className="converted-price">
           {convertedPrice === null ? (
             <span className="muted">
@@ -185,7 +185,7 @@ export const AssetRow = ({
       </div>
 
       {/* Cost basis (native currency) — drives dynamic capital-gains tracking */}
-      <div className="narrow-cell">
+      <div className="narrow-cell" data-label={t('portfolio.colCostBasis')}>
         {editing ? (
           <Stepper
             ariaLabel={t('portfolio.costBasisAria', { symbol: holding.instrument.symbol })}
@@ -201,7 +201,11 @@ export const AssetRow = ({
         )}
       </div>
 
-      <div className="narrow-cell" data-tour={index === 0 ? 'quantity-input' : undefined}>
+      <div
+        className="narrow-cell"
+        data-label={t('portfolio.colQuantity')}
+        data-tour={index === 0 ? 'quantity-input' : undefined}
+      >
         {editing ? (
           <Stepper
             ariaLabel={`${holding.instrument.symbol} quantity`}
@@ -217,7 +221,7 @@ export const AssetRow = ({
       </div>
 
       {/* Total value of the holding (master currency) */}
-      <div>
+      <div data-label={t('portfolio.colValue')}>
         <div className="converted-price">
           {rates || isSameCurrency ? (
             <b>{planFmt.price(planValue)}</b>
@@ -230,7 +234,7 @@ export const AssetRow = ({
       </div>
 
       {/* Total return: signed amount + percentage pill (green/red) */}
-      <div>
+      <div data-label={t('portfolio.colRoi')}>
         {roiPct === null ? (
           <span className="muted">—</span>
         ) : (
@@ -244,7 +248,7 @@ export const AssetRow = ({
         )}
       </div>
 
-      <div data-tour={index === 0 ? 'cagr-input' : undefined}>
+      <div data-label={t('portfolio.colCagr')} data-tour={index === 0 ? 'cagr-input' : undefined}>
         {editing ? (
           <>
             <Stepper

@@ -4164,6 +4164,24 @@ th[title] {
 .jtable .contrib {
   color: var(--success);
 }
+/* Pin the row-label column so you can always tell which metric a value belongs
+   to while scrolling the year columns horizontally (the table is a metrics x
+   years matrix — a spreadsheet — so horizontal scroll is the intended model).
+   Scoped to narrow screens: on desktop the table fits and nothing scrolls. */
+@media (max-width: 820px) {
+  .journey .jtable td.rowlabel,
+  .journey .jtable th.rowlabel,
+  .journey .jtable .asset-detail td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--bg-card);
+    box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.45);
+  }
+  .journey .jtable thead th.rowlabel {
+    z-index: 2;
+  }
+}
 .expand-toggle {
   display: inline-flex;
   align-items: center;
@@ -8789,6 +8807,83 @@ th[title] {
   }
   .sb-menu__item {
     min-height: 44px;
+  }
+}
+
+/* Portfolio holdings on phones: stack each row into a labelled card instead of a
+   horizontally-scrolled 9-column grid, so every field is readable in place. This
+   overrides the coarse-pointer scroll rule above (later + same specificity). */
+@media (max-width: 640px) {
+  .breakdown {
+    overflow-x: visible;
+    --row-min-width: 0;
+  }
+  .breakdown .brow--head {
+    display: none;
+  }
+  .brow {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 0;
+    padding: 12px 16px 14px;
+  }
+  .brow > * {
+    text-align: left;
+  }
+  .brow > .asset-id {
+    margin-bottom: 4px;
+  }
+  /* Every data cell becomes a "label — value" row. */
+  .brow > [data-label] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 28px;
+  }
+  .brow > [data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+  .brow .price-cell,
+  .brow .converted-price,
+  .brow .ret-cell {
+    justify-content: flex-end;
+  }
+  /* Keep inline-edit steppers from stretching the value side off-screen. */
+  .brow > [data-label] .stepper {
+    width: auto;
+    max-width: 60%;
+  }
+  .brow > .asset-row__actions {
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+
+  /* Account group header: unstack the grid that mirrored the data columns. */
+  .acct-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    min-width: 0;
+  }
+  .acct-section__main {
+    grid-column: auto;
+    flex: 1 1 100%;
+  }
+  .acct-section__total,
+  .acct-section__gain {
+    grid-column: auto;
+    text-align: left;
+  }
+  .total-row {
+    flex-wrap: wrap;
   }
 }
 
