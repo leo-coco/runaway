@@ -1237,6 +1237,13 @@ export interface SamplePathYear {
   readonly tax: number;
   /** Portfolio total after the withdrawal. */
   readonly closingTotal: number;
+  /**
+   * True when the portfolio could not fund what was asked of it this year — the
+   * same funding-shortfall test `runMonteCarlo` counts as a failure. A balance
+   * still above zero is not proof of success: an illiquid holding props the
+   * total up while the drawable pool is already dry.
+   */
+  readonly shortfall: boolean;
 }
 
 export interface SamplePath {
@@ -1414,6 +1421,7 @@ export const sampleMonteCarloPath = (
     let net = 0;
     let gross = 0;
     let tax = 0;
+    let shortfall = false;
     const inflationFactor = isHistReal ? histInfl : Math.pow(1 + inflationRate, y - startYear);
     const flows = expenseIncomeAmountsForYear(input.expensesIncomes, y, inflationFactor);
     if (isRetired) {
@@ -1430,9 +1438,10 @@ export const sampleMonteCarloPath = (
       net = r.net;
       gross = r.gross;
       tax = r.tax;
+      shortfall = r.net < ff.needFromPortfolio - 0.5;
     } else if (flows.expense > 0 || flows.income > 0) {
       const flowOrdinary = flowOrdinaryIncome(input, flows, inflationFactor);
-      applyFlows(
+      shortfall = applyFlows(
         state,
         flowOrdinary.net,
         flowOrdinary.base,
@@ -1472,6 +1481,7 @@ export const sampleMonteCarloPath = (
       grossWithdrawal: gross,
       tax,
       closingTotal: total,
+      shortfall,
     });
   }
 
@@ -1598,7 +1608,7 @@ export interface Trial {
   readonly seed: number;
   readonly funded: boolean;
   readonly terminalBalance: number;
-  /** First year the portfolio ran dry during retirement, if it ever did. */
+  /** First year the portfolio could not fund what was asked of it, if it ever failed to. */
   readonly dryYear: number | null;
   readonly category: TrialOutcomeCategory;
   readonly path: SamplePath;
@@ -1624,8 +1634,11 @@ export const sampleTrials = (
     const end = path.years.find((y) => y.year === lastRetirementYear) ?? path.years.at(-1);
     return end?.closingTotal ?? 0;
   };
+  // Funding shortfall, not a zero balance, and over the whole horizon rather than
+  // retirement alone — `runMonteCarlo`'s definition exactly, so a trial listed
+  // here as funded is one the aggregate also counted as a success.
   const dryYearOf = (path: SamplePath): number | null =>
-    path.years.find((y) => y.year >= input.retirementYear && y.closingTotal <= 0.5)?.year ?? null;
+    path.years.find((y) => y.shortfall && y.year <= lastRetirementYear)?.year ?? null;
 
   const drafts = Array.from({ length: count }, (_, s) => {
     const seed = (options.seed + s * 0x9e3779b1) >>> 0;

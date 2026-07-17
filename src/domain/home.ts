@@ -12,7 +12,11 @@ import type { ExpenseIncome } from './expenseIncome';
  * All monetary fields are in the plan currency, in today's money.
  */
 export interface Mortgage {
-  /** Outstanding balance today (at the plan's start year), plan currency. */
+  /**
+   * Plan currency, today's money: the balance outstanding today for a home
+   * already owned, or the amount borrowed for a future purchase (which is grown
+   * to the purchase year's price level, like the home itself).
+   */
   readonly balance: number;
   /** Annual nominal interest rate, percent (e.g. 5 = 5%/yr). */
   readonly ratePct: number;
@@ -24,7 +28,11 @@ export interface Mortgage {
 export interface HomePurchase {
   /** Calendar year the home is bought. */
   readonly year: number;
-  /** Down payment paid in cash at purchase (today's money). The mortgage funds the rest. */
+  /**
+   * Down payment paid in cash at purchase, today's money. The mortgage funds the
+   * rest, and both grow with the home's appreciation to the purchase year, so
+   * this fixes the share of the price paid in cash rather than a literal sum.
+   */
   readonly downPayment: number;
   /** One-off closing/transfer costs as a percent of the home value at purchase. Default 0. */
   readonly closingCostPct?: number;
@@ -145,6 +153,27 @@ const ownershipStartYear = (home: Home, startYear: number): number =>
 const homeValueAt = (home: Home, startYear: number, year: number): number =>
   home.currentValue * Math.pow(1 + home.appreciationPct / 100, year - startYear);
 
+/**
+ * Scale factor from today's money to the nominal price level of the year the
+ * home is acquired. 1 for a home already owned (acquired at the start year).
+ * Every amount pinned to the home's price — the down payment, closing costs and
+ * the mortgage that funds the balance — is entered in today's money and rides
+ * this factor, so a purchase 10 years out keeps the loan-to-value the user
+ * described instead of financing a future price with a present-day deposit.
+ */
+const acquisitionFactor = (home: Home, startYear: number): number =>
+  Math.pow(1 + home.appreciationPct / 100, ownershipStartYear(home, startYear) - startYear);
+
+/**
+ * The mortgage as actually drawn: the user's today's-money balance grown to the
+ * price level of the acquisition year. Identical to `home.mortgage` for a home
+ * already owned, whose balance is already a nominal amount outstanding today.
+ */
+const financedMortgage = (home: Home, startYear: number): Mortgage | undefined =>
+  home.mortgage
+    ? { ...home.mortgage, balance: home.mortgage.balance * acquisitionFactor(home, startYear) }
+    : undefined;
+
 /** A point on the home's equity trajectory, for the net-worth view (nominal). */
 export interface HomeEquityYear {
   readonly year: number;
@@ -168,13 +197,13 @@ export const homeEquitySeries = (
   horizonYears: number,
 ): readonly HomeEquityYear[] => {
   const ownStart = ownershipStartYear(home, startYear);
+  const mortgage = financedMortgage(home, startYear);
   const out: HomeEquityYear[] = [];
   for (let offset = 0; offset <= horizonYears; offset += 1) {
     const year = startYear + offset;
     const owned = year >= ownStart && (!home.sale || year < home.sale.year);
     const value = owned ? homeValueAt(home, startYear, year) : 0;
-    const mortgageBalance =
-      owned && home.mortgage ? mortgageBalanceAt(home.mortgage, ownStart, year) : 0;
+    const mortgageBalance = owned && mortgage ? mortgageBalanceAt(mortgage, ownStart, year) : 0;
     out.push({ year, value, mortgageBalance, equity: value - mortgageBalance });
   }
   return out;
@@ -190,7 +219,8 @@ export const homeSaleProceeds = (home: Home, startYear: number): number | null =
   const ownStart = ownershipStartYear(home, startYear);
   const grossPrice = homeValueAt(home, startYear, home.sale.year);
   const fees = grossPrice * ((home.sale.feePct ?? 0) / 100);
-  const remaining = home.mortgage ? mortgageBalanceAt(home.mortgage, ownStart, home.sale.year) : 0;
+  const mortgage = financedMortgage(home, startYear);
+  const remaining = mortgage ? mortgageBalanceAt(mortgage, ownStart, home.sale.year) : 0;
   return Math.max(0, grossPrice - fees - remaining);
 };
 
@@ -199,10 +229,12 @@ export const homeSaleProceeds = (home: Home, startYear: number): number | null =
  * the projection and Monte Carlo engines:
  *
  *  - **purchase** (future purchase only): a one-off expense = down payment +
- *    closing costs, in today's money (inflated to the purchase year).
- *  - **mortgage**: a recurring expense = the level annual payment, held nominal
- *    (`inflate: false`) since a fixed-rate payment does not rise with inflation,
- *    running from the start of ownership until the term ends or the home is sold.
+ *    closing costs, already appreciated to the purchase year (`inflate: false`)
+ *    since both are pinned to the home's price rather than to general CPI.
+ *  - **mortgage**: a recurring expense = the level annual payment on the balance
+ *    actually drawn (see {@link acquisitionFactor}), held nominal (`inflate: false`)
+ *    since a fixed-rate payment does not rise with inflation, running from the
+ *    start of ownership until the term ends or the home is sold.
  *  - **ownership**: a recurring expense = ownershipCostPct × the current value, in
  *    today's money (grows with general inflation), until the home is sold.
  *  - **sale**: a one-off income = {@link homeSaleProceeds}, already nominal
@@ -219,27 +251,30 @@ export const homeFlows = (home: Home | undefined, startYear: number): readonly E
   const occupancyEndYear = home.sale ? home.sale.year - 1 : startYear + OPEN_ENDED_OFFSET;
 
   if (home.purchase) {
-    // Cash outlay at purchase, all in today's money (inflated to the purchase
-    // year by the engine): the down payment plus closing costs, which scale with
-    // the home value.
-    const closing = ((home.purchase.closingCostPct ?? 0) / 100) * home.currentValue;
+    // Cash outlay at purchase, already nominal (`inflate: false`): both the down
+    // payment and the closing costs are pinned to the home's price, so they ride
+    // the home's appreciation to the purchase year rather than general CPI.
+    const priceAtPurchase = homeValueAt(home, startYear, home.purchase.year);
+    const closing = ((home.purchase.closingCostPct ?? 0) / 100) * priceAtPurchase;
+    const down = home.purchase.downPayment * acquisitionFactor(home, startYear);
     flows.push({
       id: 'home:purchase',
       name: home.name,
-      amount: home.purchase.downPayment + closing,
+      amount: down + closing,
       year: home.purchase.year,
       kind: 'expense',
-      inflate: true,
+      inflate: false,
     });
   }
 
-  if (home.mortgage && home.mortgage.balance > 0 && home.mortgage.termYearsRemaining > 0) {
+  const mortgage = financedMortgage(home, startYear);
+  if (mortgage && mortgage.balance > 0 && mortgage.termYearsRemaining > 0) {
     const payment = mortgageAnnualPayment(
-      home.mortgage.balance,
-      home.mortgage.ratePct,
-      home.mortgage.termYearsRemaining,
+      mortgage.balance,
+      mortgage.ratePct,
+      mortgage.termYearsRemaining,
     );
-    const payoffYear = ownStart + home.mortgage.termYearsRemaining - 1;
+    const payoffYear = ownStart + mortgage.termYearsRemaining - 1;
     const endYear = Math.min(payoffYear, occupancyEndYear);
     if (endYear >= ownStart) {
       flows.push({

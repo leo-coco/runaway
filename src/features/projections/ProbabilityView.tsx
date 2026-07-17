@@ -23,6 +23,7 @@ import {
   MC_ITERATIONS_MAX,
   MC_ITERATIONS_MIN,
   MC_ITERATIONS_STEP,
+  usesCorrelationMatrix,
   type MonteCarloModel,
 } from '@/domain/retirementSettings';
 import type { UseMonteCarloResult } from '@/hooks/useMonteCarlo';
@@ -145,6 +146,9 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
   const resetCorrelations = useAppStore((s) => s.resetCorrelations);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const model = plan.settings.monteCarloModel ?? 'bootstrap';
+  // The matrix is still shown under a replay model (it documents the class
+  // defaults) but is read-only: editing it there would change nothing.
+  const correlationLive = usesCorrelationMatrix(model);
   const setModel = (m: MonteCarloModel) =>
     updateSettings(plan.id, { ...plan.settings, monteCarloModel: m });
   const histStartYear = plan.settings.histStartYear;
@@ -834,7 +838,8 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                 >
                   <span>{t('mc.correlationMatrix')}</span>
-                  {plan.correlationOverrides &&
+                  {correlationLive &&
+                    plan.correlationOverrides &&
                     Object.keys(plan.correlationOverrides).length > 0 && (
                       <Button size="sm" onClick={() => resetCorrelations(plan.id)}>
                         {t('mc.resetCorrelations')}
@@ -858,7 +863,8 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                           {inspector.input.correlation[i]!.map((c, j) => {
                             const idA = inspector.input.assets[i]?.holdingId;
                             const idB = inspector.input.assets[j]?.holdingId;
-                            const editable = i !== j && idA !== undefined && idB !== undefined;
+                            const editable =
+                              correlationLive && i !== j && idA !== undefined && idB !== undefined;
                             return (
                               <td key={j}>
                                 {editable ? (
@@ -886,7 +892,9 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   </table>
                 </div>
                 <p className="field__hint" style={{ marginTop: 0 }}>
-                  {t('mc.correlationHint')}
+                  {correlationLive
+                    ? t('mc.correlationHint')
+                    : t('mc.correlationIgnored', { model: t(`modelName.${model}`) })}
                 </p>
               </>
             )}

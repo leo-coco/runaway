@@ -139,10 +139,10 @@ export const useMonteCarlo = (
     worker.onmessage = (event: MessageEvent<MonteCarloResponse>) => {
       if (cancelled) return;
       const data = event.data;
-      if (data.ok) {
+      if (data.ok && data.kind === 'run') {
         setResult(data.result);
         setStatus('done');
-      } else {
+      } else if (!data.ok) {
         setError(data.error);
         setStatus('error');
       }
@@ -153,7 +153,7 @@ export const useMonteCarlo = (
       setStatus('error');
     };
 
-    const request: MonteCarloRequest = { input, options: effectiveOptions };
+    const request: MonteCarloRequest = { kind: 'run', input, options: effectiveOptions };
     worker.postMessage(request);
     queueMicrotask(begin);
 

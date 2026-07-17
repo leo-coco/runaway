@@ -8,7 +8,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { colorForSymbol } from '@/lib/assetColors';
 import { holdingNativeValue } from '@/domain/asset';
 import { scenarioAdjustmentPts } from '@/domain/scenario';
-import { convert, convertOr, type RatesTable } from '@/services/currencyService';
+import { convert, convertChecked, type RatesTable } from '@/services/currencyService';
 import type { Holding } from '@/domain/asset';
 import type { Plan } from '@/domain/plan';
 import type { PriceFetchState } from '@/hooks/usePriceFetcher';
@@ -81,7 +81,7 @@ export const AssetRow = ({
   const isSameCurrency = native === plan.currency;
 
   const nativeValue = holdingNativeValue(holding);
-  const planValue = rates ? convertOr(nativeValue, native, plan.currency, rates) : nativeValue;
+  const planValue = rates ? convertChecked(nativeValue, native, plan.currency, rates) : nativeValue;
 
   // Live converted unit price in the plan's master currency.
   const convertedPrice = isSameCurrency
@@ -109,7 +109,7 @@ export const AssetRow = ({
   // Absolute gain/loss in the plan currency (scales with quantity).
   const totalBasisNative = costBasisPerUnit * holding.quantity;
   const totalBasisPlan = rates
-    ? convertOr(totalBasisNative, native, plan.currency, rates)
+    ? convertChecked(totalBasisNative, native, plan.currency, rates)
     : totalBasisNative;
   const gainPlan = planValue - totalBasisPlan;
 

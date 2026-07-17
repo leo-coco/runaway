@@ -2,7 +2,7 @@ import type { Account } from './account';
 import type { Holding } from './asset';
 import type { Home } from './home';
 import type { CurrencyCode } from './money';
-import type { Country, Province } from './country';
+import { RESIDENCE_CURRENCY, type Country, type Province } from './country';
 import type { RetirementSettings } from './retirementSettings';
 import type { ScenarioConfig } from './scenario';
 
@@ -39,3 +39,15 @@ export interface Plan {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+
+/**
+ * Every currency the plan must be able to convert to price itself: its own
+ * reference currency, each holding's native currency, and the residence's local
+ * currency (whose tax brackets are legislated in it and scaled into plan money).
+ * An FX table missing any of these cannot value the plan.
+ */
+export const planCurrencies = (plan: Plan): readonly CurrencyCode[] => [
+  plan.currency,
+  RESIDENCE_CURRENCY[plan.residenceCountry ?? 'US'],
+  ...plan.holdings.map((h) => h.instrument.nativeCurrency),
+];

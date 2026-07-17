@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
-import { convertOr } from '@/services/currencyService';
+import { convertChecked } from '@/services/currencyService';
 import { contributionFutureValue } from '@/services/retirementCalculator';
 import { scenarioAdjustmentPts } from '@/domain/scenario';
 import type { Holding } from '@/domain/asset';
@@ -94,10 +94,10 @@ export const SavingsCapacityModal = ({ plan, onSave, onClose }: Props) => {
   const yearsToRetirement = Math.max(0, plan.settings.retirementYear - new Date().getFullYear());
 
   const toPlan = (amount: number, currency: Holding['instrument']['nativeCurrency']): number =>
-    fx.data ? convertOr(amount, currency, plan.currency, fx.data) : amount;
+    fx.data ? convertChecked(amount, currency, plan.currency, fx.data) : amount;
 
   const fromPlan = (amount: number, currency: Holding['instrument']['nativeCurrency']): number =>
-    fx.data ? convertOr(amount, plan.currency, currency, fx.data) : amount;
+    fx.data ? convertChecked(amount, plan.currency, currency, fx.data) : amount;
 
   // Split `spread` equally across every asset (in plan currency), converting each
   // share back into the asset's native currency. Overwrites the current draft.

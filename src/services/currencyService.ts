@@ -53,15 +53,34 @@ export const bracketFxFactor = (
   residence: Country,
   planCurrency: CurrencyCode,
   table: RatesTable | undefined,
-): number => (table ? convertOr(1, RESIDENCE_CURRENCY[residence], planCurrency, table) : 1);
+): number => (table ? convertChecked(1, RESIDENCE_CURRENCY[residence], planCurrency, table) : 1);
 
-/** Convert and fall back to the raw amount if conversion is impossible. */
-export const convertOr = (
+/**
+ * The subset of `currencies` the table cannot convert to/from `planCurrency`.
+ * A plan whose table is missing even one of its currencies cannot be valued at
+ * all, so this is checked once where the table enters the app ({@link PlanLayout})
+ * rather than being rediscovered — and silently papered over — at each amount.
+ */
+export const missingRates = (
+  currencies: readonly CurrencyCode[],
+  planCurrency: CurrencyCode,
+  table: RatesTable,
+): readonly CurrencyCode[] =>
+  [...new Set(currencies)].filter((c) => !convert(1, c, planCurrency, table).ok);
+
+/**
+ * Convert, or throw when the table cannot. Every caller sits behind the
+ * {@link missingRates} guard, so a failure here is a broken invariant rather
+ * than a user-facing state: surfacing it to the error boundary is strictly
+ * better than returning an unconverted amount that reads as a real figure.
+ */
+export const convertChecked = (
   amount: number,
   from: CurrencyCode,
   to: CurrencyCode,
   table: RatesTable,
 ): number => {
   const r = convert(amount, from, to, table);
-  return r.ok ? r.value : amount;
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
 };

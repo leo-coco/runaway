@@ -62,13 +62,26 @@ describe('accountTaxAtSpending', () => {
     expect(mine.tax).toBeCloseTo(engine.tax, 0);
   });
 
-  it('a foreign account where withholding dominates is flat (withholdingBinds)', () => {
-    // US taxable account for a FR resident with a high cost basis: the residence
-    // capital-gains tax on the tiny gain (~1.5%) is below the 15% US withholding,
-    // so withholding binds and the rate is flat (no progressive brackets).
+  it('a foreign tax-deferred account where withholding dominates is flat (withholdingBinds)', () => {
+    // CA RRSP for a US resident: the whole withdrawal is ordinary income, so the
+    // 25% Part XIII withholding bites on all of it and beats the US progressive
+    // tax at this spending — the rate goes flat (no brackets).
+    const a = base({ kind: 'tax_deferred', sourceCountry: 'CA' });
+    const r = accountTaxAtSpending(a, 'US', 60_000);
+    expect(r.withholding).toBeCloseTo(0.25, 6);
+    expect(r.withholdingBinds).toBe(true);
+    expect(r.effective).toBeCloseTo(0.25, 6);
+    expect(r.brackets).toEqual([]);
+  });
+
+  it('withholding on a taxable account is charged on the gain, not the gross', () => {
+    // US taxable for a FR resident, 95% basis. A sale mostly returns the investor's
+    // own basis, which no treaty taxes: withholding is 15% of the 5% gain (0.75%),
+    // not 15% of the whole withdrawal, so it no longer dominates the residence tax.
     const a = base({ kind: 'taxable', sourceCountry: 'US', costBasisPct: 95 });
     const r = accountTaxAtSpending(a, 'FR', 60_000);
-    expect(r.withholding).toBeCloseTo(0.15, 6);
-    expect(r.effective).toBeCloseTo(0.15, 6);
+    expect(r.withholding).toBeCloseTo(0.15 * 0.05, 6);
+    expect(r.withholdingBinds).toBe(false);
+    expect(r.effective).toBeCloseTo(0.314 * 0.05, 6);
   });
 });

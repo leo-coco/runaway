@@ -40,9 +40,14 @@ const toClass = (c: string | undefined): AssetClass =>
 const STABLE_DRIFT_PCT = 4;
 const STABLE_SIGMA_PCT = 8;
 
+/** True when the engine may draw this asset down (illiquid assets never fund spending). */
+const isDrawable = (a: MonteCarloAsset): boolean => a.drawable !== false;
+
 /**
  * Produce a modified Monte Carlo input + options reflecting the lever values.
- * Capital and extra savings are spread across holdings by current weight; de-risk
+ * Capital and extra savings are spread across DRAWABLE holdings by current
+ * weight — money the user newly commits has to be able to fund retirement, and
+ * routing a share of it into an illiquid asset would quietly discard it; de-risk
  * moves a slice of every crypto holding into a low-volatility stable asset (and
  * rebuilds the correlation matrix from classes); retiring later shifts the
  * retirement year and shortens the funded horizon by the same amount.
@@ -52,12 +57,24 @@ export const applyLevers = (
   baseOpts: MonteCarloOptions,
   levers: Levers,
 ): { input: MonteCarloInput; options: MonteCarloOptions } => {
-  const totalStart = baseInput.assets.reduce((s, a) => s + a.startValue, 0) || 1;
+  const drawableStart = baseInput.assets.reduce(
+    (s, a) => s + (isDrawable(a) ? a.startValue : 0),
+    0,
+  );
   const capital = Math.max(0, levers.extraCapital);
   const extraAnnualSavings = Math.max(0, levers.extraMonthlySavings) * 12;
 
+  // With no drawable balance to weight by (an all-illiquid portfolio), there is
+  // no sensible split — spread the new money evenly over the drawable assets.
+  const drawableCount = baseInput.assets.filter(isDrawable).length;
+  const weightOf = (a: MonteCarloAsset): number => {
+    if (!isDrawable(a)) return 0;
+    if (drawableStart > 0) return a.startValue / drawableStart;
+    return drawableCount > 0 ? 1 / drawableCount : 0;
+  };
+
   let assets: MonteCarloAsset[] = baseInput.assets.map((a) => {
-    const w = a.startValue / totalStart;
+    const w = weightOf(a);
     return {
       ...a,
       startValue: a.startValue + capital * w,
@@ -68,28 +85,36 @@ export const applyLevers = (
   let correlation = baseInput.correlation;
   const f = Math.min(Math.max(levers.deriskFraction, 0), 1);
   if (f > 0) {
-    let moved = 0;
+    // De-risked crypto stays in the account (and the liquidity bucket) it came
+    // from: selling BTC inside a 401k does not move the proceeds to a taxable
+    // account, and the drawdown engine taxes the stable bucket by its accountId.
+    const moved = new Map<
+      string,
+      { amount: number; accountId: string | null; drawable?: boolean }
+    >();
     assets = assets.map((a) => {
-      if (toClass(a.assetClass) === 'crypto') {
-        const m = a.startValue * f;
-        moved += m;
-        return { ...a, startValue: a.startValue - m };
-      }
-      return a;
+      if (toClass(a.assetClass) !== 'crypto') return a;
+      const m = a.startValue * f;
+      const key = `${a.accountId ?? ''}|${a.drawable === false ? 'held' : 'drawable'}`;
+      const bucket = moved.get(key) ?? { amount: 0, accountId: a.accountId, drawable: a.drawable };
+      bucket.amount += m;
+      moved.set(key, bucket);
+      return { ...a, startValue: a.startValue - m };
     });
-    if (moved > 0.5) {
-      assets = [
-        ...assets,
-        {
-          startValue: moved,
-          driftPct: STABLE_DRIFT_PCT,
-          sigmaPct: STABLE_SIGMA_PCT,
-          annualContribution: 0,
-          accountId: assets[0]?.accountId ?? null,
-          symbol: 'Stable',
-          assetClass: 'other',
-        },
-      ];
+    const stable: MonteCarloAsset[] = [...moved.values()]
+      .filter((b) => b.amount > 0.5)
+      .map((b) => ({
+        startValue: b.amount,
+        driftPct: STABLE_DRIFT_PCT,
+        sigmaPct: STABLE_SIGMA_PCT,
+        annualContribution: 0,
+        accountId: b.accountId,
+        drawable: b.drawable,
+        symbol: 'Stable',
+        assetClass: 'other',
+      }));
+    if (stable.length > 0) {
+      assets = [...assets, ...stable];
       correlation = assets.map((ai, i) =>
         assets.map((aj, j) =>
           i === j ? 1 : classCorrelation(toClass(ai.assetClass), toClass(aj.assetClass)),
@@ -139,6 +164,12 @@ export interface LeverBounds {
   readonly maxCapital: number;
 }
 
+export interface BalanceResult {
+  readonly levers: Levers;
+  readonly success: number;
+  readonly reached: boolean;
+}
+
 /**
  * Auto-balance: move every UNLOCKED lever together along a single effort dial
  * λ ∈ [0,1] (λ=0 = no effort, λ=1 = each unlocked lever at full effort) and solve
@@ -154,7 +185,7 @@ export const balanceToTarget = (
   current: Levers,
   bounds: LeverBounds,
   iterations: number,
-): { levers: Levers; success: number; reached: boolean } => {
+): BalanceResult => {
   const make = (lambda: number): Levers => ({
     ...current,
     spending: locked.spending ? current.spending : bounds.baseSpending * (1 - lambda),
@@ -168,9 +199,9 @@ export const balanceToTarget = (
   });
   const f = (lambda: number) => evalSuccess(baseInput, baseOpts, make(lambda), iterations);
 
-  if (f(1) < target) {
-    const levers = make(1);
-    return { levers, success: f(1), reached: false };
+  const fullEffort = f(1);
+  if (fullEffort < target) {
+    return { levers: make(1), success: fullEffort, reached: false };
   }
   let lo = 0;
   let hi = 1;

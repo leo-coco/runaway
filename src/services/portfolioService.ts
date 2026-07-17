@@ -3,7 +3,7 @@ import type { Account } from '@/domain/account';
 import type { AssetClass } from '@/domain/assetClass';
 import type { CurrencyCode } from '@/domain/money';
 import { holdingNativeValue } from '@/domain/asset';
-import { convertOr, type RatesTable } from './currencyService';
+import { convertChecked, type RatesTable } from './currencyService';
 
 /** A holding's value expressed in the plan's reference currency. */
 export interface HoldingValue {
@@ -35,7 +35,7 @@ export const valueHoldings = (
   holdings.map((h) => {
     const native = holdingNativeValue(h);
     const fx = (amount: number): number =>
-      rates ? convertOr(amount, h.instrument.nativeCurrency, planCurrency, rates) : amount;
+      rates ? convertChecked(amount, h.instrument.nativeCurrency, planCurrency, rates) : amount;
     return {
       holdingId: h.id,
       symbol: h.instrument.symbol,

@@ -7,13 +7,8 @@ import { useAppStore } from '@/store';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
 import { successStatus } from '@/domain/successRate';
 import { DEFAULT_MC_OPTIONS, buildMonteCarloInput } from '@/services/monteCarlo';
-import {
-  balanceToTarget,
-  evalSuccess,
-  neutralLevers,
-  type ActiveLeverKey,
-  type Levers,
-} from '@/services/goalSeek';
+import { neutralLevers, type ActiveLeverKey, type Levers } from '@/services/goalSeek';
+import { useGoalSeekBalance, useGoalSeekEval } from '@/hooks/useGoalSeekWorker';
 import type { RatesTable } from '@/services/currencyService';
 import type { Plan } from '@/domain/plan';
 
@@ -110,12 +105,29 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
   };
   const neutral = useMemo(() => neutralLevers(base.input.annualSpending), [base]);
 
+  // One channel each: a refine pass must not cancel the draft pass in flight.
+  const { evaluate: evaluateBaseline } = useGoalSeekEval();
+  const { evaluate: evaluateDraft } = useGoalSeekEval();
+  const { evaluate: evaluateRefine } = useGoalSeekEval();
+
   // Baseline success (neutral levers) — the "now" reference, computed once. Uses
-  // the DRAFT count so an unchanged lever's points come out exactly 0.
-  const baseline = useMemo(
-    () => evalSuccess(base.input, base.opts, neutral, DRAFT_ITERS),
-    [base, neutral],
-  );
+  // the DRAFT count so an unchanged lever's points come out exactly 0. Null until
+  // the worker answers: the preview below has no meaning without it.
+  const [baseline, setBaseline] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void evaluateBaseline({
+      input: base.input,
+      options: base.opts,
+      levers: [neutral],
+      iterations: DRAFT_ITERS,
+    }).then((r) => {
+      if (!cancelled && r) setBaseline(r[0]!);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [base, neutral, evaluateBaseline]);
 
   const [levers, setLevers] = useState<Levers>(neutral);
   const [locked, setLocked] = useState<Record<ActiveLeverKey, boolean>>({
@@ -133,7 +145,7 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
     retireDelayYears: 0,
     extraCapital: 0,
   });
-  const [balancing, setBalancing] = useState(false);
+  const { balancing, error: balanceError, solve } = useGoalSeekBalance();
   const [note, setNote] = useState<string | null>(null);
   const draftTimer = useRef<number | null>(null);
   const refineTimer = useRef<number | null>(null);
@@ -144,63 +156,75 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
   // DRAFT pass during the drag, then one higher-resolution REFINE pass on the mix
   // once the sliders have been still for a moment.
   useEffect(() => {
+    if (baseline === null) return;
     if (draftTimer.current) window.clearTimeout(draftTimer.current);
     if (refineTimer.current) window.clearTimeout(refineTimer.current);
 
     draftTimer.current = window.setTimeout(() => {
+      // The mix first, then each changed lever on its own — one batch, one worker
+      // round-trip, so a drag never blocks the thread painting it.
       const changed = META.filter((m) => lastComputed.current[m.key] !== levers[m.key]);
-      setSuccess(evalSuccess(base.input, base.opts, levers, DRAFT_ITERS));
-      if (changed.length > 0) {
-        setSolos((prev) => {
-          const out = { ...prev };
-          for (const m of changed) {
-            const only = { ...neutral, [m.key]: levers[m.key] };
-            out[m.key] = Math.max(
-              0,
-              evalSuccess(base.input, base.opts, only, DRAFT_ITERS) - baseline,
-            );
-          }
-          return out;
-        });
-      }
-      lastComputed.current = levers;
+      const batch = [levers, ...changed.map((m) => ({ ...neutral, [m.key]: levers[m.key] }))];
+      void evaluateDraft({
+        input: base.input,
+        options: base.opts,
+        levers: batch,
+        iterations: DRAFT_ITERS,
+      }).then((r) => {
+        if (!r) return;
+        setSuccess(r[0]!);
+        if (changed.length > 0) {
+          setSolos((prev) => {
+            const out = { ...prev };
+            changed.forEach((m, i) => {
+              out[m.key] = Math.max(0, r[i + 1]! - baseline);
+            });
+            return out;
+          });
+        }
+        lastComputed.current = levers;
+      });
     }, 140);
 
     refineTimer.current = window.setTimeout(() => {
-      setSuccess(evalSuccess(base.input, base.opts, levers, REFINE_ITERS));
+      void evaluateRefine({
+        input: base.input,
+        options: base.opts,
+        levers: [levers],
+        iterations: REFINE_ITERS,
+      }).then((r) => {
+        if (r) setSuccess(r[0]!);
+      });
     }, 520);
 
     return () => {
       if (draftTimer.current) window.clearTimeout(draftTimer.current);
       if (refineTimer.current) window.clearTimeout(refineTimer.current);
     };
-  }, [levers, base, neutral, baseline]);
+  }, [levers, base, neutral, baseline, evaluateDraft, evaluateRefine]);
 
   const setLever = (key: ActiveLeverKey, value: number) => {
     setNote(null);
     setLevers((l) => ({ ...l, [key]: value }));
   };
 
-  const balance = () => {
-    setBalancing(true);
+  const balance = async () => {
     setNote(null);
-    window.setTimeout(() => {
-      const r = balanceToTarget(
-        base.input,
-        base.opts,
-        targetPct / 100,
-        locked,
-        levers,
-        bounds,
-        SOLVE_ITERS,
-      );
-      setLevers(r.levers);
-      setSuccess(r.success);
-      if (!r.reached) {
-        setNote(t('goalSeek.topOut', { pct: Math.round(r.success * 100) }));
-      }
-      setBalancing(false);
-    }, 0);
+    const r = await solve({
+      input: base.input,
+      options: base.opts,
+      target: targetPct / 100,
+      locked,
+      current: levers,
+      bounds,
+      iterations: SOLVE_ITERS,
+    });
+    if (!r) return;
+    setLevers(r.levers);
+    setSuccess(r.success);
+    if (!r.reached) {
+      setNote(t('goalSeek.topOut', { pct: Math.round(r.success * 100) }));
+    }
   };
 
   const reset = () => {
@@ -216,6 +240,16 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
     });
     onClose();
   };
+
+  // Every figure below is expressed relative to the baseline, so there is nothing
+  // meaningful to draw until the worker has it.
+  if (baseline === null) {
+    return (
+      <Modal title={t('goalSeek.title')} description={t('goalSeek.desc')} onClose={onClose} wide>
+        <div className="state-box">{t('common.loading')}</div>
+      </Modal>
+    );
+  }
 
   const cur = success ?? baseline;
   const sx = successStatus(cur);
@@ -427,9 +461,9 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
         </div>
       ))}
 
-      {note && (
+      {(note ?? balanceError) && (
         <p className="field__hint" style={{ marginTop: 4, color: 'var(--amber)' }}>
-          {note}
+          {note ?? balanceError}
         </p>
       )}
       <p className="field__hint">

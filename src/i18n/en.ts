@@ -217,6 +217,8 @@ export const en = {
   plan: {
     currency: 'Currency',
     notFound: 'This plan could not be found. It may have been deleted.',
+    fxIncomplete:
+      'No exchange rate is available for {{currencies}}, so this plan cannot be valued. Figures are hidden rather than shown in mixed currencies. Try again shortly.',
     disclaimerLabel: 'Disclaimer:',
     disclaimer:
       'This tool is intended for strictly informational and educational purposes. The results shown are hypothetical projections based on your inputs and do not constitute financial, tax, or legal advice. No guarantee of performance is offered. Consult a qualified professional before making any decisions.',
@@ -1223,6 +1225,8 @@ export const en = {
     correlationMatrix: 'Correlation matrix',
     correlationHint:
       'Edit any off-diagonal cell (−1…1) — the matrix is symmetric and the run updates live.',
+    correlationIgnored:
+      'Read-only: the {{model}} model replays real calendar years, so how these assets move together comes from history itself rather than this matrix. Switch to Normal, Fat tails or Crash-aware to set correlations yourself.',
     resetCorrelations: 'Reset to defaults',
     scenarioBest: 'Best 10%',
     scenarioMedian: 'Median',

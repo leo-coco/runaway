@@ -225,6 +225,8 @@ export const fr: Resources = {
   plan: {
     currency: 'Devise',
     notFound: 'Ce plan est introuvable. Il a peut-être été supprimé.',
+    fxIncomplete:
+      'Aucun taux de change disponible pour {{currencies}} : ce plan ne peut pas être valorisé. Les montants sont masqués plutôt qu’affichés dans des devises mélangées. Réessayez dans un instant.',
     disclaimerLabel: 'Avertissement :',
     disclaimer:
       'Cet outil est destiné à des fins strictement informatives et éducatives. Les résultats présentés sont des projections hypothétiques basées sur vos saisies et ne constituent pas un conseil financier, fiscal ou juridique. Aucune garantie de performance n’est offerte. Consultez un professionnel qualifié avant toute décision.',
@@ -1254,6 +1256,8 @@ export const fr: Resources = {
     correlationMatrix: 'Matrice de corrélation',
     correlationHint:
       'Modifiez n’importe quelle cellule hors diagonale (−1…1) — la matrice est symétrique et la simulation se met à jour en direct.',
+    correlationIgnored:
+      'Lecture seule : le modèle {{model}} rejoue de vraies années civiles, donc les co-mouvements de ces actifs viennent de l’historique lui-même et non de cette matrice. Passez à Normal, Queues épaisses ou Sensible aux krachs pour régler les corrélations vous-même.',
     resetCorrelations: 'Réinitialiser les valeurs par défaut',
     scenarioBest: 'Top 10 %',
     scenarioMedian: 'Médiane',

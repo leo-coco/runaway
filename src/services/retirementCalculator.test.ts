@@ -384,6 +384,46 @@ describe('retirementCalculator.project', () => {
       expect(yr(withExpense).closingBalance).toBeLessThan(yr(without).closingBalance);
     });
 
+    it('flags a pre-retirement flow the portfolio cannot fund as a depletion', () => {
+      // The Monte Carlo counts an unfundable pre-retirement expense as a failure;
+      // the deterministic projection must agree rather than reporting a plan that
+      // never runs dry because the shortfall happened before the retirement year.
+      const p = project(
+        {
+          startYear: 2026,
+          horizonYears: 30,
+          retirementYear: 2040,
+          annualSpending: 40_000,
+          inflationPct: 0,
+          applyInflation: false,
+          scenario: { ...DEFAULT_SCENARIO_CONFIG, active: 'expected' },
+          assets: [
+            {
+              holdingId: 'small',
+              symbol: 'SMALL',
+              startValue: 50_000,
+              baseCagrPct: 3,
+              annualContribution: 0,
+            },
+          ],
+          expensesIncomes: [
+            {
+              id: 'house',
+              name: 'House',
+              amount: 500_000,
+              year: 2030,
+              kind: 'expense',
+              inflate: false,
+            },
+          ],
+        } as ProjectionInput,
+        'expected',
+      );
+      expect(p.depletionYear).toBe(2030);
+      // Retirement is still 10 years out, so nothing survived into it.
+      expect(p.yearsOfSurvival).toBe(0);
+    });
+
     it('a large one-off expense can advance the depletion year', () => {
       const drawdownCommon: ProjectionInput = {
         startYear: 2026,

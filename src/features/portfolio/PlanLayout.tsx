@@ -11,9 +11,9 @@ import { usePortfolioValue } from '@/hooks/usePortfolioValue';
 import { useProjection, type ProjectionResult } from '@/hooks/useProjection';
 import { useMonteCarlo, type UseMonteCarloResult } from '@/hooks/useMonteCarlo';
 import { useFeature } from '@/hooks/useEntitlements';
-import { convertOr, type RatesTable } from '@/services/currencyService';
+import { convert, missingRates, type RatesTable } from '@/services/currencyService';
 import { PlanModals } from '@/features/settings/PlanModals';
-import type { Plan } from '@/domain/plan';
+import { planCurrencies, type Plan } from '@/domain/plan';
 import { useAppMode } from '@/providers/AppModeContext';
 
 export interface PlanContext {
@@ -37,7 +37,12 @@ export const PlanLayout = () => {
   const setPlanSuccess = useAppStore((s) => s.setPlanSuccess);
 
   const fx = useExchangeRate(plan?.currency ?? 'USD');
-  const rates = fx.data;
+  // A table that cannot cover every currency the plan uses is worse than none:
+  // it would convert some amounts and pass the rest through at face value,
+  // mixing units inside one total. Withhold it from the engines (so no call can
+  // fail on it) and refuse to render figures at all — see the guard below.
+  const missing = plan && fx.data ? missingRates(planCurrencies(plan), plan.currency, fx.data) : [];
+  const rates = missing.length > 0 ? undefined : fx.data;
   const totalValue = usePortfolioValue(plan, rates);
   const projection = useProjection(plan, rates);
   // Monte Carlo is a premium capability: free users don't compute it (so the
@@ -71,6 +76,16 @@ export const PlanLayout = () => {
     );
   }
 
+  if (missing.length > 0) {
+    return (
+      <div className="container">
+        <div className="state-box">
+          {t('plan.fxIncomplete', { currencies: missing.join(', ') })}
+        </div>
+      </div>
+    );
+  }
+
   const retirementValue =
     projection.active.years.find((y) => y.year === plan.settings.retirementYear)?.openingBalance ??
     0;
@@ -79,13 +94,14 @@ export const PlanLayout = () => {
   // so its real value is preserved (holdings are already stored in native currency).
   const changeCurrency = (next: CurrencyCode) => {
     if (next === plan.currency) return;
-    if (rates) {
-      const converted = Math.round(
-        convertOr(plan.settings.annualSpending, plan.currency, next, rates),
-      );
-      if (converted !== plan.settings.annualSpending) {
-        updateSettings(plan.id, { ...plan.settings, annualSpending: converted });
-      }
+    // `next` is outside the plan's currencies until this lands, so it sits outside
+    // the guard above: an unquotable target leaves the amount untouched (the same
+    // thing that happens with no table at all) rather than inventing a figure.
+    const converted = rates
+      ? convert(plan.settings.annualSpending, plan.currency, next, rates)
+      : null;
+    if (converted?.ok && Math.round(converted.value) !== plan.settings.annualSpending) {
+      updateSettings(plan.id, { ...plan.settings, annualSpending: Math.round(converted.value) });
     }
     setPlanCurrency(plan.id, next);
   };
