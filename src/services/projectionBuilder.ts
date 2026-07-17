@@ -1,6 +1,7 @@
 import type { Plan } from '@/domain/plan';
 import { accountEffectiveRate, accountTaxProfile } from '@/domain/account';
 import { homeFlows } from '@/domain/home';
+import { rentalPropertiesFlows } from '@/domain/rentalProperty';
 import { valueHoldings } from './portfolioService';
 import type { ProjectionInput } from './retirementCalculator';
 import { bracketFxFactor, type RatesTable } from './currencyService';
@@ -38,9 +39,13 @@ export const buildProjectionInput = (
     spendingMode: plan.settings.spendingMode,
     phasedSpending: plan.settings.phasedSpending,
     currentAge: plan.settings.currentAge,
-    // The home's purchase/mortgage/ownership/sale cashflows are merged in as
-    // ordinary flows; the home itself is never a drawable holding.
-    expensesIncomes: [...(plan.settings.expensesIncomes ?? []), ...homeFlows(plan.home, startYear)],
+    // The home's and rentals' cashflows (purchase/mortgage/ownership/rent/sale)
+    // are merged in as ordinary flows; the properties are never drawable holdings.
+    expensesIncomes: [
+      ...(plan.settings.expensesIncomes ?? []),
+      ...homeFlows(plan.home, startYear),
+      ...rentalPropertiesFlows(plan.properties, startYear, plan.settings.inflationPct),
+    ],
     conversions: plan.settings.conversions,
     rmdEnabled: plan.settings.rmdEnabled,
     scenario: plan.scenario,

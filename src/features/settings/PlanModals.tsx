@@ -9,6 +9,7 @@ import { AccountsModal } from './AccountsModal';
 import { WithdrawalOrderModal } from './WithdrawalOrderModal';
 import { ExpensesIncomesModal } from './ExpensesIncomesModal';
 import { HomeModal } from './HomeModal';
+import { RentalPropertiesModal } from './RentalPropertiesModal';
 import { ConversionsModal } from './ConversionsModal';
 import { AddAssetDialog } from './AddAssetDialog';
 import type { RatesTable } from '@/services/currencyService';
@@ -108,6 +109,8 @@ export const PlanModals = ({
       return <ExpensesIncomesModal plan={plan} onClose={closeModal} />;
     case 'home':
       return <HomeModal plan={plan} onClose={closeModal} />;
+    case 'rentalProperties':
+      return <RentalPropertiesModal plan={plan} onClose={closeModal} />;
     case 'conversions':
       return <ConversionsModal plan={plan} onClose={closeModal} />;
     case 'addAsset':

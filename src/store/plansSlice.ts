@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { Plan } from '@/domain/plan';
 import type { Holding } from '@/domain/asset';
 import type { Home } from '@/domain/home';
+import type { RentalProperty } from '@/domain/rentalProperty';
 import type { Account, AccountPreset } from '@/domain/account';
 import type { Country, Province } from '@/domain/country';
 import type { CurrencyCode } from '@/domain/money';
@@ -104,6 +105,17 @@ export interface PlansSlice {
   setHome: (planId: string, home: Home) => void;
   /** Remove the plan's home. */
   removeHome: (planId: string) => void;
+
+  /** Add a rental property; returns its id. */
+  addProperty: (planId: string, data: Omit<RentalProperty, 'id'>) => string;
+  /** Update an existing rental property in place. */
+  updateProperty: (
+    planId: string,
+    propertyId: string,
+    patch: Partial<Omit<RentalProperty, 'id'>>,
+  ) => void;
+  /** Remove a rental property. */
+  removeProperty: (planId: string, propertyId: string) => void;
 
   /** Add a cashflow (home purchase/sale, inheritance, tuition, pension…); returns its id. */
   addExpenseIncome: (planId: string, data: Omit<ExpenseIncome, 'id'>) => string;
@@ -439,6 +451,44 @@ export const createPlansSlice =
                 const { home: _removed, ...rest } = x;
                 return rest;
               })
+            : p,
+        ),
+      })),
+
+    addProperty: (planId, data) => {
+      const property: RentalProperty = { ...data, id: newId() };
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({ ...x, properties: [...(x.properties ?? []), property] }))
+            : p,
+        ),
+      }));
+      return property.id;
+    },
+
+    updateProperty: (planId, propertyId, patch) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                properties: (x.properties ?? []).map((prop) =>
+                  prop.id === propertyId ? { ...prop, ...patch } : prop,
+                ),
+              }))
+            : p,
+        ),
+      })),
+
+    removeProperty: (planId, propertyId) =>
+      set((s) => ({
+        plans: s.plans.map((p) =>
+          p.id === planId
+            ? touch(p, (x) => ({
+                ...x,
+                properties: (x.properties ?? []).filter((prop) => prop.id !== propertyId),
+              }))
             : p,
         ),
       })),

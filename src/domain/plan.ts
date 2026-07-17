@@ -1,6 +1,7 @@
 import type { Account } from './account';
 import type { Holding } from './asset';
 import type { Home } from './home';
+import type { RentalProperty } from './rentalProperty';
 import type { CurrencyCode } from './money';
 import { RESIDENCE_CURRENCY, type Country, type Province } from './country';
 import type { RetirementSettings } from './retirementSettings';
@@ -20,6 +21,14 @@ export interface Plan {
    * separately for the net-worth view.
    */
   readonly home?: Home;
+  /**
+   * Rental / investment properties, if the plan models any. Not holdings: they
+   * never enter the drawdown pool. Each one's purchase/mortgage/operating/rent/
+   * sale cashflows are generated as expense/income flows and merged into the
+   * projection (rent is taxable ordinary income); their equity is tracked
+   * separately for the net-worth view.
+   */
+  readonly properties?: readonly RentalProperty[];
   /** Tax envelopes holdings can be grouped into. Empty = no tax modelling. */
   readonly accounts: readonly Account[];
   /** Account ids in the order they are drained during retirement (top first). */

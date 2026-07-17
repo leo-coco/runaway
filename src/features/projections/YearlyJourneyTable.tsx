@@ -6,6 +6,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
 import { expenseIncomeItemAmountForYear } from '@/domain/expenseIncome';
 import { homeFlows, HOME_FLOW_LABEL_KEY } from '@/domain/home';
+import { rentalPropertiesFlows, rentalFlowLabelKey } from '@/domain/rentalProperty';
 import type { Plan } from '@/domain/plan';
 import type { AssetYearValue, Projection, ProjectionYear } from '@/domain/projection';
 
@@ -57,10 +58,16 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
   const inflationRate = plan.settings.inflationPct / 100;
   // Include the home's generated cashflows so the expandable breakdown matches the
   // totals (which already include them via the projection engine).
-  const flowItems = [...(plan.settings.expensesIncomes ?? []), ...homeFlows(plan.home, startYear)];
-  // Disambiguate the home flows (all share the home name) with a per-type label.
-  const flowLabel = (item: (typeof flowItems)[number]): string =>
-    HOME_FLOW_LABEL_KEY[item.id] ? `${item.name} · ${t(HOME_FLOW_LABEL_KEY[item.id]!)}` : item.name;
+  const flowItems = [
+    ...(plan.settings.expensesIncomes ?? []),
+    ...homeFlows(plan.home, startYear),
+    ...rentalPropertiesFlows(plan.properties, startYear, plan.settings.inflationPct),
+  ];
+  // Disambiguate the home/rental flows (each property's share a name) with a per-type label.
+  const flowLabel = (item: (typeof flowItems)[number]): string => {
+    const key = HOME_FLOW_LABEL_KEY[item.id] ?? rentalFlowLabelKey(item.id);
+    return key ? `${item.name} · ${t(key)}` : item.name;
+  };
 
   // An expandable summary row: clicking the label reveals each asset's value for
   // that line (opening, appreciation, after-appreciation or closing).

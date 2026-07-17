@@ -206,4 +206,37 @@ describe('expenseIncomeAmountsForYear', () => {
       expect(result.taxableIncome).toBeCloseTo(20_000, 6);
     });
   });
+
+  describe('taxableAmounts (explicit per-year taxable base)', () => {
+    const rental: ExpenseIncome = {
+      id: 'r',
+      name: 'Rental',
+      amount: 24_000,
+      year: 2030,
+      endYear: 2032,
+      kind: 'income',
+      frequency: 'recurring',
+      inflate: false,
+      taxable: true,
+      taxableAmounts: { 2030: 9_000, 2031: 11_000 },
+    };
+
+    it('taxes the per-year amount, not a fraction of the cash amount', () => {
+      const result = expenseIncomeAmountsForYear([rental], 2030, 1);
+      expect(result.income).toBeCloseTo(24_000, 6); // full rent is still cash
+      expect(result.taxableIncome).toBeCloseTo(9_000, 6);
+    });
+
+    it('reads a missing year in the map as a zero taxable base', () => {
+      // 2032 is in the flow's range (cash lands) but absent from taxableAmounts.
+      const result = expenseIncomeAmountsForYear([rental], 2032, 1);
+      expect(result.income).toBeCloseTo(24_000, 6);
+      expect(result.taxableIncome).toBe(0);
+    });
+
+    it('floors a negative taxable entry at zero', () => {
+      const item: ExpenseIncome = { ...rental, taxableAmounts: { 2030: -5_000 } };
+      expect(expenseIncomeAmountsForYear([item], 2030, 1).taxableIncome).toBe(0);
+    });
+  });
 });

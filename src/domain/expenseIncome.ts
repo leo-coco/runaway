@@ -90,6 +90,15 @@ export interface ExpenseIncome {
    * gain, not the full proceeds, is ordinary income. Default 1 (the whole amount).
    */
   readonly taxableFraction?: number;
+  /**
+   * Income kind only: explicit taxable ordinary-income amount per calendar year,
+   * in nominal money. When present it overrides `taxable`/`taxableFraction` — used
+   * when the taxable base isn't a fixed fraction of the cash `amount`, e.g. net
+   * rental income whose deductible operating costs and loan interest vary year by
+   * year. A missing or negative entry contributes 0. The cash `amount` is
+   * unaffected: only the tax base changes.
+   */
+  readonly taxableAmounts?: Readonly<Record<number, number>>;
 }
 
 export interface YearExpenseIncome {
@@ -145,7 +154,13 @@ export const expenseIncomeAmountsForYear = (
     if (amount === 0) continue;
     if (item.kind === 'income') {
       income += amount;
-      if (item.taxable ?? true) taxableIncome += amount * (item.taxableFraction ?? 1);
+      if (item.taxableAmounts) {
+        // Explicit per-year taxable base (e.g. net rental income): deductible
+        // costs and loan interest change yearly, so it can't be a fixed fraction.
+        taxableIncome += Math.max(0, item.taxableAmounts[year] ?? 0);
+      } else if (item.taxable ?? true) {
+        taxableIncome += amount * (item.taxableFraction ?? 1);
+      }
     } else {
       expense += amount;
     }

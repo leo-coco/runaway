@@ -1,6 +1,7 @@
 import type { Projection } from '@/domain/projection';
 import { SCENARIO_LABEL, type ScenarioKey } from '@/domain/scenario';
 import { homeEquitySeries, type Home } from '@/domain/home';
+import { rentalPropertiesEquitySeries, type RentalProperty } from '@/domain/rentalProperty';
 
 /** Row shape for the stacked composition chart: one entry per year, keyed by symbol. */
 export type CompositionRow = { year: number } & Record<string, number>;
@@ -63,25 +64,33 @@ export interface RealEstateRow {
   year: number;
   portfolio: number;
   homeEquity: number;
+  rentalEquity: number;
   total: number;
 }
 
-/** Portfolio balance, home equity and their sum for each projected year. */
+/** Portfolio balance, home equity, rental equity and their sum for each projected year. */
 export const buildRealEstateData = (
   projection: Projection,
-  home: Home,
+  home: Home | undefined,
+  properties: readonly RentalProperty[] | undefined,
   startYear: number,
 ): RealEstateRow[] => {
-  const equityByYear = new Map(
-    homeEquitySeries(home, startYear, projection.years.length - 1).map((e) => [e.year, e.equity]),
+  const horizon = projection.years.length - 1;
+  const homeByYear = new Map(
+    home ? homeEquitySeries(home, startYear, horizon).map((e) => [e.year, e.equity]) : [],
+  );
+  const rentalByYear = new Map(
+    rentalPropertiesEquitySeries(properties, startYear, horizon).map((e) => [e.year, e.equity]),
   );
   return projection.years.map((y) => {
-    const homeEquity = equityByYear.get(y.year) ?? 0;
+    const homeEquity = homeByYear.get(y.year) ?? 0;
+    const rentalEquity = rentalByYear.get(y.year) ?? 0;
     return {
       year: y.year,
       portfolio: y.closingBalance,
       homeEquity,
-      total: y.closingBalance + homeEquity,
+      rentalEquity,
+      total: y.closingBalance + homeEquity + rentalEquity,
     };
   });
 };
