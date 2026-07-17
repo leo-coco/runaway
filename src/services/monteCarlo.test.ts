@@ -157,6 +157,78 @@ describe('runMonteCarlo', () => {
     expect(medianEnd).toBeLessThan(deterministic * 1.12);
   });
 
+  it('keeps the median on the CAGR at cap-biting volatility, across models', () => {
+    // The per-year caps are asymmetric in log space, so at high σ the ceiling clips
+    // the upper tail and would drag the median compound rate far below the stated
+    // CAGR. The cap-bias compensation restores it. Mean reversion is deliberately
+    // ON here: it interacts with the caps (dev accumulates the CAPPED return), and
+    // a δ calibrated without it overshoots by >10 pts at σ=110%.
+    const start = 1_000_000;
+    const years = 20;
+    for (const model of ['normal', 'fat-tails', 'bootstrap'] as const) {
+      for (const [sigmaPct, driftPct] of [
+        [70, 20],
+        [110, 25],
+      ] as const) {
+        const r = runMonteCarlo(
+          baseInput({
+            assets: [
+              { startValue: start, driftPct, sigmaPct, annualContribution: 0, accountId: 'a' },
+            ],
+            annualSpending: 0,
+            applyInflation: false,
+            horizonYears: years,
+          }),
+          { iterations: 20_000, seed: 12345, retirementHorizon: 1, model, meanReversion: 0.15 },
+        );
+        const medianEnd = r.percentiles.at(-1)!.p50;
+        const realisedPct = (Math.pow(medianEnd / start, 1 / (years + 1)) - 1) * 100;
+        // Within 1.5 pts of the stated CAGR; uncompensated this misses by 10+.
+        expect(Math.abs(realisedPct - driftPct)).toBeLessThan(1.5);
+      }
+    }
+  }, 30_000);
+
+  it('bootstrap-uncentered: σ moves dispersion, not the median (anchored on class drift)', () => {
+    // This model ignores the user's CAGR — its anchor is the asset class's own
+    // historical drift — so σ must only widen the spread, never shift the median.
+    // The per-year caps used to drag that median down as σ rose (≈35% → 18% for
+    // crypto at σ=110); the cap-bias compensation holds it on the class drift.
+    const start = 1_000_000;
+    const years = 20;
+    const medianFor = (sigmaPct: number): number =>
+      runMonteCarlo(
+        baseInput({
+          assets: [
+            {
+              startValue: start,
+              driftPct: 10,
+              sigmaPct,
+              annualContribution: 0,
+              accountId: 'a',
+              symbol: 'X',
+              assetClass: 'crypto',
+            },
+          ],
+          annualSpending: 0,
+          applyInflation: false,
+          horizonYears: years,
+        }),
+        {
+          iterations: 20_000,
+          seed: 12345,
+          retirementHorizon: 1,
+          model: 'bootstrap-uncentered',
+          meanReversion: 0.15,
+        },
+      ).percentiles.at(-1)!.p50;
+    const cagrOf = (v: number): number => (Math.pow(v / start, 1 / (years + 1)) - 1) * 100;
+    const base = cagrOf(medianFor(40));
+    for (const sigmaPct of [70, 110] as const) {
+      expect(Math.abs(cagrOf(medianFor(sigmaPct)) - base)).toBeLessThan(1.5);
+    }
+  }, 30_000);
+
   it('growth fade lowers a high-CAGR asset’s median end balance', () => {
     // A 30% CAGR asset, pure accumulation. Fading it toward 7% over 10y must pull
     // the median end balance well below the un-faded run.

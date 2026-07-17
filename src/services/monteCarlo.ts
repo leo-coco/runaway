@@ -217,6 +217,153 @@ const LOG_RETURN_MIN = Math.log(RETURN_FACTOR_MIN);
 const capLogReturn = (logReturn: number): number =>
   Math.min(LOG_RETURN_MAX, Math.max(LOG_RETURN_MIN, logReturn));
 
+// --- cap-bias compensation ------------------------------------------------------
+// The caps are deliberately asymmetric in log space (ln 0.05 ≈ −3.0 vs ln 3 ≈ +1.1):
+// at high volatility the ceiling clips the upper tail hard (≈20% of years for a
+// σ=110% asset) and drags the realised median compound rate far below the stated
+// CAGR (≈ −13 pts at σ=110%). To keep BOTH the caps (no absurd single years — the
+// upside stays deliberately compressed) and the promise that the stated CAGR is
+// the median compound rate, each asset's drift is raised by the δ that restores
+// the median of its capped, compounded log-return over the horizon. δ is
+// calibrated against the model's own standardized shock shape AND its mean
+// reversion with a fixed-seed mini-simulation (common random numbers +
+// bisection), so it is exact for the statistic the product promises, per model.
+// Mean reversion has to be in the calibration: it already repairs most of the
+// cap bias by itself (dev accumulates the capped return, so a clipped year is
+// handed back by the next year's −κ·dev), and ignoring it overshoots the stated
+// CAGR by ≈ +11 pts at σ=110%. The crash regime and the BTC cycle overlay stay
+// excluded — both are intentional penalties/shapes, not bias to repair.
+// δ ≥ 0 — the compensation only ever repairs the ceiling's bias, never lowers a
+// drift the floor happens to flatter.
+
+const CALIB_PATHS = 4000;
+const CALIB_YEARS = 80;
+const CALIB_SEED = 0x5eedca11;
+
+/** Standardized calibration shock matrices per model shape (lazy, fixed seed). */
+const calibMatrices = new Map<string, Float64Array>();
+const calibMatrix = (
+  key: string,
+  fill: (rng: () => number, out: Float64Array) => void,
+): Float64Array => {
+  let m = calibMatrices.get(key);
+  if (!m) {
+    m = new Float64Array(CALIB_PATHS * CALIB_YEARS);
+    fill(mulberry32(CALIB_SEED), m);
+    calibMatrices.set(key, m);
+  }
+  return m;
+};
+
+/** Shock matrix matching the model's marginal yearly shape, or null (historical replay). */
+const calibShocksFor = (model: MonteCarloModel, assetClass: AssetClass): Float64Array | null => {
+  if (model === 'normal') {
+    return calibMatrix('normal', (rng, out) => {
+      for (let i = 0; i < out.length; i += 1) out[i] = gaussian(rng);
+    });
+  }
+  if (model === 'fat-tails' || model === 'crash-aware') {
+    return calibMatrix('student-t', (rng, out) => {
+      for (let i = 0; i < out.length; i += 1) out[i] = studentT(rng, STUDENT_T_DF);
+    });
+  }
+  if (model === 'bootstrap' || model === 'bootstrap-uncentered') {
+    return calibMatrix(`bootstrap:${assetClass}`, (rng, out) => {
+      const hist = STANDARDIZED_HISTORY[assetClass];
+      const sys = Math.sqrt(classCorrelation(assetClass, assetClass));
+      const idio = Math.sqrt(Math.max(0, 1 - sys * sys));
+      for (let p = 0; p < CALIB_PATHS; p += 1) {
+        let idx = 0;
+        for (let y = 0; y < CALIB_YEARS; y += 1) {
+          if (y % BOOTSTRAP_BLOCK === 0) idx = Math.floor(rng() * HISTORY_LEN);
+          out[p * CALIB_YEARS + y] = sys * hist[idx]! + idio * gaussian(rng);
+          idx = (idx + 1) % HISTORY_LEN;
+        }
+      }
+    });
+  }
+  return null;
+};
+
+const calibCorrections = new Map<string, number>();
+
+/**
+ * The δ ≥ 0 that restores the horizon median of the capped compound to the
+ * uncapped target Σ_k targets[k]. Deterministic (fixed-seed shocks) and cached.
+ *
+ * The mini-sim mirrors the real loop's mean reversion, which is NOT second-order
+ * here: the model accumulates dev from the CAPPED return, so a clipped year grows
+ * dev less and the −κ·dev term hands most of the lost upside back the next year.
+ * Calibrating without κ therefore double-counts the repair and overshoots the
+ * stated CAGR badly at high σ (≈ +11 pts at σ=110%, κ=0.15).
+ */
+const medianCapCorrection = (
+  targets: readonly number[],
+  sigma: number,
+  kappa: number,
+  shocks: Float64Array,
+  cacheKey: string,
+): number => {
+  const hit = calibCorrections.get(cacheKey);
+  if (hit !== undefined) return hit;
+  const n = targets.length;
+  let targetSum = 0;
+  for (const t of targets) targetSum += t;
+  const sums = new Float64Array(CALIB_PATHS);
+  const medianSum = (delta: number): number => {
+    for (let p = 0; p < CALIB_PATHS; p += 1) {
+      let s = 0;
+      let dev = 0;
+      const base = p * CALIB_YEARS;
+      for (let k = 0; k < n; k += 1) {
+        const mu = targets[k]! + delta;
+        const logReturn = capLogReturn(
+          mu - kappa * dev + sigma * shocks[base + (k % CALIB_YEARS)]!,
+        );
+        dev += logReturn - mu;
+        s += logReturn;
+      }
+      sums[p] = s;
+    }
+    sums.sort();
+    return sums[CALIB_PATHS >> 1]!;
+  };
+  let delta = 0;
+  if (medianSum(0) < targetSum) {
+    let lo = 0;
+    let hi = 0.2;
+    while (medianSum(hi) < targetSum && hi < 4) hi *= 2;
+    for (let i = 0; i < 20; i += 1) {
+      const mid = (lo + hi) / 2;
+      if (medianSum(mid) < targetSum) lo = mid;
+      else hi = mid;
+    }
+    delta = hi;
+  }
+  calibCorrections.set(cacheKey, delta);
+  return delta;
+};
+
+/**
+ * The cap-bias compensation δ ≥ 0 for one asset over its whole horizon: 0 when the
+ * asset is riskless, or when the model draws its dispersion from replayed history
+ * rather than σ (calibShocksFor returns null) — there is no σ-scaled shock shape to
+ * calibrate against.
+ */
+const capCompensationDelta = (
+  targets: readonly number[],
+  sigma: number,
+  kappa: number,
+  model: MonteCarloModel,
+  assetClass: AssetClass,
+): number => {
+  if (sigma <= 0 || targets.length === 0) return 0;
+  const shocks = calibShocksFor(model, assetClass);
+  if (!shocks) return 0;
+  const key = `${model}|${assetClass}|${sigma}|${kappa}|${targets.join(',')}`;
+  return medianCapCorrection(targets, sigma, kappa, shocks, key);
+};
+
 /** Read-only model parameters, surfaced to the "data sources" transparency panel. */
 export const MODEL_PARAMS = {
   studentTDf: STUDENT_T_DF,
@@ -446,6 +593,40 @@ const histStartIndex = (options: MonteCarloOptions, rng: () => number): number =
   if (options.histStartYear === undefined) return Math.floor(rng() * HIST_REAL_LEN);
   const idx = options.histStartYear - HIST_REAL_START_YEAR;
   return Math.min(HIST_REAL_LEN - 1, Math.max(0, idx));
+};
+
+/**
+ * Per-year log-drift table muByYear[offset][i]: geometric centering
+ * (exp(mu) = 1 + g) plus the optional growth fade, with the cap-bias
+ * compensation added on top. The δ is per ASSET, not per year: it restores the
+ * median of the capped compound over the whole horizon, so the same δ shifts
+ * every year of that asset's drift (see capCompensationDelta).
+ */
+const buildMuByYear = (
+  input: MonteCarloInput,
+  sigma: readonly number[],
+  kappa: number,
+  model: MonteCarloModel,
+): number[][] => {
+  const fade = input.growthFade ?? DEFAULT_GROWTH_FADE;
+  const years = input.horizonYears + 1;
+  // targetsByAsset[i][offset] — the uncompensated geometric drift.
+  const targetsByAsset = input.assets.map((a) => {
+    const targets: number[] = [];
+    for (let offset = 0; offset < years; offset += 1) {
+      const g = 1 + fadedCagrPct(a.driftPct, offset, fade) / 100;
+      targets.push(g > 0 ? Math.log(g) : -10); // g<=0: effectively zero growth
+    }
+    return targets;
+  });
+  const deltas = input.assets.map((a, i) =>
+    capCompensationDelta(targetsByAsset[i]!, sigma[i] ?? 0, kappa, model, assetClassOf(a)),
+  );
+  const rows: number[][] = [];
+  for (let offset = 0; offset < years; offset += 1) {
+    rows.push(input.assets.map((_, i) => targetsByAsset[i]![offset]! + deltas[i]!));
+  }
+  return rows;
 };
 
 const percentileOf = (sorted: number[], p: number): number => {
@@ -696,21 +877,6 @@ export const runMonteCarlo = (
   // An explicit 0% volatility means "riskless": no shock, no crash hit, no BTC
   // cycle, and (in historical-real) no historical replay — just the stated CAGR.
   const hasVariance = sigma.map((s) => s > 0);
-  // Geometric centering: the user's CAGR is the MEDIAN compound rate (exp(mu) = 1+g),
-  // so volatility disperses outcomes symmetrically around it instead of dragging the
-  // median down by σ²/2. The optional growth fade lowers high CAGRs over time, so the
-  // log-drift is per-year: muByYear[offset][assetIndex].
-  const fade = input.growthFade ?? DEFAULT_GROWTH_FADE;
-  const muByYear: number[][] = [];
-  for (let offset = 0; offset <= input.horizonYears; offset += 1) {
-    muByYear.push(
-      assets.map((a) => {
-        const g = 1 + fadedCagrPct(a.driftPct, offset, fade) / 100;
-        return g > 0 ? Math.log(g) : -10; // g<=0: effectively zero growth
-      }),
-    );
-  }
-
   const model = options.model ?? 'normal';
   const fatTails = model === 'fat-tails' || model === 'crash-aware';
   const crashAware = model === 'crash-aware';
@@ -720,6 +886,12 @@ export const runMonteCarlo = (
   const isHistRealCentered = model === 'historical-real-centered';
   const isHistReal = model === 'historical-real' || isHistRealCentered;
   const kappa = isBootstrapAny || isHistReal ? 0 : reversionSpeed(options);
+  // Geometric centering: the user's CAGR is the MEDIAN compound rate (exp(mu) = 1+g),
+  // so volatility disperses outcomes symmetrically around it instead of dragging the
+  // median down by σ²/2. The optional growth fade lowers high CAGRs over time, so the
+  // log-drift is per-year: muByYear[offset][assetIndex]. σ-scaled models also carry
+  // the cap-bias compensation (see capCompensationDelta).
+  const muByYear = buildMuByYear(input, sigma, kappa, model);
   // Bootstrap support: each asset's class history (standardized) + systematic share.
   const classOf = assets.map(assetClassOf);
   // Historical-real: each asset earns its asset-class index return, replayed for real.
@@ -728,8 +900,19 @@ export const runMonteCarlo = (
   // each year's real return can be re-centred onto the user's CAGR.
   const histLogDriftByAsset = classOf.map((c) => HIST_REAL_LOG_DRIFT[c]);
   // Bootstrap-uncentered: each asset's drift is its class's own historical average
-  // log return, instead of the user's CAGR (muY).
-  const classDriftByAsset = classOf.map((c) => CLASS_LOG_DRIFT[c]);
+  // log return, instead of the user's CAGR (muY) — cap-compensated the same way.
+  const classDriftByAsset = classOf.map((c, i) =>
+    isBootstrapUncentered && hasVariance[i]
+      ? CLASS_LOG_DRIFT[c] +
+        capCompensationDelta(
+          new Array<number>(input.horizonYears + 1).fill(CLASS_LOG_DRIFT[c]),
+          sigma[i]!,
+          kappa,
+          model,
+          c,
+        )
+      : CLASS_LOG_DRIFT[c],
+  );
   const sysShare = assets.map((_, i) => Math.sqrt(classCorrelation(classOf[i]!, classOf[i]!)));
   // Crash sensitivity per asset (defensive classes barely move in a crash).
   const crashBeta = classOf.map((c) => CLASS_CRASH_BETA[c]);
@@ -1088,18 +1271,6 @@ export const sampleMonteCarloPath = (
   // An explicit 0% volatility means "riskless": no shock, no crash hit, no BTC
   // cycle, and (in historical-real) no historical replay — just the stated CAGR.
   const hasVariance = sigma.map((s) => s > 0);
-  // Geometric centering + optional fade — see runMonteCarlo. muByYear[offset][i].
-  const fade = input.growthFade ?? DEFAULT_GROWTH_FADE;
-  const muByYear: number[][] = [];
-  for (let offset = 0; offset <= input.horizonYears; offset += 1) {
-    muByYear.push(
-      assets.map((a) => {
-        const g = 1 + fadedCagrPct(a.driftPct, offset, fade) / 100;
-        return g > 0 ? Math.log(g) : -10;
-      }),
-    );
-  }
-
   const model = options.model ?? 'normal';
   const fatTails = model === 'fat-tails' || model === 'crash-aware';
   const crashAware = model === 'crash-aware';
@@ -1109,10 +1280,23 @@ export const sampleMonteCarloPath = (
   const isHistRealCentered = model === 'historical-real-centered';
   const isHistReal = model === 'historical-real' || isHistRealCentered;
   const kappa = isBootstrapAny || isHistReal ? 0 : reversionSpeed(options);
+  // Geometric centering + optional fade + cap-bias compensation — see runMonteCarlo.
+  const muByYear = buildMuByYear(input, sigma, kappa, model);
   const classOf = assets.map(assetClassOf);
   const histReturnByAsset = classOf.map((c) => HIST_REAL_RETURN[c]);
   const histLogDriftByAsset = classOf.map((c) => HIST_REAL_LOG_DRIFT[c]);
-  const classDriftByAsset = classOf.map((c) => CLASS_LOG_DRIFT[c]);
+  const classDriftByAsset = classOf.map((c, i) =>
+    isBootstrapUncentered && hasVariance[i]
+      ? CLASS_LOG_DRIFT[c] +
+        capCompensationDelta(
+          new Array<number>(input.horizonYears + 1).fill(CLASS_LOG_DRIFT[c]),
+          sigma[i]!,
+          kappa,
+          model,
+          c,
+        )
+      : CLASS_LOG_DRIFT[c],
+  );
   const sysShare = assets.map((_, i) => Math.sqrt(classCorrelation(classOf[i]!, classOf[i]!)));
   const crashBeta = classOf.map((c) => CLASS_CRASH_BETA[c]);
   const Lcrash = crashAware ? cholesky(crashCorrelation(input.correlation, crashBeta)) : L;
