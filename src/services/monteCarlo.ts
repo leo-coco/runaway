@@ -18,6 +18,7 @@ import {
 import { applyForcedFlows, deferredBalance, type ConversionPlan } from '@/domain/taxAdvantaged';
 import type { Account, AccountKind } from '@/domain/account';
 import { homeFlows } from '@/domain/home';
+import { rentalPropertiesFlows } from '@/domain/rentalProperty';
 import { incomeTax } from '@/domain/tax';
 import {
   CLASS_CRASH_BETA,
@@ -1776,9 +1777,13 @@ export const buildMonteCarloInput = (
     spendingMode: plan.settings.spendingMode,
     phasedSpending: plan.settings.phasedSpending,
     currentAge: plan.settings.currentAge,
-    // Home cashflows (purchase/mortgage/ownership/sale) are merged in as flows;
-    // the home is never a drawable holding. Mirrors buildProjectionInput.
-    expensesIncomes: [...(plan.settings.expensesIncomes ?? []), ...homeFlows(plan.home, startYear)],
+    // Home + rental cashflows (purchase/mortgage/ownership/rent/sale) are merged
+    // in as flows; the properties are never drawable holdings. Mirrors buildProjectionInput.
+    expensesIncomes: [
+      ...(plan.settings.expensesIncomes ?? []),
+      ...homeFlows(plan.home, startYear),
+      ...rentalPropertiesFlows(plan.properties, startYear, plan.settings.inflationPct),
+    ],
     conversions: plan.settings.conversions,
     rmdEnabled: plan.settings.rmdEnabled,
     rawAccounts: plan.accounts,

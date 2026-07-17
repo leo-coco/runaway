@@ -13,7 +13,8 @@ export type ModalKind =
   | 'conversions'
   | 'addAsset'
   | 'expensesIncomes'
-  | 'home';
+  | 'home'
+  | 'rentalProperties';
 
 /**
  * What triggered the upgrade paywall — a gated feature or a hit limit. Drives the

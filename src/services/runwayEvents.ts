@@ -206,6 +206,31 @@ export const buildRunwayEvents = (
       category: 'home',
     });
   }
+  for (const property of plan.properties ?? []) {
+    if (property.purchase) {
+      events.push({
+        id: `rental:${property.id}:buy`,
+        kind: 'home-buy',
+        year: property.purchase.year,
+        labelKey: 'runway.rentalBuy',
+        labelParams: { name: property.name?.trim() || undefined },
+        amount: property.currentValue,
+        icon: 'home',
+        category: 'home',
+      });
+    }
+    if (property.sale) {
+      events.push({
+        id: `rental:${property.id}:sell`,
+        kind: 'home-sell',
+        year: property.sale.year,
+        labelKey: 'runway.rentalSell',
+        labelParams: { name: property.name?.trim() || undefined },
+        icon: 'home',
+        category: 'home',
+      });
+    }
+  }
 
   // --- Family 3: wealth milestones (upward crossings) ---
   const initialValue = firstYear ? firstYear.openingBalance : 0;

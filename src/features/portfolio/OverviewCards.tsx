@@ -6,6 +6,7 @@ import { monthlyEquivalent } from '@/domain/retirementSettings';
 import { DEFAULT_PHASED_SPENDING, realSpendingMultiplier } from '@/domain/spendingModel';
 import { SCENARIOS, scenarioAdjustmentPts, type ScenarioKey } from '@/domain/scenario';
 import { homeEquitySeries } from '@/domain/home';
+import { rentalPropertiesEquitySeries } from '@/domain/rentalProperty';
 import type { Plan } from '@/domain/plan';
 import { useAppStore } from '@/store';
 import { useFeature } from '@/hooks/useEntitlements';
@@ -73,6 +74,13 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
   const homeEquityNow = plan.home
     ? homeEquitySeries(plan.home, startYear, 0)[0]?.equity
     : undefined;
+
+  // Rental properties: count + combined equity today, for the summary card.
+  const rentalCount = plan.properties?.length ?? 0;
+  const rentalEquityNow =
+    rentalCount > 0
+      ? rentalPropertiesEquitySeries(plan.properties, startYear, 0)[0]?.equity
+      : undefined;
 
   return (
     <div className="overview-grid">
@@ -198,6 +206,33 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             </span>
             <span className="ov__sub">
               {plan.home ? t('overview.homeSub') : t('overview.homeEmpty')}
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="ov">
+        <div className="ov__head">
+          <span className="ov__title">{t('overview.rentals')}</span>
+          {homeLocked ? (
+            <span className="ov__link" onClick={() => openPaywall('realEstate')}>
+              <ProBadge />
+            </span>
+          ) : (
+            <span className="ov__link" onClick={() => openModal('rentalProperties')}>
+              {t('common.edit')}
+            </span>
+          )}
+        </div>
+        <div className="ov__body">
+          <div className="ov__content">
+            <span className="ov__big">
+              {rentalEquityNow !== undefined ? fmt.compact(rentalEquityNow) : '—'}
+            </span>
+            <span className="ov__sub">
+              {rentalCount > 0
+                ? t('overview.rentalsSub', { count: rentalCount })
+                : t('overview.rentalsEmpty')}
             </span>
           </div>
         </div>

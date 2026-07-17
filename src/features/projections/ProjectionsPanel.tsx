@@ -87,6 +87,7 @@ const C_EXPENSES = '#f5a623';
 const C_HORIZON = '#5eead4';
 const C_PORTFOLIO = '#38bdf8';
 const C_HOME_EQUITY = '#f7931a';
+const C_RENTAL_EQUITY = '#a855f7';
 const C_TOTAL = '#22c55e';
 
 const PIE_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#f7931a', '#f43f5e'];
@@ -124,16 +125,20 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   const netChangeData = useMemo(() => buildNetChangeData(projection.active), [projection]);
   const scenarioData = useMemo(() => buildScenarioData(projection.byScenario), [projection]);
   const survivalData = useMemo(() => buildSurvivalData(projection.byScenario), [projection]);
+  const hasRealEstate = Boolean(plan.home) || (plan.properties?.length ?? 0) > 0;
+  const hasRentals = (plan.properties?.length ?? 0) > 0;
   const realEstateData = useMemo(
     () =>
-      plan.home ? buildRealEstateData(projection.active, plan.home, projection.startYear) : [],
-    [projection, plan.home],
+      hasRealEstate
+        ? buildRealEstateData(projection.active, plan.home, plan.properties, projection.startYear)
+        : [],
+    [projection, plan.home, plan.properties, hasRealEstate],
   );
   const viewOrder = useMemo(
-    () => (plan.home ? VIEW_ORDER : VIEW_ORDER.filter((v) => v !== 'realEstate')),
-    [plan.home],
+    () => (hasRealEstate ? VIEW_ORDER : VIEW_ORDER.filter((v) => v !== 'realEstate')),
+    [hasRealEstate],
   );
-  // Falls back to 'composition' if the home is removed while 'realEstate' is selected.
+  // Falls back to 'composition' if the real estate is removed while 'realEstate' is selected.
   const view = viewOrder.includes(rawView) ? rawView : 'composition';
 
   const depletion = projection.active.depletionYear;
@@ -476,7 +481,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                       ? t('projChart.seriesPortfolio')
                       : name === 'homeEquity'
                         ? t('projChart.seriesHomeEquity')
-                        : t('projChart.seriesTotal'),
+                        : name === 'rentalEquity'
+                          ? t('projChart.seriesRentalEquity')
+                          : t('projChart.seriesTotal'),
                   ]}
                 />
               }
@@ -489,13 +496,24 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
               dot={false}
               strokeWidth={2}
             />
-            <Line
-              type="monotone"
-              dataKey="homeEquity"
-              stroke={C_HOME_EQUITY}
-              dot={false}
-              strokeWidth={2}
-            />
+            {plan.home && (
+              <Line
+                type="monotone"
+                dataKey="homeEquity"
+                stroke={C_HOME_EQUITY}
+                dot={false}
+                strokeWidth={2}
+              />
+            )}
+            {hasRentals && (
+              <Line
+                type="monotone"
+                dataKey="rentalEquity"
+                stroke={C_RENTAL_EQUITY}
+                dot={false}
+                strokeWidth={2}
+              />
+            )}
             <Line type="monotone" dataKey="total" stroke={C_TOTAL} dot={false} strokeWidth={2} />
           </LineChart>
         ) : view === 'scenarios' ? (
@@ -605,9 +623,16 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
           <span>
             <i style={{ background: C_PORTFOLIO }} /> {t('projChart.seriesPortfolio')}
           </span>
-          <span>
-            <i style={{ background: C_HOME_EQUITY }} /> {t('projChart.seriesHomeEquity')}
-          </span>
+          {plan.home && (
+            <span>
+              <i style={{ background: C_HOME_EQUITY }} /> {t('projChart.seriesHomeEquity')}
+            </span>
+          )}
+          {hasRentals && (
+            <span>
+              <i style={{ background: C_RENTAL_EQUITY }} /> {t('projChart.seriesRentalEquity')}
+            </span>
+          )}
           <span>
             <i style={{ background: C_TOTAL }} /> {t('projChart.seriesTotal')}
           </span>
