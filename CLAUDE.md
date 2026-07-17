@@ -10,6 +10,10 @@
 ## Git workflow
 - When making the first commit for a feature branch, open the PR automatically right after the commit (no need to ask).
 
+## Premium features in local dev
+- If a task requires exercising a feature gated behind the `premium` tier (see `src/domain/entitlements.ts`), do not permanently upgrade an account. Apply a local override in sandbox mode only (e.g. your own dev account's `tier`/`premiumUntil` via the admin panel or a local DB update) to unlock it for the duration of the task.
+- Once the task is done, always revert the sandbox back to its prior state (re-lock the account to its original tier/premiumUntil) and verify the restore actually took effect (the feature is gated again, values match what they were before the override) before wrapping up.
+
 ## Database migrations
 - Migrations run automatically on deploy (`vercel-build` runs `drizzle-kit migrate` before the app build), so they must be safe to apply against a running prod instance with no downtime.
 - Always additive-first: add new columns as nullable or with a default; never add a `NOT NULL` column without a default in the same migration as a deploy that depends on it. If a column must become `NOT NULL`, do it in a later migration after the backfill/rollout has landed.
