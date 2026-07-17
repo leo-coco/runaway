@@ -32,7 +32,11 @@ paths the product depends on:
 - Taxes — `src/domain/tax.test.ts`, `taxAdvantaged.test.ts`, `taxMatrix.test.ts`, `accountTaxRate.test.ts`
 - Asset import / instrument resolution — `src/services/searchService.test.ts`, `src/services/instrumentRef.test.ts`, `src/services/portfolioService.test.ts`, `src/store/plansSlice.test.ts` (`addHolding`)
 - Plan creation & persistence — `src/store/plansSlice.test.ts` (`createPlan`), `src/store/planStorage.test.ts`, `server/routes/plans.test.ts`, `server/test/smoke.api.test.ts`
-- Security — see [security-audit.md](./security-audit.md)
+- Security — cross-user isolation (`server/routes/plans.test.ts`), the admin gate
+  (`server/routes/admin.test.ts`), and contact-form abuse defences / rate limiting
+  (`server/routes/contact.test.ts`). Kept as regression tests only: this repo is
+  public, so a written audit naming specific gaps stays out of version control —
+  ask internally for the current writeup.
 
 ## Commands
 
