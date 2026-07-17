@@ -158,6 +158,8 @@ export interface FlowAsset {
   readonly accountId: string | null;
   /** Cost basis, moved/scaled alongside value so gain tracking stays consistent. */
   basis?: number;
+  /** False = illiquid: excluded from every forced flow, like it is from withdrawals. */
+  readonly drawable?: boolean;
 }
 
 export interface ForcedFlowsResult {
@@ -175,6 +177,9 @@ const ZERO: ForcedFlowsResult = { conversionIncome: 0, rmdGross: 0 };
  *     holdings (pro-rata) into the first holding of the destination account.
  *  2. The RMD removes `rmdFraction × deferred balance` pro-rata from tax-deferred
  *     holdings (the engine turns that gross into net cash and taxes it).
+ *
+ * Illiquid holdings (`drawable: false`) are excluded from both flows, and from the
+ * RMD base: the user marked them never-sell, and a real RMD can be taken in kind.
  *
  * Returns the ordinary-income amounts so the caller can settle tax and cash.
  */
@@ -202,10 +207,12 @@ export const applyForcedFlows = (
     // The destination account must hold at least one asset to receive the
     // principal. Otherwise skip the conversion entirely — moving money into a
     // holding-less account would silently vanish it (and tax it on top).
-    const dest = assets.find((a) => a.accountId === plan.toAccountId);
+    const dest = assets.find((a) => a.drawable !== false && a.accountId === plan.toAccountId);
     if (!dest) continue;
     const target = plan.annualAmount * inflationFactor;
-    const fromHoldings = assets.filter((a) => a.accountId === plan.fromAccountId && a.value > 0);
+    const fromHoldings = assets.filter(
+      (a) => a.drawable !== false && a.accountId === plan.fromAccountId && a.value > 0,
+    );
     const fromBalance = fromHoldings.reduce((s, a) => s + a.value, 0);
     const moved = Math.min(target, fromBalance);
     if (moved <= 0) continue;
@@ -225,7 +232,9 @@ export const applyForcedFlows = (
   if (rmdEnabled) {
     const fraction = rmdFraction(residence, age, birthYear);
     if (fraction > 0) {
-      const deferred = assets.filter((a) => kindOf(a.accountId) === 'tax_deferred' && a.value > 0);
+      const deferred = assets.filter(
+        (a) => a.drawable !== false && kindOf(a.accountId) === 'tax_deferred' && a.value > 0,
+      );
       const deferredBalance = deferred.reduce((s, a) => s + a.value, 0);
       const required = deferredBalance * fraction;
       if (required > 0) {

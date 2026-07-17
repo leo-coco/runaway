@@ -151,6 +151,54 @@ describe('applyForcedFlows', () => {
     expect(r.rmdGross).toBeCloseTo(470_000 / 26.5, 4);
   });
 
+  it('never sells an illiquid holding, and leaves it out of the RMD base', () => {
+    const a: FlowAsset[] = [
+      { value: 200_000, accountId: 'rrsp', drawable: false },
+      { value: 300_000, accountId: 'rrsp' },
+    ];
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 73,
+      rmdEnabled: true,
+      conversions: [],
+      inflationFactor: 1,
+    });
+    expect(a[0]!.value).toBe(200_000);
+    expect(r.rmdGross).toBeCloseTo(300_000 / 26.5, 4);
+  });
+
+  it('never converts out of an illiquid holding', () => {
+    const a: FlowAsset[] = [
+      { value: 500_000, accountId: 'rrsp', drawable: false },
+      { value: 100_000, accountId: 'roth' },
+    ];
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 68,
+      rmdEnabled: false,
+      conversions: [conv],
+      inflationFactor: 1,
+    });
+    expect(a[0]!.value).toBe(500_000);
+    expect(r.conversionIncome).toBe(0);
+  });
+
+  it('never lands converted principal in an illiquid destination', () => {
+    const a: FlowAsset[] = [
+      { value: 500_000, accountId: 'rrsp' },
+      { value: 100_000, accountId: 'roth', drawable: false },
+    ];
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 68,
+      rmdEnabled: false,
+      conversions: [conv],
+      inflationFactor: 1,
+    });
+    expect(a[1]!.value).toBe(100_000);
+    expect(r.conversionIncome).toBe(0);
+  });
+
   it('no RMD when disabled or below start age', () => {
     const a = make();
     const r = applyForcedFlows(a, kindOf, {
