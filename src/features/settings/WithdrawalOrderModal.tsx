@@ -28,7 +28,7 @@ import {
   orderTaxOptimized,
   type AccountRanking,
 } from '@/services/drawdownSimulator';
-import type { RatesTable } from '@/services/currencyService';
+import { bracketFxFactor, type RatesTable } from '@/services/currencyService';
 import type { Plan } from '@/domain/plan';
 import { cn } from '@/lib/cn';
 
@@ -181,6 +181,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
           plan.settings.annualSpending,
           liveGain,
           plan.residenceProvince,
+          bracketFxFactor(plan.residenceCountry ?? 'US', plan.currency, rates),
         ).effective,
       };
     });

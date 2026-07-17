@@ -37,6 +37,11 @@ export const ConversionsModal = ({ plan, onClose }: Props) => {
   const conversions = plan.settings.conversions ?? [];
   const rmdEnabled = plan.settings.rmdEnabled ?? true;
   const deferredAccounts = plan.accounts.filter((a) => (a.kind ?? 'taxable') === 'tax_deferred');
+  // The engine can only land converted principal in an account that holds at
+  // least one asset (it skips the conversion otherwise), so only offer those.
+  const accountsWithHoldings = new Set(
+    plan.holdings.map((h) => h.accountId).filter((id): id is string => id != null),
+  );
 
   return (
     <Modal
@@ -121,7 +126,11 @@ export const ConversionsModal = ({ plan, onClose }: Props) => {
                         }
                       >
                         {plan.accounts
-                          .filter((a) => a.id !== c.fromAccountId)
+                          .filter(
+                            (a) =>
+                              a.id !== c.fromAccountId &&
+                              (accountsWithHoldings.has(a.id) || a.id === c.toAccountId),
+                          )
                           .map((a) => (
                             <option key={a.id} value={a.id}>
                               {a.name}

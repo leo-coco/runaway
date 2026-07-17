@@ -3,7 +3,7 @@ import { accountEffectiveRate, accountTaxProfile } from '@/domain/account';
 import { homeFlows } from '@/domain/home';
 import { valueHoldings } from './portfolioService';
 import type { ProjectionInput } from './retirementCalculator';
-import type { RatesTable } from './currencyService';
+import { bracketFxFactor, type RatesTable } from './currencyService';
 
 /**
  * Build the projection engine input from a plan. Shared by the main projection
@@ -40,10 +40,7 @@ export const buildProjectionInput = (
     currentAge: plan.settings.currentAge,
     // The home's purchase/mortgage/ownership/sale cashflows are merged in as
     // ordinary flows; the home itself is never a drawable holding.
-    expensesIncomes: [
-      ...(plan.settings.expensesIncomes ?? []),
-      ...homeFlows(plan.home, startYear),
-    ],
+    expensesIncomes: [...(plan.settings.expensesIncomes ?? []), ...homeFlows(plan.home, startYear)],
     conversions: plan.settings.conversions,
     rmdEnabled: plan.settings.rmdEnabled,
     scenario: plan.scenario,
@@ -64,6 +61,7 @@ export const buildProjectionInput = (
     rawAccounts: plan.accounts,
     residence: plan.residenceCountry ?? 'US',
     province: plan.residenceProvince,
+    taxFxFactor: bracketFxFactor(plan.residenceCountry ?? 'US', plan.currency, rates),
     growthFade: plan.settings.growthFade,
   };
 };

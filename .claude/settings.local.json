@@ -79,7 +79,9 @@
       "Bash(node --env-file=.env.local -e \"console.log\\(process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 'MISSING'\\)\")",
       "Bash(rm /tmp/check_openended.mjs)",
       "Bash(pkill -f \"concurrently -n web,api\")",
-      "Bash(lsof -iTCP -sTCP:LISTEN -P)"
+      "Bash(lsof -iTCP -sTCP:LISTEN -P)",
+      "WebSearch",
+      "Bash(python3 -)"
     ]
   }
 }

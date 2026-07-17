@@ -789,7 +789,7 @@ export const fr: Resources = {
     disclaimer:
       'Barème représentatif simplifié à votre niveau de dépenses — ne constitue pas un conseil fiscal.',
     assumptions:
-      'Hypothèses : barèmes 2026 (IRS Rev. Proc. 2025-32 / Loi de finances 2026 / ARC), célibataire / 1 part. Hors impôts d’État et locaux (US) et surtaxes provinciales au-delà du barème (CA). Une simulation, pas un conseil fiscal.',
+      'Hypothèses : barèmes 2026 (IRS Rev. Proc. 2025-32 / Loi de finances 2026 / ARC), célibataire / 1 part, incluant la déduction standard US, les montants personnels de base canadiens et l’abattement de 10 % sur les pensions (FR) en tranches à 0 %. Les seuils sont convertis dans la devise du plan si elle diffère de celle du pays de résidence. Hors impôts d’État et locaux (US) et surtaxes provinciales au-delà du barème (CA). Une simulation, pas un conseil fiscal.',
   },
   addAsset: {
     title: 'Ajouter un actif',
@@ -985,7 +985,7 @@ export const fr: Resources = {
     taxOther:
       'Plus-values : taux forfaitaire {{cg}} %, part incluse au revenu {{incl}} %. Retenue à la source (compte étranger) : {{wh}} %.',
     taxAssumptions:
-      'Hors impôts d’État et locaux (US) ; une simulation, pas un conseil fiscal. Les enveloppes non-imposées ne sont exonérées à l’étranger que si une convention les reconnaît (Roth US pour résidents CA/FR ; TFSA et PEA non).',
+      'Les barèmes incluent la déduction standard US, les montants personnels de base canadiens et l’abattement de 10 % sur les pensions (FR) en tranches à 0 % ; les seuils sont convertis dans la devise du plan si elle diffère de celle du pays de résidence. Hors impôts d’État et locaux (US) ; une simulation, pas un conseil fiscal. Les enveloppes non-imposées ne sont exonérées à l’étranger que si une convention les reconnaît (Roth US pour résidents CA/FR ; TFSA et PEA non).',
     colAsset: 'Actif',
     colClass: 'Classe',
     colDrift: 'Dérive (CAGR)',

@@ -8,9 +8,20 @@ describe('incomeTax (progressive brackets)', () => {
     expect(incomeTax(10_000, 'FR')).toBe(0); // under the 11,600€ 0% band (2026)
   });
 
-  it('applies brackets progressively (FR)', () => {
-    // 11% on the slice 11,600 → 20,000 (2026 barème).
-    expect(incomeTax(20_000, 'FR')).toBeCloseTo(0.11 * (20_000 - 11_600), 0);
+  it('applies brackets progressively (FR), after the 10% pension allowance', () => {
+    // Allowance 10% of 20,000 = 2,000 → taxable 18,000; 11% above 11,600.
+    expect(incomeTax(20_000, 'FR')).toBeCloseTo(0.11 * (18_000 - 11_600), 0);
+  });
+
+  it('FR: the 10% allowance shows in the marginal rate, and its cap restores it', () => {
+    // In the 10% zone the marginal rate is 0.9 × bracket rate (each extra euro
+    // only adds 0.90€ of taxable income)…
+    const marginalLow = incomeTax(20_001, 'FR') - incomeTax(20_000, 'FR');
+    expect(marginalLow).toBeCloseTo(0.9 * 0.11, 4);
+    // …but once the allowance is capped (income > 44,390) the full bracket
+    // rate applies again.
+    const marginalHigh = incomeTax(200_001, 'FR') - incomeTax(200_000, 'FR');
+    expect(marginalHigh).toBeCloseTo(0.45, 4);
   });
 
   it('the effective rate rises with income', () => {
@@ -25,9 +36,17 @@ describe('incomeTax (progressive brackets)', () => {
     expect(incomeTax(100_000, 'FR', 1.5)).toBeLessThan(incomeTax(100_000, 'FR', 1));
   });
 
-  it('US 2026 first bracket: 10% up to 12,400', () => {
-    expect(incomeTax(12_400, 'US')).toBeCloseTo(1_240, 5);
-    expect(incomeTax(20_000, 'US')).toBeCloseTo(1_240 + 0.12 * (20_000 - 12_400), 5);
+  it('US 2026: standard deduction (16,100), then 10% up to 12,400 of taxable', () => {
+    expect(incomeTax(16_100, 'US')).toBe(0); // fully absorbed by the deduction
+    expect(incomeTax(16_100 + 12_400, 'US')).toBeCloseTo(1_240, 5);
+    expect(incomeTax(36_100, 'US')).toBeCloseTo(1_240 + 0.12 * (36_100 - 16_100 - 12_400), 5);
+  });
+
+  it('CA: basic personal amounts form a 0% band at the bottom', () => {
+    expect(incomeTax(12_989, 'CA', 1, 'ON')).toBe(0); // under both BPAs
+    // Between the ON BPA (12,989) and the federal BPA (16,452) only the
+    // provincial 5.05% applies.
+    expect(incomeTax(16_452, 'CA', 1, 'ON')).toBeCloseTo(0.0505 * (16_452 - 12_989), 4);
   });
 });
 
@@ -45,14 +64,19 @@ describe('province selection (Canada)', () => {
     expect(incomeTax(120_000, 'CA', 1, 'AB')).toBeLessThan(incomeTax(120_000, 'CA', 1, 'QC'));
   });
 
-  it('ON combined first marginal rate = federal 14% + provincial 5.05%', () => {
-    const first = CA_PROVINCES_TABLES.ON.brackets[0]!;
-    expect(first.rate).toBeCloseTo(0.14 + 0.0505, 10);
+  it('ON combined: BPA 0% bands first, then federal 14% + provincial 5.05%', () => {
+    const on = CA_PROVINCES_TABLES.ON.brackets;
+    expect(on[0]).toEqual({ upTo: 12_989, rate: 0 }); // ON BPA
+    expect(on[1]!.upTo).toBe(16_452); // federal BPA band: provincial rate only
+    expect(on[1]!.rate).toBeCloseTo(0.0505, 10);
+    expect(on[2]!.rate).toBeCloseTo(0.14 + 0.0505, 10);
   });
 
-  it('QC applies the 16.5% federal abatement', () => {
-    const first = CA_PROVINCES_TABLES.QC.brackets[0]!;
-    expect(first.rate).toBeCloseTo(0.14 * 0.835 + 0.14, 10);
+  it('QC applies the 16.5% federal abatement above both BPA bands', () => {
+    const qc = CA_PROVINCES_TABLES.QC.brackets;
+    // 0 → fed BPA 16,452 → QC BPA 18,952 → first fully-taxed segment.
+    expect(qc[0]!.rate).toBe(0);
+    expect(qc[2]!.rate).toBeCloseTo(0.14 * 0.835 + 0.14, 10);
   });
 
   it('OTHER aliases the representative Ontario schedule', () => {
@@ -85,8 +109,9 @@ describe('capitalGainsTax (US progressive LTCG + NIIT)', () => {
   });
 
   it('gains stack on top of ordinary income', () => {
-    // With 60k ordinary income the 0% band is already filled → 15% on the gain.
-    expect(capitalGainsTax(10_000, 60_000, 'US')).toBeCloseTo(1_500, 5);
+    // With 100k ordinary income the 0% band (65,550 on the gross scale, i.e.
+    // 49,450 official + the 16,100 standard deduction) is filled → 15% on the gain.
+    expect(capitalGainsTax(10_000, 100_000, 'US')).toBeCloseTo(1_500, 5);
   });
 
   it('a gain straddling the 0%/15% threshold is taxed only on the excess', () => {

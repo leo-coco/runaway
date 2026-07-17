@@ -60,6 +60,12 @@ export interface WithdrawalContext {
   /** Bracket-threshold inflation factor for the year (keeps real brackets constant). */
   readonly inflationFactor: number;
   /**
+   * Units of plan currency per unit of the residence country's local currency.
+   * Scales bracket thresholds (and the NIIT threshold) so schedules legislated
+   * in EUR/USD/CAD apply correctly to plan-currency amounts. Default 1.
+   */
+  readonly fxFactor?: number;
+  /**
    * Ordinary income already received this year from non-portfolio sources (pension,
    * salary…). Withdrawals stack on top of it in the progressive brackets, so a
    * deferred withdrawal is taxed at the marginal rate above this base.
@@ -103,6 +109,11 @@ export interface ProjectionInput {
   readonly accountOrder?: readonly string[];
   /** Tax residence — drives the progressive brackets for auto-mode accounts. */
   readonly residence?: Country;
+  /**
+   * Units of plan currency per unit of the residence country's local currency
+   * (see WithdrawalContext.fxFactor). Default 1 — thresholds applied as-is.
+   */
+  readonly taxFxFactor?: number;
   /** Optional decay of high CAGRs toward a mature rate over the projection. */
   readonly growthFade?: GrowthFadeConfig;
 }
@@ -218,6 +229,7 @@ export const withdrawNet = (
   const country = ctx?.residence ?? 'US';
   const province = ctx?.province;
   const infl = ctx?.inflationFactor ?? 1;
+  const fx = ctx?.fxFactor ?? 1;
   // Seed with non-portfolio ordinary income so withdrawals stack on top of it.
   let ordinaryIncome = Math.max(0, ctx?.baseOrdinaryIncome ?? 0);
   // Capital gains realised so far this year (they stack in the US LTCG ladder).
@@ -244,13 +256,13 @@ export const withdrawNet = (
       // Delta form: this bucket owes the increase over what the year's income
       // already owed — which also reprices earlier gains when a later bucket
       // raises the ordinary floor beneath the LTCG ladder.
-      const baseTax = incomeTax(ordinaryIncome, country, infl, province);
-      const baseCgTax = capitalGainsTax(gainsIncome, ordinaryIncome, country, infl);
+      const baseTax = incomeTax(ordinaryIncome, country, infl, province, fx);
+      const baseCgTax = capitalGainsTax(gainsIncome, ordinaryIncome, country, infl, fx);
       const netFromGross = (g: number): number => {
         const ord = ordinaryIncome + g * b.incomeCoef;
-        const incTax = incomeTax(ord, country, infl, province) - baseTax;
+        const incTax = incomeTax(ord, country, infl, province, fx) - baseTax;
         const cgTax =
-          capitalGainsTax(gainsIncome + g * b.gainsCoef, ord, country, infl) - baseCgTax;
+          capitalGainsTax(gainsIncome + g * b.gainsCoef, ord, country, infl, fx) - baseCgTax;
         const tax = Math.max(incTax + cgTax + g * b.flatRate, g * b.withholding);
         return g - tax;
       };
@@ -343,6 +355,7 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
   const adjustment = scenarioAdjustmentPts(input.scenario, scenarioKey);
   const inflationRate = (input.applyInflation ?? true) ? input.inflationPct / 100 : 0;
   const residence = input.residence ?? 'US';
+  const taxFx = input.taxFxFactor ?? 1;
 
   // Account kind by id (for RMD targeting and reinvesting RMD surplus).
   const kindById = new Map((input.accounts ?? []).map((a) => [a.id, a.kind]));
@@ -474,7 +487,7 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
     // is taxed at the marginal rate above this base. Non-taxable flow income
     // (e.g. an inheritance) is added back as pure net cash.
     const ordinaryBase = flows.taxableIncome;
-    const ordinaryTax = incomeTax(ordinaryBase, residence, inflationFactor, input.province);
+    const ordinaryTax = incomeTax(ordinaryBase, residence, inflationFactor, input.province, taxFx);
     const nonTaxableFlowIncome = flows.income - flows.taxableIncome;
     const otherNet = ordinaryBase - ordinaryTax + nonTaxableFlowIncome;
 
@@ -500,8 +513,14 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
       const c = forced.conversionIncome;
       rmdGross = forced.rmdGross;
       const t0 = ordinaryTax;
-      const tC = incomeTax(ordinaryBase + c, residence, inflationFactor, input.province);
-      const tR = incomeTax(ordinaryBase + c + rmdGross, residence, inflationFactor, input.province);
+      const tC = incomeTax(ordinaryBase + c, residence, inflationFactor, input.province, taxFx);
+      const tR = incomeTax(
+        ordinaryBase + c + rmdGross,
+        residence,
+        inflationFactor,
+        input.province,
+        taxFx,
+      );
       convTax = tC - t0;
       rmdTax = tR - tC;
       rmdNet = rmdGross - rmdTax;
@@ -538,6 +557,7 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
         residence,
         province: input.province,
         inflationFactor,
+        fxFactor: taxFx,
         baseOrdinaryIncome: forcedBase,
       },
     );

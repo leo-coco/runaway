@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convert, convertOr, type RatesTable } from './currencyService';
+import { bracketFxFactor, convert, convertOr, type RatesTable } from './currencyService';
 
 const table: RatesTable = {
   base: 'USD',
@@ -32,5 +32,23 @@ describe('currencyService.convert', () => {
 
   it('convertOr falls back to the raw amount on failure', () => {
     expect(convertOr(100, 'USD', 'JPY', table)).toBe(100);
+  });
+});
+
+describe('bracketFxFactor', () => {
+  it('is 1 when the plan currency matches the residence currency', () => {
+    expect(bracketFxFactor('US', 'USD', table)).toBe(1);
+  });
+
+  it('converts one residence-currency unit into plan currency', () => {
+    // 1 EUR = 1/0.9 USD ≈ 1.111 — a French resident with a USD plan needs the
+    // EUR bracket thresholds scaled up by that factor.
+    expect(bracketFxFactor('FR', 'USD', table)).toBeCloseTo(1 / 0.9, 6);
+    // 1 USD = 1.35 CAD.
+    expect(bracketFxFactor('US', 'CAD', table)).toBeCloseTo(1.35, 6);
+  });
+
+  it('defaults to 1 without a rates table (legacy behaviour)', () => {
+    expect(bracketFxFactor('FR', 'USD', undefined)).toBe(1);
   });
 });

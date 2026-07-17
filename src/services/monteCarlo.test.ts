@@ -934,6 +934,25 @@ describe('correlation overrides', () => {
   });
 });
 
+describe('bracket FX wiring', () => {
+  it('buildMonteCarloInput converts residence-currency thresholds into the plan currency', () => {
+    const plan = {
+      ...createSeedPlan(),
+      residenceCountry: 'FR' as const,
+      currency: 'USD' as const,
+    };
+    const rates = { base: 'USD', rates: { USD: 1, EUR: 0.8 }, asOf: 0 };
+    // 1 EUR = 1.25 USD → EUR thresholds scaled ×1.25 for USD amounts.
+    expect(buildMonteCarloInput(plan, rates, 2026, 30).taxFxFactor).toBeCloseTo(1.25, 6);
+    // Plan currency = residence currency → factor 1.
+    expect(
+      buildMonteCarloInput({ ...plan, currency: 'EUR' as const }, rates, 2026, 30).taxFxFactor,
+    ).toBe(1);
+    // No rates table → 1 (legacy behaviour, thresholds applied as-is).
+    expect(buildMonteCarloInput(plan, undefined, 2026, 30).taxFxFactor).toBe(1);
+  });
+});
+
 describe('one-off expenses / income', () => {
   // Zero volatility so the only difference between runs is the one-off cashflow.
   const zeroVolInput = (overrides: Partial<MonteCarloInput> = {}): MonteCarloInput =>

@@ -33,6 +33,7 @@ import {
   HIST_REAL_START_YEAR,
 } from '@/domain/historicalReturns';
 import { valueHoldings } from './portfolioService';
+import { bracketFxFactor } from './currencyService';
 import {
   futureValueOfContributions,
   withdrawNet,
@@ -93,6 +94,11 @@ export interface MonteCarloInput {
   readonly residence?: Country;
   /** Canadian province for the combined bracket schedule (default ON). */
   readonly province?: Province;
+  /**
+   * Units of plan currency per unit of the residence country's local currency —
+   * scales bracket thresholds so they apply correctly to plan-currency amounts.
+   */
+  readonly taxFxFactor?: number;
   /** Optional decay of high CAGRs toward a mature rate over the horizon. */
   readonly growthFade?: GrowthFadeConfig;
 }
@@ -486,7 +492,13 @@ const flowOrdinaryIncome = (
   inflationFactor: number,
 ): { base: number; net: number } => {
   const base = flows.taxableIncome;
-  const tax = incomeTax(base, input.residence ?? 'US', inflationFactor, input.province);
+  const tax = incomeTax(
+    base,
+    input.residence ?? 'US',
+    inflationFactor,
+    input.province,
+    input.taxFxFactor ?? 1,
+  );
   const net = base - tax + (flows.income - flows.taxableIncome);
   return { base, net };
 };
@@ -543,6 +555,7 @@ const makeForcedFlows = (input: MonteCarloInput) => {
   const conversions = input.conversions ?? [];
   const rmdEnabled = input.rmdEnabled ?? true;
   const residence = input.residence ?? 'US';
+  const taxFx = input.taxFxFactor ?? 1;
   const active = conversions.length > 0 || rmdEnabled;
   const kindById = new Map((input.accounts ?? []).map((a) => [a.id, a.kind]));
   const kindOf = (accountId: string | null): AccountKind | undefined =>
@@ -588,9 +601,9 @@ const makeForcedFlows = (input: MonteCarloInput) => {
     });
     const c = forced.conversionIncome;
     const r = forced.rmdGross;
-    const t0 = incomeTax(ordinaryBase, residence, inflationFactor, input.province);
-    const tC = incomeTax(ordinaryBase + c, residence, inflationFactor, input.province);
-    const tR = incomeTax(ordinaryBase + c + r, residence, inflationFactor, input.province);
+    const t0 = incomeTax(ordinaryBase, residence, inflationFactor, input.province, taxFx);
+    const tC = incomeTax(ordinaryBase + c, residence, inflationFactor, input.province, taxFx);
+    const tR = incomeTax(ordinaryBase + c + r, residence, inflationFactor, input.province, taxFx);
     const convTax = tC - t0;
     const rmdNet = r - (tR - tC);
     const cashAvailable = ordinaryNet + rmdNet;
@@ -643,6 +656,7 @@ const makeApplyFlows = (input: MonteCarloInput) => {
         residence,
         province: input.province,
         inflationFactor,
+        fxFactor: input.taxFxFactor ?? 1,
         baseOrdinaryIncome: ordinaryBase,
       });
       return r.net < net - 0.5;
@@ -832,7 +846,9 @@ export const runMonteCarlo = (
           // still trusts the stated CAGR (see historical-real's identical rule).
           const driftBase =
             isBootstrapUncentered && hasVariance[i] ? classDriftByAsset[i]! : muY[i]!;
-          const logReturn = capLogReturn(driftBase - kappaI * dev[i]! + shock + crashDrift + cycOff);
+          const logReturn = capLogReturn(
+            driftBase - kappaI * dev[i]! + shock + crashDrift + cycOff,
+          );
           dev[i] = dev[i]! + (logReturn - muY[i]!);
           factor = Math.exp(logReturn);
         }
@@ -875,6 +891,7 @@ export const runMonteCarlo = (
           residence: input.residence ?? 'US',
           province: input.province,
           inflationFactor,
+          fxFactor: input.taxFxFactor ?? 1,
           baseOrdinaryIncome: ff.forcedBase,
         });
         if (r.net < ff.needFromPortfolio - 0.5 && year <= lastRetirementYear) {
@@ -1223,6 +1240,7 @@ export const sampleMonteCarloPath = (
         residence: input.residence ?? 'US',
         province: input.province,
         inflationFactor,
+        fxFactor: input.taxFxFactor ?? 1,
         baseOrdinaryIncome: ff.forcedBase,
       });
       net = r.net;
@@ -1537,6 +1555,7 @@ export const buildMonteCarloInput = (
     horizonYears,
     residence: plan.residenceCountry ?? 'US',
     province: plan.residenceProvince,
+    taxFxFactor: bracketFxFactor(plan.residenceCountry ?? 'US', plan.currency, rates),
     growthFade: plan.settings.growthFade,
   };
 };
