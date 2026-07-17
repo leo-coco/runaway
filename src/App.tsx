@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import emptyPlansIllustration from '@/assets/empty-plans.png';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { MenuIcon } from '@/components/icons';
+import runawayLogo from '@/assets/runaway-logo.png';
 import { Footer } from '@/components/layout/Footer';
 import { TourProvider } from '@/features/tour/TourProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -77,33 +80,90 @@ const ProductShell = ({
         {syncPlans && <PlanSyncManager />}
         <PaywallDialog />
         {!sandbox && <CheckoutSuccessDialog />}
-        <div className="app-shell">
-          <Sidebar />
-          <main className="app-main">
-            <div className="app-content">
-              <ErrorBoundary feature="app">
-                <Routes>
-                  <Route path="/" element={<RootRedirect />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  {!sandbox && <Route path="/admin" element={<AdminPage />} />}
-                  {!sandbox && <Route path="/account" element={<AccountPage />} />}
-                  <Route path="/plan/:id" element={<PlanLayout />}>
-                    <Route index element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="portfolio" element={<PortfolioPage />} />
-                    <Route path="projection" element={<ProjectionPage />} />
-                    <Route path="monte-carlo" element={<MonteCarloPage />} />
-                    <Route path="methodology" element={<MethodologyPage />} />
-                  </Route>
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </ErrorBoundary>
-            </div>
-            <Footer />
-          </main>
-        </div>
+        <AppShell sandbox={sandbox} />
       </TourProvider>
     </AppModeProvider>
+  );
+};
+
+const AppShell = ({ sandbox }: { sandbox: boolean }) => {
+  const { t } = useTranslation();
+  const [navOpen, setNavOpen] = useState(false);
+  const location = useLocation();
+
+  // Close the mobile drawer whenever the route changes (a nav/plan tap navigates).
+  // Adjusted during render rather than in an effect (React's supported reset-on-
+  // change pattern, mirroring the sidebar), which avoids an extra render pass.
+  const [prevPath, setPrevPath] = useState(location.pathname);
+  if (location.pathname !== prevPath) {
+    setPrevPath(location.pathname);
+    setNavOpen(false);
+  }
+
+  // Lock body scroll while the drawer overlays the page.
+  useEffect(() => {
+    if (!navOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [navOpen]);
+
+  return (
+    <div className={`app-shell${navOpen ? ' is-nav-open' : ''}`}>
+      <Sidebar mobileOpen={navOpen} onCloseMobile={() => setNavOpen(false)} />
+      <button
+        type="button"
+        className="sidebar-scrim"
+        aria-label={t('common.close')}
+        tabIndex={-1}
+        onClick={() => setNavOpen(false)}
+      />
+      <main className="app-main">
+        <header className="app-mobilebar">
+          <button
+            type="button"
+            className="app-mobilebar__toggle"
+            aria-label={t('sidebar.openMenu')}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(true)}
+          >
+            <MenuIcon size={20} />
+          </button>
+          <span className="app-mobilebar__brand">
+            <img
+              className="app-mobilebar__mark"
+              src={runawayLogo.src}
+              width={runawayLogo.width}
+              height={runawayLogo.height}
+              alt=""
+            />
+            <span className="app-mobilebar__name">Runaway</span>
+          </span>
+        </header>
+        <div className="app-content">
+          <ErrorBoundary feature="app">
+            <Routes>
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              {!sandbox && <Route path="/admin" element={<AdminPage />} />}
+              {!sandbox && <Route path="/account" element={<AccountPage />} />}
+              <Route path="/plan/:id" element={<PlanLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="portfolio" element={<PortfolioPage />} />
+                <Route path="projection" element={<ProjectionPage />} />
+                <Route path="monte-carlo" element={<MonteCarloPage />} />
+                <Route path="methodology" element={<MethodologyPage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </ErrorBoundary>
+        </div>
+        <Footer />
+      </main>
+    </div>
   );
 };
 

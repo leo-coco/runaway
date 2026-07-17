@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/store';
 import { estimatePlanSuccess } from '@/services/planSuccess';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { useIsMobileShell } from '@/hooks/useMediaQuery';
 import { useFeature, useLimit } from '@/hooks/useEntitlements';
 import { atLimit } from '@/domain/entitlements';
 import { ProBadge } from '@/features/billing/ProBadge';
@@ -160,7 +161,15 @@ const PlanRow = ({
   );
 };
 
-export const Sidebar = () => {
+export const Sidebar = ({
+  mobileOpen = false,
+  onCloseMobile,
+}: {
+  /** Whether the off-canvas drawer is open (only meaningful below the shell breakpoint). */
+  mobileOpen?: boolean;
+  /** Close the mobile drawer, e.g. when the collapse button doubles as a close button. */
+  onCloseMobile?: () => void;
+} = {}) => {
   const plans = useAppStore((s) => s.plans);
   const createPlan = useAppStore((s) => s.createPlan);
   const deletePlan = useAppStore((s) => s.deletePlan);
@@ -191,7 +200,16 @@ export const Sidebar = () => {
       return false;
     }
   });
+  const isMobile = useIsMobileShell();
+  // Below the shell breakpoint the sidebar renders as a full-width off-canvas
+  // drawer, so the icon-rail collapsed state (and its tooltips) is ignored there.
+  const effectiveCollapsed = !isMobile && collapsed;
   const toggleCollapsed = () => {
+    // On mobile the collapse toggle doubles as the drawer's close button.
+    if (isMobile) {
+      onCloseMobile?.();
+      return;
+    }
     setCollapsed((c) => {
       const next = !c;
       try {
@@ -206,13 +224,13 @@ export const Sidebar = () => {
   const [tip, setTip] = useState<{ label: string; top: number; left: number } | null>(null);
   // Clear any stale tooltip when the sidebar toggles, adjusted during render
   // rather than in an effect (see the identical pattern in PlanRow above).
-  const [prevCollapsedForTip, setPrevCollapsedForTip] = useState(collapsed);
-  if (collapsed !== prevCollapsedForTip) {
-    setPrevCollapsedForTip(collapsed);
+  const [prevCollapsedForTip, setPrevCollapsedForTip] = useState(effectiveCollapsed);
+  if (effectiveCollapsed !== prevCollapsedForTip) {
+    setPrevCollapsedForTip(effectiveCollapsed);
     setTip(null);
   }
   const showTip: ShowTip = (label) => (e) => {
-    if (!collapsed) return;
+    if (!effectiveCollapsed) return;
     const rect = e.currentTarget.getBoundingClientRect();
     setTip({ label, top: rect.top + rect.height / 2, left: rect.right + 10 });
   };
@@ -249,14 +267,29 @@ export const Sidebar = () => {
 
   return (
     <>
-      <aside className={`sidebar${collapsed ? ' is-collapsed' : ''}`} onScroll={hideTip}>
+      <aside
+        className={`sidebar${effectiveCollapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-open' : ''}`}
+        onScroll={hideTip}
+      >
         <div className="sb-top">
           <button
             type="button"
             className="sb-toggle"
             onClick={toggleCollapsed}
-            aria-label={t(collapsed ? 'sidebar.expandMenu' : 'sidebar.collapseMenu')}
-            title={t(collapsed ? 'sidebar.expandMenu' : 'sidebar.collapseMenu')}
+            aria-label={t(
+              isMobile
+                ? 'common.close'
+                : effectiveCollapsed
+                  ? 'sidebar.expandMenu'
+                  : 'sidebar.collapseMenu',
+            )}
+            title={t(
+              isMobile
+                ? 'common.close'
+                : effectiveCollapsed
+                  ? 'sidebar.expandMenu'
+                  : 'sidebar.collapseMenu',
+            )}
           >
             <MenuIcon size={18} />
           </button>
@@ -282,7 +315,7 @@ export const Sidebar = () => {
               active={p.id === activeId}
               published={successByPlan[p.id]}
               mcEnabled={mcEnabled}
-              collapsed={collapsed}
+              collapsed={effectiveCollapsed}
               onOpen={() => navigate(`/plan/${p.id}/dashboard`)}
               onEdit={() => setEditingId(p.id)}
               onDuplicate={() => onDuplicate(p.id)}
