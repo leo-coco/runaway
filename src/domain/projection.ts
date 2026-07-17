@@ -33,7 +33,12 @@ export interface ProjectionYear {
   readonly flowIncome: number;
   /** Gross amount withdrawn from the portfolio (net + tax), plan currency. */
   readonly grossWithdrawal: number;
-  /** Tax paid on this year's withdrawals, plan currency. */
+  /**
+   * Every tax the household owes this year, plan currency: on withdrawals, on
+   * conversions and the RMD, and on taxable flow income (pension, salary, rental).
+   * Not all of it is raised from the portfolio — flow income is taxed at source of
+   * the flow — so this is NOT bounded by `grossWithdrawal`.
+   */
   readonly taxPaid: number;
   readonly closingBalance: number;
   readonly perAsset: readonly AssetYearValue[];
