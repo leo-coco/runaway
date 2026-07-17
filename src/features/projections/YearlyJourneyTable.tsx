@@ -48,6 +48,9 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
   const moneySigned = (n: number) => (n < 0 ? `(${money(-n)})` : money(n));
   // Only surface gross/tax rows once tax actually applies (an account is taxed).
   const hasTax = projection.years.some((y) => y.taxPaid > 0.5);
+  // Taxed pension/salary/rental income is its own row: it never passes through the
+  // portfolio, so it must not be gated on (or folded into) the withdrawal rows.
+  const hasFlowIncomeTax = projection.years.some((y) => y.flowIncomeTax > 0.5);
   // "Dépenses & entrées" items, for the combined row's expand-to-detail. Same
   // inflation math the projection loop applies.
   const startYear = projection.years[0]?.year ?? new Date().getFullYear();
@@ -291,6 +294,21 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
                 {years.map((y) => (
                   <td key={y.year} className="num spend">
                     ({money(y.taxPaid)})
+                  </td>
+                ))}
+              </tr>
+            )}
+            {hasFlowIncomeTax && (
+              <tr>
+                <td className="rowlabel tip-host" tabIndex={0}>
+                  {t('jtable.taxOnIncome')}
+                  <span className="tip-bubble" role="tooltip">
+                    {t('jtable.taxOnIncomeTip')}
+                  </span>
+                </td>
+                {years.map((y) => (
+                  <td key={y.year} className="num spend">
+                    ({money(y.flowIncomeTax)})
                   </td>
                 ))}
               </tr>

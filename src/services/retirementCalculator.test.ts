@@ -669,7 +669,7 @@ describe('retirementCalculator.project', () => {
     expect(p.years.find((y) => y.year === 2035)!.flowExpense).toBeCloseTo(150_000, 0);
   });
 
-  it('taxPaid counts the tax on taxable flow income, not just on withdrawals', () => {
+  it('reports tax on flow income separately, without polluting the withdrawal rate', () => {
     const input: ProjectionInput = {
       startYear: 2026,
       horizonYears: 0,
@@ -711,12 +711,62 @@ describe('retirementCalculator.project', () => {
     const y0 = project(input, 'expected').years[0]!;
     // An 80k pension alone funds the 40k budget, so nothing is withdrawn — but the
     // pension is still taxed: US single, 80,000 − 16,100 deduction = 63,900 taxable
-    // → 1,240 + 4,560 + 2,970 = 8,770. Reporting only the withdrawal tax would show
-    // a tax-free year and hide it from the projection table entirely.
+    // → 1,240 + 4,560 + 2,970 = 8,770.
     expect(y0.grossWithdrawal).toBeCloseTo(0, 2);
-    expect(y0.taxPaid).toBeCloseTo(8_770, 0);
+    expect(y0.flowIncomeTax).toBeCloseTo(8_770, 0);
     // The tax really left the household: closing = 1m + (80k − 8,770 − 40k spent).
     expect(y0.closingBalance).toBeCloseTo(1_031_230, 0);
+    // It must NOT land in taxPaid: that field is the numerator of the effective
+    // rate on grossWithdrawal, and the portfolio paid nothing here.
+    expect(y0.taxPaid).toBeCloseTo(0, 2);
+  });
+
+  it('keeps the effective withdrawal rate honest when a pension is taxed alongside', () => {
+    const input: ProjectionInput = {
+      startYear: 2026,
+      horizonYears: 0,
+      retirementYear: 2026,
+      annualSpending: 95_000,
+      inflationPct: 0,
+      applyInflation: false,
+      currentAge: 65,
+      residence: 'US',
+      rmdEnabled: false,
+      scenario: { ...DEFAULT_SCENARIO_CONFIG, active: 'expected' },
+      accounts: [{ id: 'tax', kind: 'taxable', effectiveTaxRate: 0, incomeCoef: 0, flatRate: 0 }],
+      accountOrder: ['tax'],
+      assets: [
+        {
+          holdingId: 't',
+          symbol: 'T',
+          startValue: 1_000_000,
+          baseCagrPct: 0,
+          annualContribution: 0,
+          accountId: 'tax',
+          costBasis: 1_000_000, // all basis: the draw itself realises no gain
+        },
+      ],
+      expensesIncomes: [
+        {
+          id: 'p',
+          name: 'Pension',
+          amount: 80_000,
+          year: 2026,
+          kind: 'income',
+          frequency: 'recurring',
+          endYear: 2100,
+          taxable: true,
+          inflate: false,
+        },
+      ],
+    };
+    const y0 = project(input, 'expected').years[0]!;
+    // The table divides taxPaid by grossWithdrawal to show an effective rate. The
+    // draw is pure basis, so that rate must read 0% — folding the 8,770 of pension
+    // tax into taxPaid would print ~37% tax on an untaxed withdrawal.
+    expect(y0.grossWithdrawal).toBeGreaterThan(20_000);
+    expect(y0.taxPaid).toBeCloseTo(0, 2);
+    expect(y0.flowIncomeTax).toBeCloseTo(8_770, 0);
   });
 
   it('RMD forces a taxable withdrawal from deferred even when spending is low', () => {

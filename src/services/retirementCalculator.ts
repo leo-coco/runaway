@@ -600,7 +600,8 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
       flowExpense: round2(flows.expense),
       flowIncome: round2(flows.income),
       grossWithdrawal: round2(withdrawal.gross + rmdGross),
-      taxPaid: round2(ordinaryTax + withdrawal.tax + convTax + rmdTax),
+      taxPaid: round2(withdrawal.tax + convTax + rmdTax),
+      flowIncomeTax: round2(ordinaryTax),
       closingBalance: round2(closingBalance),
       isRetired,
       perAsset: state.map((a) => {
