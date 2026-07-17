@@ -41,10 +41,19 @@ export const DEFAULT_PHASED_SPENDING: PhasedSpendingConfig = {
 
 export type SpendingPhase = 'goGo' | 'slowGo' | 'noGo';
 
+/**
+ * Slow-Go can never end before Go-Go does. The settings form enforces this, but a
+ * config can also arrive from a stored/imported plan that never passed through it;
+ * an inverted pair would otherwise skip Slow-Go and apply its whole span at the
+ * No-Go rate. Collapsing Slow-Go to an empty phase keeps the model coherent.
+ */
+const effectiveSlowGoEndAge = (cfg: PhasedSpendingConfig): number =>
+  Math.max(cfg.goGoEndAge, cfg.slowGoEndAge);
+
 /** Which phase a given age falls in. */
 export const phaseForAge = (age: number, cfg: PhasedSpendingConfig): SpendingPhase => {
   if (age <= cfg.goGoEndAge) return 'goGo';
-  if (age <= cfg.slowGoEndAge) return 'slowGo';
+  if (age <= effectiveSlowGoEndAge(cfg)) return 'slowGo';
   return 'noGo';
 };
 
@@ -58,11 +67,12 @@ export const realSpendingMultiplier = (age: number, cfg: PhasedSpendingConfig): 
   const floor = Math.max(0, cfg.floorPct) / 100;
   if (age <= cfg.goGoEndAge) return Math.max(1, floor);
 
-  const slowYears = Math.min(age, cfg.slowGoEndAge) - cfg.goGoEndAge;
+  const slowGoEnd = effectiveSlowGoEndAge(cfg);
+  const slowYears = Math.min(age, slowGoEnd) - cfg.goGoEndAge;
   let m = Math.pow(1 + cfg.slowGoAdjustmentPct / 100, Math.max(0, slowYears));
 
-  if (age > cfg.slowGoEndAge) {
-    const noGoYears = age - cfg.slowGoEndAge;
+  if (age > slowGoEnd) {
+    const noGoYears = age - slowGoEnd;
     m *= Math.pow(1 + cfg.noGoAdjustmentPct / 100, noGoYears);
   }
   return Math.max(m, floor);
