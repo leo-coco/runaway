@@ -5,9 +5,10 @@ import type { TFunction } from 'i18next';
  * Validation for the "Home / Real estate" form. The home is described in today's
  * money; optional mortgage, future-purchase and sale sections are gated by their
  * own toggles, so their fields are only meaningful (and cross-checked) when on.
- * Takes `t` because messages are rendered directly in the form (localized).
+ * Takes `t` because messages are rendered directly in the form (localized), and
+ * `startYear` so a purchase/sale can't be dated before the plan even starts.
  */
-export const createHomeFormSchema = (t: TFunction) =>
+export const createHomeFormSchema = (t: TFunction, startYear: number) =>
   z
     .object({
       name: z.string().min(1, t('validation.home.enterName')),
@@ -47,9 +48,18 @@ export const createHomeFormSchema = (t: TFunction) =>
       saleYear: z.number().int().min(1900).max(2200),
       saleFeePct: z.number().min(0, t('validation.common.cannotBeNegative')).max(20),
       saleCapitalGainsTaxable: z.boolean(),
+      costBasis: z.number().nonnegative(t('validation.common.cannotBeNegative')).max(1_000_000_000),
     })
     .refine((v) => !(v.hasSale && v.hasPurchase) || v.saleYear > v.purchaseYear, {
       message: t('validation.home.saleAfterPurchase'),
+      path: ['saleYear'],
+    })
+    .refine((v) => !v.hasPurchase || v.purchaseYear >= startYear, {
+      message: t('validation.home.purchaseNotPast'),
+      path: ['purchaseYear'],
+    })
+    .refine((v) => !v.hasSale || v.saleYear >= startYear, {
+      message: t('validation.home.saleNotPast'),
       path: ['saleYear'],
     });
 

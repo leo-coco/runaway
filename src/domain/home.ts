@@ -50,6 +50,13 @@ export interface HomeSale {
    * US §121 exclusion), so the proceeds arrive as pure cash.
    */
   readonly capitalGainsTaxable?: boolean;
+  /**
+   * Original cost basis (purchase price), today's money — only meaningful, and
+   * only asked for, when the home has no {@link HomePurchase} (already owned):
+   * a future purchase's basis is its price at acquisition, known automatically.
+   * Defaults to `currentValue` (zero gain) when omitted.
+   */
+  readonly costBasis?: number;
 }
 
 export interface Home {
@@ -225,6 +232,29 @@ export const homeSaleProceeds = (home: Home, startYear: number): number | null =
 };
 
 /**
+ * What the home cost to acquire, at the price level of its acquisition: for a
+ * future purchase, the price paid (the home's value at the purchase year,
+ * since {@link Home.currentValue} is defined relative to `startYear` regardless
+ * of purchase timing); for a home already owned, the user-entered
+ * {@link HomeSale.costBasis} (defaults to `currentValue`, i.e. zero gain).
+ */
+const acquisitionCost = (home: Home, startYear: number): number =>
+  home.purchase
+    ? homeValueAt(home, startYear, home.purchase.year)
+    : (home.sale?.costBasis ?? home.currentValue);
+
+/**
+ * Taxable capital gain on the sale: the appreciated price less selling fees and
+ * the acquisition cost, floored at 0. 0 when the home has no planned sale.
+ */
+export const homeSaleGain = (home: Home, startYear: number): number => {
+  if (!home.sale) return 0;
+  const grossPrice = homeValueAt(home, startYear, home.sale.year);
+  const fees = grossPrice * ((home.sale.feePct ?? 0) / 100);
+  return Math.max(0, grossPrice - fees - acquisitionCost(home, startYear));
+};
+
+/**
  * Translate a home into the {@link ExpenseIncome} flows that drive its impact on
  * the projection and Monte Carlo engines:
  *
@@ -235,10 +265,11 @@ export const homeSaleProceeds = (home: Home, startYear: number): number | null =
  *    actually drawn (see {@link acquisitionFactor}), held nominal (`inflate: false`)
  *    since a fixed-rate payment does not rise with inflation, running from the
  *    start of ownership until the term ends or the home is sold.
- *  - **ownership**: a recurring expense = ownershipCostPct × the current value, in
- *    today's money (grows with general inflation), until the home is sold.
+ *  - **ownership**: a recurring expense = ownershipCostPct × the home's own
+ *    (appreciating) value each year (`growthPct`), until the home is sold.
  *  - **sale**: a one-off income = {@link homeSaleProceeds}, already nominal
- *    (`inflate: false`), taxed per the sale's `capitalGainsTaxable` flag.
+ *    (`inflate: false`); when `capitalGainsTaxable` is set, only the
+ *    {@link homeSaleGain} portion (not the full proceeds) is taxable.
  *
  * Ids are stable (`home:*`) so the flows can be re-generated and diffed. The home
  * is never emitted as a portfolio holding, so it can never be drawn down.
@@ -292,20 +323,24 @@ export const homeFlows = (home: Home | undefined, startYear: number): readonly E
 
   const ownershipCostPct = home.ownershipCostPct ?? 0;
   if (ownershipCostPct > 0 && occupancyEndYear >= ownStart) {
+    // Pinned to the home's own appreciation (growthPct), not general CPI, so the
+    // cost stays this percent of the home's actual value every year it's owned.
     flows.push({
       id: 'home:ownership',
       name: home.name,
-      amount: (ownershipCostPct / 100) * home.currentValue,
+      amount: (ownershipCostPct / 100) * homeValueAt(home, startYear, ownStart),
       year: ownStart,
       endYear: occupancyEndYear,
       kind: 'expense',
       frequency: 'recurring',
-      inflate: true,
+      growthPct: home.appreciationPct,
     });
   }
 
   if (home.sale) {
     const proceeds = homeSaleProceeds(home, startYear) ?? 0;
+    const taxable = home.sale.capitalGainsTaxable ?? false;
+    const gain = taxable ? homeSaleGain(home, startYear) : 0;
     flows.push({
       id: 'home:sale',
       name: home.name,
@@ -313,7 +348,8 @@ export const homeFlows = (home: Home | undefined, startYear: number): readonly E
       year: home.sale.year,
       kind: 'income',
       inflate: false,
-      taxable: home.sale.capitalGainsTaxable ?? false,
+      taxable,
+      taxableFraction: proceeds > 0 ? gain / proceeds : 0,
     });
   }
 

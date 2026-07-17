@@ -81,6 +81,9 @@ export const fr: Resources = {
     saleYear: 'Année de vente',
     saleFee: 'Frais de vente',
     saleTaxable: 'Imposer le gain en capital (décocher pour une résidence principale exonérée)',
+    costBasis: 'Prix d’acquisition d’origine',
+    costBasisHint:
+      'Ce que vous avez payé à l’origine pour le bien. Seul le gain au-delà de ce montant est imposé, pas la totalité du produit de la vente.',
     remove: 'Retirer la maison',
     previewTitle: 'Flux',
     equityNow: "Équité aujourd'hui",
@@ -397,6 +400,7 @@ export const fr: Resources = {
     optOpeningClosing: 'Ouverture vs clôture',
     optNetChange: 'Variation nette (clôture − ouverture)',
     optApprExpenses: 'Appréciation vs dépenses',
+    optRealEstate: 'Immobilier + Portefeuille',
     optPostRetirement: 'Post-retraite (années de survie)',
     optScenarios: 'Scénarios (optimiste / attendu / pessimiste)',
     descComposition:
@@ -409,6 +413,8 @@ export const fr: Resources = {
       'Variation nette projetée de la valeur du portefeuille chaque année (clôture − ouverture). Positive pendant l’épargne, négative quand les retraits dépassent la croissance à la retraite.',
     descApprExpenses:
       'Compare l’appréciation des investissements de chaque année aux dépenses brutes (retraits, impôt inclus) ponctionnées du portefeuille.',
+    descRealEstate:
+      'Solde du portefeuille et équité immobilière (valeur moins prêt) côte à côte, plus leur patrimoine net total combiné.',
     descPostRetirement:
       'Combien d’années votre épargne dure après la retraite selon chaque scénario.',
     descScenarios: 'Compare les hypothèses de rendement annuel optimiste, attendu et pessimiste.',
@@ -417,6 +423,8 @@ export const fr: Resources = {
     seriesClosing: 'Clôture',
     seriesAppreciation: 'Appréciation',
     seriesExpenses: 'Dépenses',
+    seriesHomeEquity: 'Équité immobilière',
+    seriesTotal: 'Patrimoine net total',
     seriesNetChange: 'Variation nette',
     seriesSurvival: 'Survie',
     retirement: 'Retraite {{year}}',
@@ -1585,6 +1593,8 @@ export const fr: Resources = {
       enterAppreciation: 'Indiquez un taux d’appréciation',
       enterOwnershipCost: 'Indiquez un coût de possession',
       saleAfterPurchase: 'La vente doit avoir lieu après l’achat',
+      purchaseNotPast: 'L’année d’achat ne peut pas être antérieure au début du plan',
+      saleNotPast: 'L’année de vente ne peut pas être antérieure au début du plan',
     },
     retirementSettings: {
       enterSpending: 'Indiquez un montant de dépenses',
