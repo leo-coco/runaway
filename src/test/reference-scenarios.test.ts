@@ -87,37 +87,42 @@ describe('Reference · the 4% rule (Bengen / Trinity sanity check)', () => {
 
 // ---------------------------------------------------------------------------
 describe('Reference · progressive income tax (hand-computed from the 2026 brackets)', () => {
-  it('France: 50,000 → 8,103.99', () => {
+  it('France: 50,000 → 6,772.29 (10% pension allowance capped at 4,439)', () => {
+    // Allowance: min(10%·50,000, 4,439) = 4,439 → taxable 45,561.
     // 0–11,600 @0% = 0
     // 11,600–29,579 @11% = 17,979·0.11 = 1,977.69
-    // 29,579–50,000 @30% = 20,421·0.30 = 6,126.30
-    expect(incomeTax(50_000, 'FR')).toBeCloseTo(8_103.99, 2);
+    // 29,579–45,561 @30% = 15,982·0.30 = 4,794.60
+    expect(incomeTax(50_000, 'FR')).toBeCloseTo(6_772.29, 2);
   });
 
-  it('France: 100,000 → 24,800.52', () => {
-    // + 29,579–84,577 @30% = 54,998·0.30 = 16,499.40
-    // + 84,577–100,000 @41% = 15,423·0.41 = 6,323.43
-    expect(incomeTax(100_000, 'FR')).toBeCloseTo(24_800.52, 2);
+  it('France: 100,000 → 22,980.53', () => {
+    // Allowance capped at 4,439 → taxable 95,561.
+    // 1,977.69 + (84,577−29,579)·0.30 = 16,499.40
+    // + (95,561−84,577)·0.41 = 10,984·0.41 = 4,503.44
+    expect(incomeTax(100_000, 'FR')).toBeCloseTo(22_980.53, 2);
   });
 
-  it('United States: 60,000 → 7,912.00', () => {
+  it('United States: 60,000 → 5,020.00 (after the 16,100 standard deduction)', () => {
+    // Taxable = 60,000 − 16,100 = 43,900.
     // 0–12,400 @10% = 1,240
-    // 12,400–50,400 @12% = 38,000·0.12 = 4,560
-    // 50,400–60,000 @22% = 9,600·0.22 = 2,112
-    expect(incomeTax(60_000, 'US')).toBeCloseTo(7_912, 2);
+    // 12,400–43,900 @12% = 31,500·0.12 = 3,780
+    expect(incomeTax(60_000, 'US')).toBeCloseTo(5_020, 2);
   });
 
-  it('Canada (ON combined): 80,000 → 17,706.47', () => {
-    // Combined federal (14/20.5%) + Ontario (5.05/9.15%) segments:
-    // 0–53,891 @19.05% = 10,266.24
+  it('Canada (ON combined): 80,000 → 14,747.25 (federal + provincial BPA)', () => {
+    // 0% bands: ON BPA to 12,989, federal BPA to 16,452. Then:
+    // 12,989–16,452 @5.05% = 3,463·0.0505 = 174.88
+    // 16,452–53,891 @19.05% = 37,439·0.1905 = 7,132.13
     // 53,891–58,523 @23.15% = 4,632·0.2315 = 1,072.31
     // 58,523–80,000 @29.65% = 21,477·0.2965 = 6,367.93
-    expect(incomeTax(80_000, 'CA')).toBeCloseTo(17_706.47, 2);
+    expect(incomeTax(80_000, 'CA')).toBeCloseTo(14_747.25, 2);
   });
 
   it('income below the first threshold (and zero) pays nothing', () => {
     expect(incomeTax(0, 'FR')).toBe(0);
     expect(incomeTax(10_000, 'FR')).toBe(0); // under the 11,600 allowance (2026)
+    expect(incomeTax(16_100, 'US')).toBe(0); // fully absorbed by the deduction
+    expect(incomeTax(12_989, 'CA')).toBe(0); // under both basic personal amounts
   });
 });
 
@@ -173,10 +178,11 @@ describe('Reference · withdrawal strategy', () => {
     expect(closing(y2027, 'b')).toBeCloseTo(80_000, 0);
   });
 
-  it('progressive gross-up (France, deferred account): net 30,000 ⇒ gross 33,005.70', () => {
-    // Solve g − incomeTax_FR(g) = 30,000 with g in the 30% band (2026 barème):
-    //   T(g) = 1,977.69 + 0.30·(g − 29,579)  ⇒  net = 0.70·g + 6,896.01
-    //   ⇒  g = 33,005.70, tax = 3,005.70.
+  it('progressive gross-up (France, deferred account): net 30,000 ⇒ gross 31,880.13', () => {
+    // Solve g − incomeTax_FR(g) = 30,000. With the 10% allowance (uncapped in
+    // this range) taxable = 0.9·g, which sits in the 11% band (0.9·g < 29,579):
+    //   T(g) = 0.11·(0.9·g − 11,600) = 0.099·g − 1,276
+    //   net  = 0.901·g + 1,276  ⇒  g = 28,724 / 0.901 = 31,880.13, tax = 1,880.13.
     const state: WithdrawableAsset[] = [{ value: 1_000_000, accountId: 'a' }];
     const r = withdrawNet(
       state,
@@ -186,8 +192,8 @@ describe('Reference · withdrawal strategy', () => {
       { residence: 'FR', inflationFactor: 1 },
     );
     expect(r.net).toBeCloseTo(30_000, 1);
-    expect(r.gross).toBeCloseTo(33_005.7, 1);
-    expect(r.tax).toBeCloseTo(3_005.7, 1);
+    expect(r.gross).toBeCloseTo(31_880.13, 1);
+    expect(r.tax).toBeCloseTo(1_880.13, 1);
   });
 });
 
@@ -277,9 +283,29 @@ describe('Reference · 2026 tax-engine additions', () => {
     // Same net funded, but order A pays more tax because the ordinary income
     // consumed the 0% LTCG band beneath the gains.
     expect(a.tax).toBeGreaterThan(b.tax);
-    // Cross-check order B against the closed form: first 49,450 of gains at 0%.
+    // Cross-check order B against the closed form: the 0% LTCG band covers the
+    // first 65,550 of gross (49,450 official + the 16,100 standard deduction).
     const gGains = b.gross; // brokerage-only gross = gains (gainsCoef 1)
     expect(gGains - capitalGainsTax(gGains, 0, 'US')).toBeCloseTo(100_000, 1);
+  });
+
+  it('bracket thresholds are FX-scaled: fx=2 halves the effective progressivity', () => {
+    // Doubling every threshold is exactly a currency where 1 local unit = 2 plan
+    // units: the tax on 2× the income must be 2× the tax on the base income.
+    expect(incomeTax(100_000, 'US', 1, undefined, 2)).toBeCloseTo(2 * incomeTax(50_000, 'US'), 6);
+    expect(incomeTax(80_000, 'CA', 1, 'ON', 2)).toBeCloseTo(2 * incomeTax(40_000, 'CA'), 6);
+    expect(incomeTax(50_000, 'FR', 1, undefined, 2)).toBeCloseTo(2 * incomeTax(25_000, 'FR'), 6);
+  });
+
+  it('the NIIT threshold is FX-converted but never inflation-indexed', () => {
+    // ord 190k + 30k gains: at fx=1 NIIT taxes the 20k above the 200k threshold;
+    // at fx=2 the threshold is 400k in plan currency → no NIIT. The LTCG slice
+    // stays 15%·30,000 in both cases (thresholds scale with fx).
+    const atFx1 = capitalGainsTax(30_000, 190_000, 'US', 1, 1);
+    const atFx2 = capitalGainsTax(30_000, 190_000, 'US', 1, 2);
+    expect(atFx1).toBeCloseTo(0.15 * 30_000 + 0.038 * 20_000, 2);
+    // fx=2: taxable ord 190k sits above the doubled 0% band (131,100) → 15% band.
+    expect(atFx2).toBeCloseTo(0.15 * 30_000, 2);
   });
 
   it('RMD start age follows SECURE 2.0: 73 before 1960, 75 from 1960 (US)', () => {

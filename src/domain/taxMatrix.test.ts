@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { accountEffectiveRate, accountTaxProfile, type Account, type AccountKind } from './account';
 import { accountTaxAtSpending } from './accountTaxRate';
+import { taxableOrdinaryIncome } from './tax';
 import type { Country } from './country';
 import {
   CAPITAL_GAINS_FLAT,
@@ -204,10 +205,11 @@ describe('accountTaxAtSpending — progressive brackets depend on the withdrawal
       const high = accountTaxAtSpending(a, residence, 250_000);
       expect(low.progressive).toBe(true);
       expect(high.effective).toBeGreaterThan(low.effective);
-      // Bracket slices reconcile with the ordinary income and the tax owed.
+      // Bracket slices reconcile with the income exposed to the schedule (after
+      // the FR pension allowance; identity elsewhere) and with the tax owed.
       const sliceSum = high.brackets.reduce((s, b) => s + b.amount, 0);
       const taxSum = high.brackets.reduce((s, b) => s + b.tax, 0);
-      expect(sliceSum).toBeCloseTo(high.ordinaryIncome, 1);
+      expect(sliceSum).toBeCloseTo(taxableOrdinaryIncome(high.ordinaryIncome, residence), 1);
       expect(taxSum).toBeCloseTo(high.tax, 1);
       // net = gross − tax holds.
       expect(high.gross - high.tax).toBeCloseTo(high.net, 1);
@@ -249,8 +251,10 @@ describe('accountTaxAtSpending — progressive brackets depend on the withdrawal
     expect(sliceSum).toBeCloseTo(large.gainsIncome, 1);
     expect(taxSum + large.niitTax).toBeCloseTo(large.tax, 1);
     expect(large.gross - large.tax).toBeCloseTo(large.net, 1);
-    // Hand-check: solve g − 0.15·(g − 49,450) = 120,000 ⇒ g = 132,450.
-    expect(large.gross).toBeCloseTo(132_450, 0);
+    // Hand-check: the 0% band ends at zeroCap (49,450 official + the 16,100
+    // standard deduction); solve g − 0.15·(g − zeroCap) = 120,000.
+    const zeroCap = US_LTCG_BRACKETS[0]!.upTo;
+    expect(large.gross).toBeCloseTo((120_000 - 0.15 * zeroCap) / 0.85, 0);
   });
 
   it('US taxable: NIIT (3.8%) kicks in above the 200k MAGI threshold', () => {
@@ -323,9 +327,11 @@ describe('live gain-fraction override scales the tax for every account type', ()
   }
 
   it('tax-free abroad: taxed as a gain by residence, scales with the live gain', () => {
+    // 120k spend: the full-gain draw spills past the LTCG 0% band (65,550 with
+    // the deduction) while the half-gain draw stays inside it.
     const pea = acct({ kind: 'tax_free', sourceCountry: 'FR', costBasisPct: 0 });
-    const half = accountTaxAtSpending(pea, 'US', 50_000, 0.5).effective;
-    const full = accountTaxAtSpending(pea, 'US', 50_000, 1.0).effective;
+    const half = accountTaxAtSpending(pea, 'US', 120_000, 0.5).effective;
+    const full = accountTaxAtSpending(pea, 'US', 120_000, 1.0).effective;
     expect(full).toBeGreaterThan(half);
   });
 

@@ -58,6 +58,8 @@ export const explainEffectiveRate = (
   gainFractionOverride?: number,
   /** Canadian province for the combined bracket schedule (default ON). */
   province?: Province,
+  /** Plan-currency units per residence-currency unit (bracket FX scaling). */
+  fxFactor = 1,
 ): TaxExplanation => {
   const steps: TaxExplainStep[] = [];
 
@@ -77,6 +79,7 @@ export const explainEffectiveRate = (
     netSpending,
     gainFractionOverride,
     province,
+    fxFactor,
   );
   const effectivePct = pct(breakdown.effective);
 

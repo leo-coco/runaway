@@ -1,5 +1,6 @@
 import { appError, type AppError } from '@/domain/errors';
 import { err, ok, type Result } from '@/domain/result';
+import { RESIDENCE_CURRENCY, type Country } from '@/domain/country';
 import type { CurrencyCode } from '@/domain/money';
 
 /**
@@ -41,6 +42,18 @@ export const convert = (
   const inBase = amount / rateFrom;
   return ok(inBase * rateTo);
 };
+
+/**
+ * Units of `planCurrency` per 1 unit of the residence country's local currency —
+ * the factor bracket thresholds (legislated in EUR/USD/CAD) must be scaled by
+ * before being applied to plan-currency amounts. 1 without a rates table (the
+ * legacy behaviour: thresholds applied as-is).
+ */
+export const bracketFxFactor = (
+  residence: Country,
+  planCurrency: CurrencyCode,
+  table: RatesTable | undefined,
+): number => (table ? convertOr(1, RESIDENCE_CURRENCY[residence], planCurrency, table) : 1);
 
 /** Convert and fall back to the raw amount if conversion is impossible. */
 export const convertOr = (

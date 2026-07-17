@@ -33,6 +33,69 @@ export interface IncomeBracket {
 }
 
 /**
+ * US standard deduction, tax year 2026, single filer (Rev. Proc. 2025-32).
+ * Baked into the US schedules below by shifting every threshold up by it and
+ * adding a 0% band, so ladder(income) = official ladder(income − deduction) —
+ * including the case where the unused deduction offsets capital gains.
+ */
+export const US_STANDARD_DEDUCTION = 16_100;
+
+/**
+ * Canada basic personal amounts, tax year 2026, modelled as a 0% band at the
+ * bottom of each schedule — exactly equivalent to the real non-refundable
+ * credit at the lowest rate. Federal: maximum BPA (the phase-down to $14,829
+ * above $181,440 of income is not modelled — worth at most ~$230/yr).
+ */
+export const CA_FEDERAL_BPA = 16_452;
+export const CA_PROVINCIAL_BPA: Record<Exclude<Province, 'OTHER'>, number> = {
+  ON: 12_989,
+  QC: 18_952,
+  BC: 13_216,
+  AB: 22_769,
+};
+
+/**
+ * France: 10% allowance on pensions (kept in LF 2026 — the proposed €2,000
+ * flat replacement was rejected), floor/ceiling per the 2026 déclaration.
+ * Applied by the engine to all FR ordinary income, which in this planner is
+ * pension-like (PER withdrawals, pension/salary flows).
+ */
+export const FR_PENSION_ALLOWANCE = { rate: 0.1, min: 454, max: 4_439 } as const;
+
+/**
+ * Prepend a 0% band of `amount` and shift every threshold up by it: the
+ * deduction semantics (taxable income = income − amount). Adjacent 0% bands
+ * are merged so schedules stay clean for display.
+ */
+const shiftBrackets = (schedule: readonly IncomeBracket[], amount: number): IncomeBracket[] => {
+  const shifted = [
+    { upTo: amount, rate: 0 },
+    ...schedule.map((b) => ({
+      upTo: b.upTo === Infinity ? Infinity : b.upTo + amount,
+      rate: b.rate,
+    })),
+  ];
+  const merged: IncomeBracket[] = [];
+  for (const b of shifted) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.rate === b.rate) merged[merged.length - 1] = b;
+    else merged.push(b);
+  }
+  return merged;
+};
+
+/**
+ * Prepend a 0% band of `amount` WITHOUT shifting the other thresholds: the
+ * credit semantics (tax = ladder(income) − amount × lowest rate, floored at 0),
+ * which is exactly Canada's basic-personal-amount mechanics. Requires `amount`
+ * below the schedule's first threshold.
+ */
+const withZeroBracket = (schedule: readonly IncomeBracket[], amount: number): IncomeBracket[] => [
+  { upTo: amount, rate: 0 },
+  ...schedule.filter((b) => b.upTo > amount),
+];
+
+/**
  * Merge two marginal schedules (e.g. federal + provincial) into one combined
  * schedule: union of thresholds, marginal rates summed on each segment.
  */
@@ -114,18 +177,23 @@ export interface ProvinceTaxTable {
  * uses the Ontario combined table as a representative middle-of-the-pack proxy.
  */
 export const CA_PROVINCES_TABLES: Record<Province, ProvinceTaxTable> = (() => {
-  const on = combineBrackets(CA_FEDERAL_BRACKETS, CA_PROVINCIAL.ON);
+  // Each side carries its basic personal amount as a 0% band (credit at the
+  // lowest rate), then the two marginal schedules are merged as before.
+  const fed = withZeroBracket(CA_FEDERAL_BRACKETS, CA_FEDERAL_BPA);
+  const prov = (p: Exclude<Province, 'OTHER'>): IncomeBracket[] =>
+    withZeroBracket(CA_PROVINCIAL[p], CA_PROVINCIAL_BPA[p]);
+  const on = combineBrackets(fed, prov('ON'));
   return {
     ON: { label: 'Ontario', brackets: on },
     QC: {
       label: 'Québec',
-      brackets: combineBrackets(scaleRates(CA_FEDERAL_BRACKETS, 1 - 0.165), CA_PROVINCIAL.QC),
+      brackets: combineBrackets(scaleRates(fed, 1 - 0.165), prov('QC')),
     },
     BC: {
       label: 'British Columbia',
-      brackets: combineBrackets(CA_FEDERAL_BRACKETS, CA_PROVINCIAL.BC),
+      brackets: combineBrackets(fed, prov('BC')),
     },
-    AB: { label: 'Alberta', brackets: combineBrackets(CA_FEDERAL_BRACKETS, CA_PROVINCIAL.AB) },
+    AB: { label: 'Alberta', brackets: combineBrackets(fed, prov('AB')) },
     OTHER: { label: 'Other (representative)', brackets: on },
   };
 })();
@@ -144,28 +212,40 @@ export const INCOME_BRACKETS: Record<Country, readonly IncomeBracket[]> = {
     { upTo: 181_917, rate: 0.41 },
     { upTo: Infinity, rate: 0.45 },
   ],
-  US: [
-    { upTo: 12_400, rate: 0.1 },
-    { upTo: 50_400, rate: 0.12 },
-    { upTo: 105_700, rate: 0.22 },
-    { upTo: 201_775, rate: 0.24 },
-    { upTo: 256_225, rate: 0.32 },
-    { upTo: 640_600, rate: 0.35 },
-    { upTo: Infinity, rate: 0.37 },
-  ],
+  // Official 2026 single-filer brackets, shifted by the standard deduction —
+  // the schedule taxes gross income exactly like the IRS taxes taxable income.
+  US: shiftBrackets(
+    [
+      { upTo: 12_400, rate: 0.1 },
+      { upTo: 50_400, rate: 0.12 },
+      { upTo: 105_700, rate: 0.22 },
+      { upTo: 201_775, rate: 0.24 },
+      { upTo: 256_225, rate: 0.32 },
+      { upTo: 640_600, rate: 0.35 },
+      { upTo: Infinity, rate: 0.37 },
+    ],
+    US_STANDARD_DEDUCTION,
+  ),
   CA: CA_PROVINCES_TABLES.ON.brackets,
 };
 
 /**
  * US long-term capital gains brackets, tax year 2026 (single filer). Gains
  * stack ON TOP of ordinary taxable income: the rate for each gain slice is
- * read at (ordinary income + cumulative gains).
+ * read at (ordinary income + cumulative gains). Shifted by the standard
+ * deduction like the income schedule, so both ladders index the same
+ * gross-income scale — including the unused deduction offsetting gains when
+ * ordinary income is below it. Official thresholds: 0% to 49,450, 15% to
+ * 545,500, 20% above.
  */
-export const US_LTCG_BRACKETS: readonly IncomeBracket[] = [
-  { upTo: 49_450, rate: 0 },
-  { upTo: 545_500, rate: 0.15 },
-  { upTo: Infinity, rate: 0.2 },
-];
+export const US_LTCG_BRACKETS: readonly IncomeBracket[] = shiftBrackets(
+  [
+    { upTo: 49_450, rate: 0 },
+    { upTo: 545_500, rate: 0.15 },
+    { upTo: Infinity, rate: 0.2 },
+  ],
+  US_STANDARD_DEDUCTION,
+);
 
 /**
  * US Net Investment Income Tax: +3.8% on investment income above the MAGI

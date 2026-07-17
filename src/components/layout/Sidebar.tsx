@@ -3,6 +3,7 @@ import { Link, NavLink, useMatch, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/store';
 import { estimatePlanSuccess } from '@/services/planSuccess';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { useFeature, useLimit } from '@/hooks/useEntitlements';
 import { atLimit } from '@/domain/entitlements';
 import { ProBadge } from '@/features/billing/ProBadge';
@@ -64,9 +65,11 @@ const PlanRow = ({
   // Show the exact figure the Monte Carlo page produced. Only fall back to a local
   // estimate for plans never opened this session (e.g. right after a reload). Free
   // tier has no Monte Carlo, so no success % is shown (the estimate is skipped too).
+  // The FX table is required so multi-currency plans are valued like the MC page.
+  const fx = useExchangeRate(plan.currency);
   const fallback = useMemo(
-    () => (mcEnabled && published === undefined ? estimatePlanSuccess(plan, undefined, 500) : null),
-    [mcEnabled, published, plan],
+    () => (mcEnabled && published === undefined ? estimatePlanSuccess(plan, fx.data, 500) : null),
+    [mcEnabled, published, plan, fx.data],
   );
   const pct = !mcEnabled ? null : published !== undefined ? published : fallback;
   const { t } = useTranslation();

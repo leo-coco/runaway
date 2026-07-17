@@ -35,7 +35,7 @@ import {
 } from '@/domain/country';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { valueHoldings } from '@/services/portfolioService';
-import type { RatesTable } from '@/services/currencyService';
+import { bracketFxFactor, type RatesTable } from '@/services/currencyService';
 import type { Plan } from '@/domain/plan';
 import { cn } from '@/lib/cn';
 
@@ -427,6 +427,7 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
     </div>
   );
 
+  const taxFx = bracketFxFactor(residence, plan.currency, rates);
   const infoAccount = infoId ? draftAccounts.find((account) => account.id === infoId) : undefined;
   const infoExplanation = infoAccount
     ? explainEffectiveRate(
@@ -435,6 +436,7 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
         plan.settings.annualSpending,
         liveGainByAccount.get(infoAccount.id),
         plan.residenceProvince,
+        taxFx,
       )
     : undefined;
 
@@ -530,6 +532,7 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                   plan.settings.annualSpending,
                   liveGainByAccount.get(a.id),
                   plan.residenceProvince,
+                  taxFx,
                 );
                 const eff = explanation.effectivePct;
 

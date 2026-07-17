@@ -91,6 +91,21 @@ describe('applyForcedFlows', () => {
     expect(r.conversionIncome).toBeCloseTo(45_000, 6);
   });
 
+  it('skips the conversion when the destination account has no holding', () => {
+    // Converting into a holding-less account used to vanish the principal (and
+    // tax it). It must now be a no-op: nothing moves, nothing is taxed.
+    const a: FlowAsset[] = [{ value: 500_000, accountId: 'rrsp', basis: 0 }];
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 67,
+      rmdEnabled: false,
+      conversions: [{ ...conv, toAccountId: 'roth-empty' }],
+      inflationFactor: 1,
+    });
+    expect(r.conversionIncome).toBe(0);
+    expect(a[0]!.value).toBe(500_000);
+  });
+
   it('caps the conversion at the available deferred balance', () => {
     const a: FlowAsset[] = [
       { value: 20_000, accountId: 'rrsp' },

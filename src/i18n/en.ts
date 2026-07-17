@@ -768,7 +768,7 @@ export const en = {
       'Gross-up: for a flat bucket, gross = net ÷ (1 − effective rate); for a progressive bucket the gross is solved by bisection so net = gross − tax.',
     disclaimer: 'Simplified representative brackets at your spending level — not tax advice.',
     assumptions:
-      'Assumptions: 2026 brackets (IRS Rev. Proc. 2025-32 / Loi de finances 2026 / CRA), single filer / 1 part. Excludes US state & local taxes and Canadian provincial surtaxes beyond the bracket table. A simulation, not tax advice.',
+      'Assumptions: 2026 brackets (IRS Rev. Proc. 2025-32 / Loi de finances 2026 / CRA), single filer / 1 part, including the US standard deduction, the Canadian basic personal amounts and the French 10% pension allowance as 0% bands. Thresholds are converted into the plan currency when it differs from the residence currency. Excludes US state & local taxes and Canadian provincial surtaxes beyond the bracket table. A simulation, not tax advice.',
   },
   addAsset: {
     title: 'Add New Asset',
@@ -958,7 +958,7 @@ export const en = {
     taxOther:
       'Capital gains: flat rate {{cg}}%, share included in income {{incl}}%. Withholding (foreign account): {{wh}}%.',
     taxAssumptions:
-      'Excludes US state & local taxes; a simulation, not tax advice. Tax-free wrappers are honoured abroad only when a treaty recognises them (US Roth for CA/FR residents; TFSA and PEA are not).',
+      'Schedules include the US standard deduction, the Canadian basic personal amounts and the French 10% pension allowance as 0% bands; thresholds are converted into the plan currency when it differs from the residence currency. Excludes US state & local taxes; a simulation, not tax advice. Tax-free wrappers are honoured abroad only when a treaty recognises them (US Roth for CA/FR residents; TFSA and PEA are not).',
     colAsset: 'Asset',
     colClass: 'Class',
     colDrift: 'Drift (CAGR)',

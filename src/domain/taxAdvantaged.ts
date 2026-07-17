@@ -199,6 +199,11 @@ export const applyForcedFlows = (
   // 1) Conversions / meltdown: move principal between accounts.
   for (const plan of conversions) {
     if (age < plan.startAge || age > plan.endAge) continue;
+    // The destination account must hold at least one asset to receive the
+    // principal. Otherwise skip the conversion entirely — moving money into a
+    // holding-less account would silently vanish it (and tax it on top).
+    const dest = assets.find((a) => a.accountId === plan.toAccountId);
+    if (!dest) continue;
     const target = plan.annualAmount * inflationFactor;
     const fromHoldings = assets.filter((a) => a.accountId === plan.fromAccountId && a.value > 0);
     const fromBalance = fromHoldings.reduce((s, a) => s + a.value, 0);
@@ -209,14 +214,9 @@ export const applyForcedFlows = (
       if (h.basis !== undefined) h.basis *= 1 - sold;
       h.value -= moved * (h.value / fromBalance);
     }
-    const dest = assets.find((a) => a.accountId === plan.toAccountId);
-    if (dest) {
-      dest.value += moved;
-      // The converted (already-taxed) principal becomes fresh basis at destination.
-      if (dest.basis !== undefined) dest.basis += moved;
-    }
-    // If the destination has no holding, the principal still leaves the deferred
-    // account (modelled as spent/withheld) — conversion income is unchanged.
+    dest.value += moved;
+    // The converted (already-taxed) principal becomes fresh basis at destination.
+    if (dest.basis !== undefined) dest.basis += moved;
     conversionIncome += moved;
   }
 

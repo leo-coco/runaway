@@ -18,6 +18,17 @@ export const COUNTRY_FLAG: Record<Country, string> = {
   CA: '🇨🇦',
 };
 
+/**
+ * Local currency of each tax jurisdiction — the currency its bracket thresholds,
+ * deductions and NIIT-style thresholds are legislated in. Used to convert those
+ * thresholds into the plan currency before applying them to plan-currency amounts.
+ */
+export const RESIDENCE_CURRENCY: Record<Country, 'USD' | 'EUR' | 'CAD'> = {
+  US: 'USD',
+  FR: 'EUR',
+  CA: 'CAD',
+};
+
 /** Best-guess tax residence for a plan currency (EUR → France, CAD → Canada, else US). */
 export const residenceForCurrency = (currency: string): Country => {
   if (currency === 'EUR') return 'FR';

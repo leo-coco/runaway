@@ -1,7 +1,7 @@
 import type { Account } from './account';
 import { accountTaxProfile } from './account';
 import type { Country, Province } from './country';
-import { bracketsFor, capitalGainsTax, incomeTax } from './tax';
+import { bracketsFor, capitalGainsTax, incomeTax, taxableOrdinaryIncome } from './tax';
 import { US_LTCG_BRACKETS, US_NIIT, type IncomeBracket } from './taxTables';
 
 /**
@@ -54,31 +54,48 @@ export interface AccountTaxBreakdown {
 
 const clamp99 = (r: number): number => Math.min(Math.max(Number.isFinite(r) ? r : 0, 0), 0.99);
 
-/** Slice `amount` of income across `schedule`, starting at income level `from`. */
+/**
+ * Slice `amount` of income across `schedule`, starting at income level `from`.
+ * `scale` multiplies the thresholds (FX conversion into the plan currency).
+ */
 const sliceRows = (
   from: number,
   amount: number,
   schedule: readonly IncomeBracket[],
+  scale = 1,
 ): TaxBracketRow[] => {
   const rows: TaxBracketRow[] = [];
   const to = from + amount;
   let prev = 0;
   for (const b of schedule) {
+    const cap = b.upTo === Infinity ? Infinity : b.upTo * scale;
     const lo = Math.max(prev, from);
-    const hi = b.upTo === Infinity ? to : Math.min(to, b.upTo);
+    const hi = cap === Infinity ? to : Math.min(to, cap);
     const slice = Math.max(0, hi - lo);
     if (slice > 0) rows.push({ rate: b.rate, amount: slice, tax: slice * b.rate });
-    prev = b.upTo;
-    if (to <= b.upTo) break;
+    prev = cap;
+    if (to <= cap) break;
   }
   return rows;
 };
 
+/**
+ * Per-bracket split of the ordinary income actually exposed to the schedule
+ * (after the FR pension allowance — the US deduction and CA basic amounts are
+ * 0% bands inside the schedules), so the rows always sum to the income tax.
+ */
 const bracketRows = (
   ordinaryIncome: number,
   residence: Country,
   province?: Province,
-): TaxBracketRow[] => sliceRows(0, ordinaryIncome, bracketsFor(residence, province));
+  fx = 1,
+): TaxBracketRow[] =>
+  sliceRows(
+    0,
+    taxableOrdinaryIncome(ordinaryIncome, residence, fx),
+    bracketsFor(residence, province),
+    fx,
+  );
 
 export const accountTaxAtSpending = (
   account: Account,
@@ -88,6 +105,8 @@ export const accountTaxAtSpending = (
   gainFractionOverride?: number,
   /** Canadian province for the combined bracket schedule (default ON). */
   province?: Province,
+  /** Plan-currency units per residence-currency unit (bracket FX scaling). */
+  fxFactor = 1,
 ): AccountTaxBreakdown => {
   const p = accountTaxProfile(account, residence, gainFractionOverride);
   const incomeCoef = Math.max(p.incomeCoef, 0);
@@ -138,8 +157,8 @@ export const accountTaxAtSpending = (
   const netFromGross = (g: number): number => {
     const ord = g * incomeCoef;
     const residenceTax =
-      incomeTax(ord, residence, 1, province) +
-      capitalGainsTax(g * gainsCoef, ord, residence) +
+      incomeTax(ord, residence, 1, province, fxFactor) +
+      capitalGainsTax(g * gainsCoef, ord, residence, 1, fxFactor) +
       g * flatRate;
     const tax = Math.max(residenceTax, g * withholding);
     return g - tax;
@@ -155,8 +174,8 @@ export const accountTaxAtSpending = (
   const gross = hi;
   const ordinaryIncome = gross * incomeCoef;
   const gainsIncome = gross * gainsCoef;
-  const incTax = incomeTax(ordinaryIncome, residence, 1, province);
-  const cgTax = capitalGainsTax(gainsIncome, ordinaryIncome, residence);
+  const incTax = incomeTax(ordinaryIncome, residence, 1, province, fxFactor);
+  const cgTax = capitalGainsTax(gainsIncome, ordinaryIncome, residence, 1, fxFactor);
   const residenceTax = incTax + cgTax + gross * flatRate;
   const withholdingTax = gross * withholding;
   const withholdingBinds = withholdingTax > residenceTax;
@@ -165,7 +184,10 @@ export const accountTaxAtSpending = (
   const niitTax =
     residence === 'US' && gainsIncome > 0
       ? US_NIIT.rate *
-        Math.max(0, Math.min(gainsIncome, ordinaryIncome + gainsIncome - US_NIIT.threshold))
+        Math.max(
+          0,
+          Math.min(gainsIncome, ordinaryIncome + gainsIncome - US_NIIT.threshold * fxFactor),
+        )
       : 0;
 
   return {
@@ -176,11 +198,11 @@ export const accountTaxAtSpending = (
     ordinaryIncome,
     gainsIncome,
     niitTax: withholdingBinds ? 0 : niitTax,
-    brackets: withholdingBinds ? [] : bracketRows(ordinaryIncome, residence, province),
+    brackets: withholdingBinds ? [] : bracketRows(ordinaryIncome, residence, province, fxFactor),
     ltcgBrackets:
       withholdingBinds || gainsIncome <= 0
         ? []
-        : sliceRows(ordinaryIncome, gainsIncome, US_LTCG_BRACKETS),
+        : sliceRows(ordinaryIncome, gainsIncome, US_LTCG_BRACKETS, fxFactor),
     progressive: !withholdingBinds,
     withholdingBinds,
   };
