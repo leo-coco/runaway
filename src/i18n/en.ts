@@ -75,6 +75,9 @@ export const en = {
     saleYear: 'Sale year',
     saleFee: 'Selling fees',
     saleTaxable: 'Tax the capital gain (uncheck for an exempt primary residence)',
+    costBasis: 'Original cost basis',
+    costBasisHint:
+      'What you originally paid for the home. Only the gain above this is taxed, not the full sale proceeds.',
     remove: 'Remove home',
     previewTitle: 'Flows',
     equityNow: 'Equity today',
@@ -386,6 +389,7 @@ export const en = {
     optOpeningClosing: 'Opening vs Closing',
     optNetChange: 'Net Change (Close − Open)',
     optApprExpenses: 'Appreciation vs Expenses',
+    optRealEstate: 'Real estate + Portfolio',
     optPostRetirement: 'Post-retirement (Years of survival)',
     optScenarios: 'Scenarios (Optimistic / Expected / Pessimistic)',
     descComposition:
@@ -398,6 +402,8 @@ export const en = {
       'Projected net change in portfolio value each year (closing − opening). Positive while saving, negative once withdrawals outpace growth in retirement.',
     descApprExpenses:
       'Compares each year’s investment appreciation with the gross expenses (withdrawals incl. tax) drawn from the portfolio.',
+    descRealEstate:
+      'Portfolio balance and home equity (value minus mortgage) side by side, plus their combined total net worth.',
     descPostRetirement:
       'How many years your savings last after retirement under each planning scenario.',
     descScenarios: 'Compares optimistic, expected, and pessimistic annual return assumptions.',
@@ -406,6 +412,8 @@ export const en = {
     seriesClosing: 'Closing',
     seriesAppreciation: 'Appreciation',
     seriesExpenses: 'Expenses',
+    seriesHomeEquity: 'Home equity',
+    seriesTotal: 'Total net worth',
     seriesNetChange: 'Net change',
     seriesSurvival: 'Survival',
     retirement: 'Retirement {{year}}',
@@ -1549,6 +1557,8 @@ export const en = {
       enterAppreciation: 'Enter an appreciation rate',
       enterOwnershipCost: 'Enter an ownership cost',
       saleAfterPurchase: 'Sale must be after the purchase',
+      purchaseNotPast: 'Purchase year cannot be before the plan starts',
+      saleNotPast: 'Sale year cannot be before the plan starts',
     },
     retirementSettings: {
       enterSpending: 'Enter a spending amount',

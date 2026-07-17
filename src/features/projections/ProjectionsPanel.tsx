@@ -26,6 +26,7 @@ import {
   buildGrowthData,
   buildNetChangeData,
   buildOpeningClosingData,
+  buildRealEstateData,
   buildScenarioData,
   buildSurvivalData,
 } from './chartData';
@@ -38,6 +39,7 @@ type ChartView =
   | 'openingClosing'
   | 'netChange'
   | 'appreciationExpenses'
+  | 'realEstate'
   | 'scenarios'
   | 'postRetirement';
 
@@ -47,6 +49,7 @@ const VIEW_ORDER: ChartView[] = [
   'openingClosing',
   'netChange',
   'appreciationExpenses',
+  'realEstate',
   'postRetirement',
   'scenarios',
 ];
@@ -57,6 +60,7 @@ const VIEW_LABEL_KEY: Record<ChartView, string> = {
   openingClosing: 'projChart.optOpeningClosing',
   netChange: 'projChart.optNetChange',
   appreciationExpenses: 'projChart.optApprExpenses',
+  realEstate: 'projChart.optRealEstate',
   postRetirement: 'projChart.optPostRetirement',
   scenarios: 'projChart.optScenarios',
 };
@@ -67,6 +71,7 @@ const VIEW_DESC_KEY: Record<ChartView, string> = {
   openingClosing: 'projChart.descOpeningClosing',
   netChange: 'projChart.descNetChange',
   appreciationExpenses: 'projChart.descApprExpenses',
+  realEstate: 'projChart.descRealEstate',
   postRetirement: 'projChart.descPostRetirement',
   scenarios: 'projChart.descScenarios',
 };
@@ -80,6 +85,9 @@ const SCENARIO_SERIES_KEY: Record<string, string> = {
 const C_APPRECIATION = '#38bdf8';
 const C_EXPENSES = '#f5a623';
 const C_HORIZON = '#5eead4';
+const C_PORTFOLIO = '#38bdf8';
+const C_HOME_EQUITY = '#f7931a';
+const C_TOTAL = '#22c55e';
 
 const PIE_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#f7931a', '#f43f5e'];
 
@@ -90,7 +98,7 @@ interface ProjectionsPanelProps {
 
 export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) => {
   const { t } = useTranslation();
-  const [view, setView] = useState<ChartView>('composition');
+  const [rawView, setView] = useState<ChartView>('composition');
   const [xAxisMode, setXAxisMode] = useState<'year' | 'age'>('year');
   const fmt = useCurrencyFormatter(plan.currency);
 
@@ -116,6 +124,17 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   const netChangeData = useMemo(() => buildNetChangeData(projection.active), [projection]);
   const scenarioData = useMemo(() => buildScenarioData(projection.byScenario), [projection]);
   const survivalData = useMemo(() => buildSurvivalData(projection.byScenario), [projection]);
+  const realEstateData = useMemo(
+    () =>
+      plan.home ? buildRealEstateData(projection.active, plan.home, projection.startYear) : [],
+    [projection, plan.home],
+  );
+  const viewOrder = useMemo(
+    () => (plan.home ? VIEW_ORDER : VIEW_ORDER.filter((v) => v !== 'realEstate')),
+    [plan.home],
+  );
+  // Falls back to 'composition' if the home is removed while 'realEstate' is selected.
+  const view = viewOrder.includes(rawView) ? rawView : 'composition';
 
   const depletion = projection.active.depletionYear;
   const axisTick = { fill: 'var(--text-dim)', fontSize: 11 };
@@ -241,7 +260,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             value={view}
             onChange={(e) => setView(e.target.value as ChartView)}
           >
-            {VIEW_ORDER.map((v) => (
+            {viewOrder.map((v) => (
               <option key={v} value={v}>
                 {t(VIEW_LABEL_KEY[v])}
               </option>
@@ -431,6 +450,54 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <Bar dataKey="appreciation" fill={C_APPRECIATION} radius={[2, 2, 0, 0]} />
             <Bar dataKey="expenses" fill={C_EXPENSES} radius={[2, 2, 0, 0]} />
           </BarChart>
+        ) : view === 'realEstate' ? (
+          <LineChart data={realEstateData} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
+            <CartesianGrid stroke="var(--border)" vertical={false} />
+            <XAxis
+              dataKey="year"
+              tick={axisTick}
+              stroke="var(--border)"
+              minTickGap={40}
+              tickFormatter={xAxisTickFormatter}
+            />
+            <YAxis
+              tick={axisTick}
+              stroke="var(--border)"
+              tickFormatter={(v) => fmt.compact(Number(v))}
+              width={60}
+            />
+            <Tooltip
+              content={
+                <ChartTooltip
+                  labelFormatter={xAxisLabelFormatter}
+                  formatter={(value: unknown, name) => [
+                    fmt.format(Number(value)),
+                    name === 'portfolio'
+                      ? t('projChart.seriesPortfolio')
+                      : name === 'homeEquity'
+                        ? t('projChart.seriesHomeEquity')
+                        : t('projChart.seriesTotal'),
+                  ]}
+                />
+              }
+            />
+            {yearMarkers(false)}
+            <Line
+              type="monotone"
+              dataKey="portfolio"
+              stroke={C_PORTFOLIO}
+              dot={false}
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="homeEquity"
+              stroke={C_HOME_EQUITY}
+              dot={false}
+              strokeWidth={2}
+            />
+            <Line type="monotone" dataKey="total" stroke={C_TOTAL} dot={false} strokeWidth={2} />
+          </LineChart>
         ) : view === 'scenarios' ? (
           <LineChart data={scenarioData} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
             <CartesianGrid stroke="var(--border)" vertical={false} />
@@ -529,6 +596,20 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
           </span>
           <span>
             <i style={{ background: C_EXPENSES }} /> {t('projChart.seriesExpenses')}
+          </span>
+        </div>
+      )}
+
+      {view === 'realEstate' && (
+        <div className="legend">
+          <span>
+            <i style={{ background: C_PORTFOLIO }} /> {t('projChart.seriesPortfolio')}
+          </span>
+          <span>
+            <i style={{ background: C_HOME_EQUITY }} /> {t('projChart.seriesHomeEquity')}
+          </span>
+          <span>
+            <i style={{ background: C_TOTAL }} /> {t('projChart.seriesTotal')}
           </span>
         </div>
       )}

@@ -45,6 +45,7 @@ const blankForm = (startYear: number): HomeForm => ({
   saleYear: startYear + 20,
   saleFeePct: 5,
   saleCapitalGainsTaxable: false,
+  costBasis: 500_000,
 });
 
 const homeToForm = (home: Home, startYear: number): HomeForm => {
@@ -67,6 +68,7 @@ const homeToForm = (home: Home, startYear: number): HomeForm => {
     saleYear: home.sale?.year ?? blank.saleYear,
     saleFeePct: home.sale?.feePct ?? blank.saleFeePct,
     saleCapitalGainsTaxable: home.sale?.capitalGainsTaxable ?? false,
+    costBasis: home.sale?.costBasis ?? home.currentValue,
   };
 };
 
@@ -95,6 +97,7 @@ const formToHome = (form: HomeForm, id: string): Home => ({
         year: form.saleYear,
         feePct: form.saleFeePct,
         capitalGainsTaxable: form.saleCapitalGainsTaxable,
+        costBasis: form.costBasis,
       }
     : undefined,
 });
@@ -121,7 +124,7 @@ export const HomeModal = ({ plan, onClose }: Props) => {
   );
   const horizonYears = Math.max(1, maxYear - startYear);
 
-  const homeFormSchema = useMemo(() => createHomeFormSchema(t), [t]);
+  const homeFormSchema = useMemo(() => createHomeFormSchema(t, startYear), [t, startYear]);
   const {
     control,
     handleSubmit,
@@ -485,6 +488,26 @@ export const HomeModal = ({ plan, onClose }: Props) => {
                   />
                   <span>{t('home.saleTaxable')}</span>
                 </label>
+                {form.saleCapitalGainsTaxable && !form.hasPurchase && (
+                  <label className="phase-field">
+                    <span className="ov__sub">{t('home.costBasis')}</span>
+                    <Controller
+                      control={control}
+                      name="costBasis"
+                      render={({ field }) => (
+                        <Stepper
+                          ariaLabel={t('home.costBasis')}
+                          prefix={fmt.symbol}
+                          min={0}
+                          step={10_000}
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <p className="field__hint">{t('home.costBasisHint')}</p>
+                  </label>
+                )}
                 {errors.saleYear && <p className="field-error">{errors.saleYear.message}</p>}
               </div>
             )}

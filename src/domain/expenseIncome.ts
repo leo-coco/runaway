@@ -64,8 +64,14 @@ export interface ExpenseIncome {
   readonly kind: 'expense' | 'income';
   /** Presentational tag driving the runway-timeline icon. Default 'general'. */
   readonly category?: ExpenseCategory;
-  /** Grow with inflation from today to the target year(s). Default true. */
+  /** Grow with inflation from today to the target year(s). Default true. Ignored when `growthPct` is set. */
   readonly inflate?: boolean;
+  /**
+   * Overrides `inflate`/the shared inflation factor with a custom compounding
+   * rate applied from `year` — e.g. a home's ownership cost, pinned to the
+   * home's own appreciation rather than general CPI. Percent (e.g. 3 = 3%/yr).
+   */
+  readonly growthPct?: number;
   /** 'once' (default) fires only in `year`; 'recurring' fires every year through `endYear`. */
   readonly frequency?: FlowFrequency;
   /** Recurring only: last year it occurs (inclusive). Ignored when frequency is 'once'. */
@@ -78,6 +84,12 @@ export interface ExpenseIncome {
    * should set this to false.
    */
   readonly taxable?: boolean;
+  /**
+   * Income kind only: further restricts the taxable base to this fraction of
+   * `amount` when `taxable` is true — e.g. a home sale where only the capital
+   * gain, not the full proceeds, is ordinary income. Default 1 (the whole amount).
+   */
+  readonly taxableFraction?: number;
 }
 
 export interface YearExpenseIncome {
@@ -106,6 +118,9 @@ export const expenseIncomeItemAmountForYear = (
       ? year >= item.year && year <= (item.endYear ?? item.year)
       : item.year === year;
   if (!inRange) return 0;
+  if (item.growthPct !== undefined) {
+    return item.amount * Math.pow(1 + item.growthPct / 100, year - item.year);
+  }
   return item.amount * ((item.inflate ?? true) ? inflationFactor : 1);
 };
 
@@ -130,7 +145,7 @@ export const expenseIncomeAmountsForYear = (
     if (amount === 0) continue;
     if (item.kind === 'income') {
       income += amount;
-      if (item.taxable ?? true) taxableIncome += amount;
+      if (item.taxable ?? true) taxableIncome += amount * (item.taxableFraction ?? 1);
     } else {
       expense += amount;
     }

@@ -128,7 +128,7 @@ describe('homeFlows', () => {
     expect(ownership.kind).toBe('expense');
     expect(ownership.frequency).toBe('recurring');
     expect(ownership.amount).toBeCloseTo(10_000, 4); // 2% of 500k
-    expect(ownership.inflate).toBe(true);
+    expect(ownership.growthPct).toBe(3); // tracks the home's own appreciation
   });
 
   it('emits a nominal, fixed mortgage payment stopping at the payoff year', () => {
@@ -200,9 +200,24 @@ describe('homeFlows', () => {
     expect(sale.amount).toBeCloseTo(homeSaleProceeds(home, START)!, 4);
   });
 
-  it('taxes the sale gain when capitalGainsTaxable is set', () => {
+  it('taxes only the gain above cost basis, not the full proceeds, when capitalGainsTaxable is set', () => {
     const home: Home = { ...ownedHome, sale: { year: START + 5, capitalGainsTaxable: true } };
     const sale = homeFlows(home, START).find((f) => f.id === 'home:sale')!;
+    const grossPrice = 500_000 * 1.03 ** 5;
+    const gain = grossPrice - 500_000; // no costBasis set → defaults to currentValue
     expect(sale.taxable).toBe(true);
+    expect(sale.amount).toBeCloseTo(grossPrice, 4);
+    expect(sale.taxableFraction).toBeCloseTo(gain / grossPrice, 6);
+  });
+
+  it('uses an explicit cost basis to size the taxable gain on an already-owned home', () => {
+    const home: Home = {
+      ...ownedHome,
+      sale: { year: START + 5, capitalGainsTaxable: true, costBasis: 300_000 },
+    };
+    const sale = homeFlows(home, START).find((f) => f.id === 'home:sale')!;
+    const grossPrice = 500_000 * 1.03 ** 5;
+    const gain = grossPrice - 300_000;
+    expect(sale.taxableFraction).toBeCloseTo(gain / grossPrice, 6);
   });
 });

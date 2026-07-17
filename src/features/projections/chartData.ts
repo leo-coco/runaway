@@ -1,5 +1,6 @@
 import type { Projection } from '@/domain/projection';
 import { SCENARIO_LABEL, type ScenarioKey } from '@/domain/scenario';
+import { homeEquitySeries, type Home } from '@/domain/home';
 
 /** Row shape for the stacked composition chart: one entry per year, keyed by symbol. */
 export type CompositionRow = { year: number } & Record<string, number>;
@@ -56,6 +57,33 @@ export const buildScenarioData = (
     });
   }
   return rows;
+};
+
+export interface RealEstateRow {
+  year: number;
+  portfolio: number;
+  homeEquity: number;
+  total: number;
+}
+
+/** Portfolio balance, home equity and their sum for each projected year. */
+export const buildRealEstateData = (
+  projection: Projection,
+  home: Home,
+  startYear: number,
+): RealEstateRow[] => {
+  const equityByYear = new Map(
+    homeEquitySeries(home, startYear, projection.years.length - 1).map((e) => [e.year, e.equity]),
+  );
+  return projection.years.map((y) => {
+    const homeEquity = equityByYear.get(y.year) ?? 0;
+    return {
+      year: y.year,
+      portfolio: y.closingBalance,
+      homeEquity,
+      total: y.closingBalance + homeEquity,
+    };
+  });
 };
 
 export const buildSurvivalData = (
