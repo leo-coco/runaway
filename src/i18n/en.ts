@@ -654,7 +654,7 @@ export const en = {
       'Conversions and RMDs apply to US and Canadian residents. France has no equivalent.',
     rmdLabel: 'Apply required minimum distributions (from age {{age}})',
     rmdHint:
-      'From the start age, a minimum fraction of tax-deferred balances is withdrawn and taxed as income each year, whether or not it is needed for spending (US RMD / Canada RRIF).',
+      'From the start age, a minimum fraction of tax-deferred balances is withdrawn and taxed as income each year, whether or not it is needed for spending (US RMD / Canada RRIF). The fraction applies to the previous year-end balance, and the minimum is taken before any conversion — an RMD cannot be converted, so scheduling one never reduces the same year’s required amount.',
     plansTitle: 'Conversions / meltdown',
     needDeferred: 'Add a tax-deferred account (PER, 401k, RRSP…) to schedule conversions.',
     empty:
@@ -667,7 +667,7 @@ export const en = {
     endAge: 'End age',
     yearsSuffix: 'yrs',
     removeAria: 'Remove conversion',
-    hint: 'Each year in the window, the amount moves from the deferred account to the destination and is taxed as ordinary income now — shrinking future RMDs and the taxable estate.',
+    hint: 'Each year in the window, the amount moves from the deferred account to the destination and is taxed as ordinary income now — shrinking future RMDs and the taxable estate. It stacks on top of that year’s RMD, so it is taxed at your marginal rate above it, and it never reduces the current year’s required minimum.',
   },
   accountKind: {
     tax_deferred: 'Tax-deferred',
@@ -1042,6 +1042,9 @@ export const en = {
     taxOnWithdrawal: 'Tax on Withdrawal',
     taxOnWithdrawalTip:
       "Tax on the portfolio draw that funds this year's lifestyle spending, goal expenses, and any Roth conversion — net of income and RMDs already covering the need.",
+    taxOnIncome: 'Tax on income',
+    taxOnIncomeTip:
+      'Tax on this year’s taxable income streams (pension, salary, rental), at your residence’s brackets. Paid straight out of that income rather than raised from the portfolio, so it is not part of the tax on withdrawal — but it does reduce what the income leaves you to spend.',
     grossWithdrawal: 'Gross Withdrawal',
     grossWithdrawalTip:
       "Total pulled from the portfolio, before tax, to cover this year's lifestyle spending, goal expenses, and any Roth conversion — net of income and RMDs already covering the need.",

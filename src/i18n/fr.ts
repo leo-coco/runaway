@@ -671,7 +671,7 @@ export const fr: Resources = {
       'Les conversions et RMD concernent les résidents US et canadiens. La France n’a pas d’équivalent.',
     rmdLabel: 'Appliquer les retraits minimums obligatoires (dès {{age}} ans)',
     rmdHint:
-      'À partir de l’âge de début, une fraction minimale des comptes différés est retirée et imposée comme revenu chaque année, qu’elle soit nécessaire ou non aux dépenses (RMD US / FERR Canada).',
+      'À partir de l’âge de début, une fraction minimale des comptes différés est retirée et imposée comme revenu chaque année, qu’elle soit nécessaire ou non aux dépenses (RMD US / FERR Canada). La fraction s’applique au solde de fin d’année précédente, et le minimum est prélevé avant toute conversion : un RMD n’est pas convertible, donc programmer une conversion ne réduit jamais le montant obligatoire de l’année en cours.',
     plansTitle: 'Conversions / meltdown',
     needDeferred:
       'Ajoutez un compte à imposition différée (PER, 401k, RRSP…) pour programmer des conversions.',
@@ -685,7 +685,7 @@ export const fr: Resources = {
     endAge: 'Âge de fin',
     yearsSuffix: 'ans',
     removeAria: 'Supprimer la conversion',
-    hint: 'Chaque année de la fenêtre, le montant passe du compte différé vers la destination et est imposé comme revenu ordinaire maintenant — réduisant les RMD futurs et la succession imposable.',
+    hint: 'Chaque année de la fenêtre, le montant passe du compte différé vers la destination et est imposé comme revenu ordinaire maintenant — réduisant les RMD futurs et la succession imposable. Il s’empile au-dessus du RMD de l’année, donc il est imposé à votre taux marginal au-dessus de celui-ci, et il ne réduit jamais le minimum obligatoire de l’année en cours.',
   },
   accountKind: {
     tax_deferred: 'Impôt différé',
@@ -1071,6 +1071,9 @@ export const fr: Resources = {
     taxOnWithdrawal: 'Impôt sur le retrait',
     taxOnWithdrawalTip:
       'Impôt sur le prélèvement du portefeuille qui finance le train de vie, les dépenses ponctuelles (Goals) et une éventuelle conversion Roth de l’année, net des revenus et RMD déjà pris en compte.',
+    taxOnIncome: 'Impôt sur les revenus',
+    taxOnIncomeTip:
+      'Impôt sur les revenus imposables de l’année (pension, salaire, loyers), au barème de votre pays de résidence. Il est prélevé sur ces revenus et non sur le portefeuille : il ne fait donc pas partie de l’impôt sur le retrait, mais il réduit bien ce que ces revenus vous laissent à dépenser.',
     grossWithdrawal: 'Retrait brut',
     grossWithdrawalTip:
       'Montant total prélevé sur le portefeuille, avant impôt, pour financer le train de vie, les dépenses ponctuelles (Goals) et une éventuelle conversion Roth de l’année, net des revenus et RMD déjà pris en compte.',

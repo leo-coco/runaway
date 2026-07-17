@@ -37,6 +37,7 @@ const mkYear = (
     flowIncome: 0,
     grossWithdrawal: 0,
     taxPaid: 0,
+    flowIncomeTax: 0,
     closingBalance: closing,
     perAsset,
     isRetired,
