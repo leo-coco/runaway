@@ -651,7 +651,12 @@ const percentileOf = (sorted: number[], p: number): number => {
  * the user's age is unknown, so existing behaviour is unchanged by default.
  */
 const makeSpendingReal = (input: MonteCarloInput): ((offset: number) => number) => {
-  if (input.spendingMode !== 'phased' || !input.phasedSpending || !input.currentAge) {
+  if (
+    input.spendingMode !== 'phased' ||
+    !input.phasedSpending ||
+    !input.currentAge ||
+    input.currentAge <= 0
+  ) {
     return () => 1;
   }
   const cfg = input.phasedSpending;

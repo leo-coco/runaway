@@ -51,6 +51,21 @@ describe('realSpendingMultiplier', () => {
     }
   });
 
+  it('collapses Slow-Go rather than back-dating No-Go when the ages are inverted', () => {
+    // Only reachable from a stored/imported config: the form refuses this pair.
+    const inverted: PhasedSpendingConfig = {
+      ...cfg,
+      goGoEndAge: 85,
+      slowGoEndAge: 75,
+      noGoAdjustmentPct: -5,
+    };
+    expect(phaseForAge(85, inverted)).toBe('goGo');
+    expect(phaseForAge(86, inverted)).toBe('noGo');
+    expect(realSpendingMultiplier(85, inverted)).toBe(1);
+    // 86 is one year past Go-Go, so exactly one year of No-Go — not eleven.
+    expect(realSpendingMultiplier(86, inverted)).toBeCloseTo(0.95, 4);
+  });
+
   it('grows real spending when adjustments are positive', () => {
     const rising: PhasedSpendingConfig = {
       ...cfg,

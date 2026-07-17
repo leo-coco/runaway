@@ -1304,3 +1304,81 @@ describe('sampleTrials agrees with runMonteCarlo on what counts as funded', () =
     }
   });
 });
+
+describe('phased spending', () => {
+  // sigma 0 + no inflation + no tax: every path is identical and the withdrawal
+  // is exactly the phase multiplier times the budget, so both engines can be
+  // asserted against closed-form values rather than a bare inequality.
+  const opts = {
+    ...DEFAULT_MC_OPTIONS,
+    model: 'normal' as const,
+    meanReversion: 0,
+    iterations: 20,
+  };
+  const phased = (overrides: Partial<MonteCarloInput> = {}): MonteCarloInput =>
+    baseInput({
+      assets: [
+        { startValue: 50_000_000, driftPct: 5, sigmaPct: 0, annualContribution: 0, accountId: 'a' },
+      ],
+      annualSpending: 100_000,
+      inflationPct: 0,
+      applyInflation: false,
+      currentAge: 60, // startYear 2026 => age = 60 + (year − 2026)
+      retirementYear: 2026,
+      horizonYears: 40,
+      spendingMode: 'phased',
+      phasedSpending: {
+        goGoEndAge: 75,
+        slowGoEndAge: 85,
+        slowGoAdjustmentPct: -1.5,
+        noGoAdjustmentPct: -1.5,
+        floorPct: 70,
+      },
+      ...overrides,
+    });
+
+  const yearAtAge = (age: number) => 2026 + (age - 60);
+
+  describe('sample path', () => {
+    it('withdraws the phase multiplier of the budget in each phase', () => {
+      const path = sampleMonteCarloPath(phased(), opts);
+      const at = (age: number) => path.years.find((y) => y.year === yearAtAge(age))!;
+
+      expect(at(70).netWithdrawal).toBeCloseTo(100_000, 2);
+      expect(at(80).netWithdrawal).toBeCloseTo(100_000 * Math.pow(0.985, 5), 2);
+      expect(at(90).netWithdrawal).toBeCloseTo(100_000 * Math.pow(0.985, 15), 2);
+    });
+
+    it('holds the budget flat in linear mode and when the age is unknown', () => {
+      const linear = sampleMonteCarloPath(phased({ spendingMode: 'linear' }), opts);
+      const ageless = sampleMonteCarloPath(phased({ currentAge: 0 }), opts);
+      for (const p of [linear, ageless]) {
+        const at = (age: number) => p.years.find((y) => y.year === yearAtAge(age))!;
+        expect(at(70).netWithdrawal).toBeCloseTo(100_000, 2);
+        expect(at(90).netWithdrawal).toBeCloseTo(100_000, 2);
+      }
+    });
+  });
+
+  describe('aggregate run', () => {
+    it('leaves a larger balance than linear when spending declines', () => {
+      const declining = runMonteCarlo(phased(), opts).medianEndBalance;
+      const flat = runMonteCarlo(phased({ spendingMode: 'linear' }), opts).medianEndBalance;
+      expect(declining).toBeGreaterThan(flat);
+    });
+
+    it('agrees with the sample path year by year', () => {
+      // Both engines apply the multiplier at their own call site; a drift between
+      // the two would show up here as diverging balances. With sigma 0 every
+      // iteration is the same path, so the median is that path exactly.
+      const run = runMonteCarlo(phased(), opts);
+      const path = sampleMonteCarloPath(phased(), opts);
+      for (const age of [70, 80, 90]) {
+        const year = yearAtAge(age);
+        const p = run.percentiles.find((x) => x.year === year)!;
+        const s = path.years.find((y) => y.year === year)!;
+        expect(p.p50).toBeCloseTo(s.closingTotal, 2);
+      }
+    });
+  });
+});
