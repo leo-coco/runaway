@@ -199,6 +199,7 @@ export const en = {
     backToAccount: 'Return to my account',
     collapseMenu: 'Collapse menu',
     expandMenu: 'Expand menu',
+    openMenu: 'Open menu',
     deletePlanTitle: 'Delete plan?',
     deletePlanDesc: 'This permanently deletes "{{name}}". This cannot be undone.',
     deletePlanBody: 'All inputs, holdings and settings for this plan will be removed.',
