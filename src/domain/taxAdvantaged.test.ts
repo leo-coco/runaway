@@ -33,7 +33,11 @@ describe('rmdFraction', () => {
 });
 
 describe('applyForcedFlows', () => {
-  const kinds: Record<string, AccountKind> = { rrsp: 'tax_deferred', roth: 'tax_free' };
+  const kinds: Record<string, AccountKind> = {
+    rrsp: 'tax_deferred',
+    roth: 'tax_free',
+    brokerage: 'taxable',
+  };
   const kindOf = (id: string | null) => (id ? kinds[id] : undefined);
 
   const make = (): FlowAsset[] => [
@@ -137,7 +141,7 @@ describe('applyForcedFlows', () => {
     expect(a[1]!.value).toBe(100_000); // tax-free untouched
   });
 
-  it('applies conversions before the RMD (lower deferred balance → lower RMD)', () => {
+  it('settles the RMD before conversions, so a conversion cannot shrink it', () => {
     const a = make();
     const r = applyForcedFlows(a, kindOf, {
       residence: 'US',
@@ -146,9 +150,56 @@ describe('applyForcedFlows', () => {
       conversions: [{ ...conv, startAge: 70, endAge: 80 }],
       inflationFactor: 1,
     });
-    // Conversion moves 30k out first; RMD is on the remaining 470k.
+    // An RMD is not eligible for rollover: the requirement is set on the full 500k
+    // and the conversion moves its 30k out of what is left afterwards.
+    expect(r.rmdGross).toBeCloseTo(500_000 / 26.5, 4);
     expect(r.conversionIncome).toBeCloseTo(30_000, 6);
-    expect(r.rmdGross).toBeCloseTo(470_000 / 26.5, 4);
+    expect(a[0]!.value).toBeCloseTo(500_000 - 500_000 / 26.5 - 30_000, 4);
+  });
+
+  it('sets the RMD on the prior year-end balance, not on the grown one', () => {
+    const a = make(); // rrsp 500k, already grown from a 400k close last year
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 73,
+      rmdEnabled: true,
+      conversions: [],
+      inflationFactor: 1,
+      rmdBase: 400_000,
+    });
+    expect(r.rmdGross).toBeCloseTo(400_000 / 26.5, 4);
+  });
+
+  it('caps the RMD at what the account still holds after a crash', () => {
+    const a: FlowAsset[] = [{ value: 5_000, accountId: 'rrsp' }];
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 73,
+      rmdEnabled: true,
+      conversions: [],
+      inflationFactor: 1,
+      rmdBase: 500_000, // last year's close, before the balance collapsed
+    });
+    expect(r.rmdGross).toBeCloseTo(5_000, 4);
+    expect(a[0]!.value).toBeCloseTo(0, 6);
+  });
+
+  it('skips a stale conversion whose source is no longer tax-deferred', () => {
+    const a: FlowAsset[] = [
+      { value: 500_000, accountId: 'brokerage' },
+      { value: 100_000, accountId: 'roth' },
+    ];
+    const r = applyForcedFlows(a, kindOf, {
+      residence: 'US',
+      age: 73,
+      rmdEnabled: false,
+      conversions: [{ ...conv, fromAccountId: 'brokerage', startAge: 70, endAge: 80 }],
+      inflationFactor: 1,
+    });
+    // Converting a taxable account is not a thing: no principal moves, and above
+    // all no phantom ordinary income is booked.
+    expect(r.conversionIncome).toBe(0);
+    expect(a[0]!.value).toBe(500_000);
   });
 
   it('never sells an illiquid holding, and leaves it out of the RMD base', () => {

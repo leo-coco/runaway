@@ -15,7 +15,7 @@ import {
   type ExpenseIncome,
   type YearExpenseIncome,
 } from '@/domain/expenseIncome';
-import { applyForcedFlows, type ConversionPlan } from '@/domain/taxAdvantaged';
+import { applyForcedFlows, deferredBalance, type ConversionPlan } from '@/domain/taxAdvantaged';
 import type { Account, AccountKind } from '@/domain/account';
 import { homeFlows } from '@/domain/home';
 import { incomeTax } from '@/domain/tax';
@@ -732,10 +732,13 @@ const makeAccountsForYear = (input: MonteCarloInput) => {
 };
 
 /**
- * Build a per-year handler for forced tax-advantaged flows (conversions + RMD),
- * mirroring the deterministic projection. It mutates `state` (moves/removes
+ * Build a per-year handler for forced tax-advantaged flows (RMD + conversions),
+ * mirroring the deterministic projection. `settle` mutates `state` (moves/removes
  * balances, reinvests RMD surplus) and returns the portfolio cash still needed for
  * spending plus the ordinary-income base withdrawals stack on.
+ *
+ * `rmdBaseOf` must be sampled BEFORE the year's growth — the RMD divisor applies
+ * to the prior 31 December balance (see `deferredBalance`).
  */
 const makeForcedFlows = (input: MonteCarloInput) => {
   const conversions = input.conversions ?? [];
@@ -747,7 +750,10 @@ const makeForcedFlows = (input: MonteCarloInput) => {
   const kindOf = (accountId: string | null): AccountKind | undefined =>
     accountId ? kindById.get(accountId) : undefined;
 
-  return (
+  const rmdBaseOf = (state: readonly WithdrawableAsset[]): number =>
+    active ? deferredBalance(state, kindOf) : 0;
+
+  const settle = (
     state: WithdrawableAsset[],
     year: number,
     inflationFactor: number,
@@ -755,6 +761,7 @@ const makeForcedFlows = (input: MonteCarloInput) => {
     ordinaryNet: number,
     spendNet: number,
     flowExpense: number,
+    rmdBase: number,
   ): { needFromPortfolio: number; forcedBase: number } => {
     if (!active) {
       const surplus = Math.max(0, ordinaryNet - (spendNet + flowExpense));
@@ -784,14 +791,17 @@ const makeForcedFlows = (input: MonteCarloInput) => {
       rmdEnabled,
       conversions,
       inflationFactor,
+      rmdBase,
     });
     const c = forced.conversionIncome;
     const r = forced.rmdGross;
+    // Stack in the order the flows happen: mandatory RMD first, discretionary
+    // conversion at the marginal rate above it (mirrors the deterministic engine).
     const t0 = incomeTax(ordinaryBase, residence, inflationFactor, input.province, taxFx);
-    const tC = incomeTax(ordinaryBase + c, residence, inflationFactor, input.province, taxFx);
-    const tR = incomeTax(ordinaryBase + c + r, residence, inflationFactor, input.province, taxFx);
-    const convTax = tC - t0;
-    const rmdNet = r - (tR - tC);
+    const tR = incomeTax(ordinaryBase + r, residence, inflationFactor, input.province, taxFx);
+    const tC = incomeTax(ordinaryBase + r + c, residence, inflationFactor, input.province, taxFx);
+    const convTax = tC - tR;
+    const rmdNet = r - (tR - t0);
     const cashAvailable = ordinaryNet + rmdNet;
     const cashNeed = spendNet + convTax + flowExpense;
     const surplus = Math.max(0, cashAvailable - cashNeed);
@@ -807,9 +817,11 @@ const makeForcedFlows = (input: MonteCarloInput) => {
     }
     return {
       needFromPortfolio: Math.max(0, cashNeed - cashAvailable),
-      forcedBase: ordinaryBase + c + r,
+      forcedBase: ordinaryBase + r + c,
     };
   };
+
+  return { settle, rmdBaseOf };
 };
 
 /**
@@ -992,6 +1004,10 @@ export const runMonteCarlo = (
         }
       }
 
+      // Deferred balance at last year's close — the RMD divisor's base, sampled
+      // before this year's growth moves it.
+      const rmdBase = forcedFlows.rmdBaseOf(state);
+
       // Growth + contributions (accumulation phase). The log return is pulled
       // toward its mean by κ·(deviation so far), then the deviation is updated.
       // Contributions compound intra-year (monthly) like the deterministic
@@ -1066,7 +1082,7 @@ export const runMonteCarlo = (
         // Non-portfolio income + taxable flow income + forced flows (conversions
         // / RMD) settle first, stacking beneath withdrawals in the brackets.
         const other = flowOrdinaryIncome(input, flows, inflationFactor);
-        const ff = forcedFlows(
+        const ff = forcedFlows.settle(
           state,
           year,
           inflationFactor,
@@ -1074,6 +1090,7 @@ export const runMonteCarlo = (
           other.net,
           need,
           flows.expense,
+          rmdBase,
         );
         const r = withdrawNet(state, ff.needFromPortfolio, accountsForYear(state), accountOrder, {
           residence: input.residence ?? 'US',
@@ -1362,6 +1379,10 @@ export const sampleMonteCarloPath = (
       }
     }
 
+    // Deferred balance at last year's close — the RMD divisor's base, sampled
+    // before this year's growth moves it.
+    const rmdBase = forcedFlows.rmdBaseOf(state);
+
     // Per-asset opening / appreciation / contribution (mirrors the deterministic
     // engine so the data table matches the main projection table).
     const opening = new Array<number>(n);
@@ -1432,7 +1453,16 @@ export const sampleMonteCarloPath = (
     if (isRetired) {
       const need = annualSpending * spendingReal(y - startYear) * inflationFactor;
       const other = flowOrdinaryIncome(input, flows, inflationFactor);
-      const ff = forcedFlows(state, y, inflationFactor, other.base, other.net, need, flows.expense);
+      const ff = forcedFlows.settle(
+        state,
+        y,
+        inflationFactor,
+        other.base,
+        other.net,
+        need,
+        flows.expense,
+        rmdBase,
+      );
       const r = withdrawNet(state, ff.needFromPortfolio, accountsForYear(state), accountOrder, {
         residence: input.residence ?? 'US',
         province: input.province,

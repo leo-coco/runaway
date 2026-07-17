@@ -9,7 +9,7 @@ import {
   type SpendingMode,
 } from '@/domain/spendingModel';
 import { expenseIncomeAmountsForYear, type ExpenseIncome } from '@/domain/expenseIncome';
-import { applyForcedFlows, type ConversionPlan } from '@/domain/taxAdvantaged';
+import { applyForcedFlows, deferredBalance, type ConversionPlan } from '@/domain/taxAdvantaged';
 import {
   accountEffectiveRate,
   accountTaxProfile,
@@ -436,6 +436,9 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
 
     const openingBalance = state.reduce((sum, a) => sum + a.value, 0);
     const openingByAsset = new Map(state.map((a) => [a.holdingId, a.value]));
+    // Snapshot the deferred balance before growth: this year's opening balance is
+    // last year's close, i.e. the 31 December figure the RMD divisor applies to.
+    const rmdBase = deferredBalance(state, kindOf);
 
     // Growth on the existing balance, plus contributions made during the year
     // (accumulation phase). Monthly contributions are compounded intra-year at
@@ -509,22 +512,32 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
         rmdEnabled,
         conversions,
         inflationFactor,
+        rmdBase,
       });
       const c = forced.conversionIncome;
       rmdGross = forced.rmdGross;
+      // Stack in the order the flows actually happen: the mandatory RMD sits on
+      // the flow income, and the discretionary conversion pays the marginal rate
+      // above it — the honest price to attribute to a conversion strategy.
       const t0 = ordinaryTax;
-      const tC = incomeTax(ordinaryBase + c, residence, inflationFactor, input.province, taxFx);
       const tR = incomeTax(
-        ordinaryBase + c + rmdGross,
+        ordinaryBase + rmdGross,
         residence,
         inflationFactor,
         input.province,
         taxFx,
       );
-      convTax = tC - t0;
-      rmdTax = tR - tC;
+      const tC = incomeTax(
+        ordinaryBase + rmdGross + c,
+        residence,
+        inflationFactor,
+        input.province,
+        taxFx,
+      );
+      rmdTax = tR - t0;
+      convTax = tC - tR;
       rmdNet = rmdGross - rmdTax;
-      forcedBase = ordinaryBase + c + rmdGross;
+      forcedBase = ordinaryBase + rmdGross + c;
     }
 
     // Cash the household has before touching the portfolio for spending, and the
@@ -587,7 +600,7 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
       flowExpense: round2(flows.expense),
       flowIncome: round2(flows.income),
       grossWithdrawal: round2(withdrawal.gross + rmdGross),
-      taxPaid: round2(withdrawal.tax + convTax + rmdTax),
+      taxPaid: round2(ordinaryTax + withdrawal.tax + convTax + rmdTax),
       closingBalance: round2(closingBalance),
       isRetired,
       perAsset: state.map((a) => {
