@@ -9,6 +9,22 @@ import { sendResetPasswordEmail, sendVerificationEmail } from './email.js';
 
 const languageSchema = z.enum(['en', 'fr']);
 
+const env = serverEnv();
+
+/**
+ * Vercel provides the unique URL of each Preview deployment at runtime. Trust
+ * only that exact origin so sign-in works from previews without accepting all
+ * `*.vercel.app` applications.
+ */
+const previewDeploymentOrigin =
+  process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : undefined;
+
+const trustedOrigins = [env.BETTER_AUTH_URL, previewDeploymentOrigin].filter(
+  (origin): origin is string => Boolean(origin),
+);
+
 /** Reads the additionalFields `language` off a Better Auth user via the same schema that validates it on input. */
 const userLanguage = (user: Record<string, unknown>): 'en' | 'fr' | undefined =>
   languageSchema.safeParse(user.language).data;
@@ -19,9 +35,11 @@ const userLanguage = (user: Record<string, unknown>): 'en' | 'fr' | undefined =>
  * cookie-based (httpOnly) — no token stored in the browser.
  */
 export const auth = betterAuth({
-  secret: serverEnv().BETTER_AUTH_SECRET,
-  baseURL: serverEnv().BETTER_AUTH_URL,
-  trustedOrigins: [serverEnv().BETTER_AUTH_URL],
+  secret: env.BETTER_AUTH_SECRET,
+  // Keep the canonical URL for absolute links sent by email. The active Vercel
+  // Preview origin is added separately above for browser-origin validation.
+  baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins,
   database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }),
   user: {
     // Surface the freemium columns on the session user so the client can read
