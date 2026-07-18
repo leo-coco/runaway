@@ -208,6 +208,7 @@ export const fr: Resources = {
     backToAccount: 'Retourner à mon compte',
     collapseMenu: 'Réduire le menu',
     expandMenu: 'Développer le menu',
+    openMenu: 'Ouvrir le menu',
     deletePlanTitle: 'Supprimer le plan ?',
     deletePlanDesc: 'Ceci supprime définitivement « {{name}} ». Cette action est irréversible.',
     deletePlanBody: 'Toutes les données, positions et réglages de ce plan seront supprimés.',
