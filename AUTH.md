@@ -63,7 +63,9 @@ npm run dev:all      # Vite (5173) + API (8787), Vite proxies /api to the API
    `DATABASE_URL`, `BETTER_AUTH_SECRET`, `DATA_ENCRYPTION_KEY`, `BETTER_AUTH_URL`
    (= your prod URL, e.g. `https://your-app.vercel.app`), `RESEND_API_KEY`, `EMAIL_FROM`
    (verified domain), `CONTACT_EMAIL_TO`, `EXCHANGERATE_API_KEY`. Also add the existing
-   `VITE_*` keys.
+   `VITE_*` keys. Enable **Automatically expose System Environment Variables** so Preview
+   deployments receive `VERCEL_URL`; Better Auth then trusts that deployment's exact origin
+   without opening authentication to every `*.vercel.app` domain.
 3. Deploy. The static SPA is served by Vercel; `api/[...route].ts` (Node.js function)
    handles `/api/*`. Migrations run automatically as part of the build: `vercel-build`
    runs `drizzle-kit migrate` before `tsc -b && vite build`, so every migration must be
