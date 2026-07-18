@@ -70,17 +70,16 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
     .filter((e) => flowEndYear(e) >= startYear)
     .sort((a, b) => a.year - b.year)[0];
 
-  // Home equity today (value − mortgage), for the summary card.
-  const homeEquityNow = plan.home
-    ? homeEquitySeries(plan.home, startYear, 0)[0]?.equity
-    : undefined;
-
-  // Rental properties: count + combined equity today, for the summary card.
+  // Combined real-estate equity today (home + rentals) and property count, for
+  // the single premium "Immobilier" summary card.
+  const homeEquityNow = plan.home ? (homeEquitySeries(plan.home, startYear, 0)[0]?.equity ?? 0) : 0;
   const rentalCount = plan.properties?.length ?? 0;
   const rentalEquityNow =
     rentalCount > 0
-      ? rentalPropertiesEquitySeries(plan.properties, startYear, 0)[0]?.equity
-      : undefined;
+      ? (rentalPropertiesEquitySeries(plan.properties, startYear, 0)[0]?.equity ?? 0)
+      : 0;
+  const realEstateEquityNow = homeEquityNow + rentalEquityNow;
+  const realEstateCount = (plan.home ? 1 : 0) + rentalCount;
 
   return (
     <div className="overview-grid">
@@ -188,13 +187,13 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
 
       <Card className="ov">
         <div className="ov__head">
-          <span className="ov__title">{t('overview.home')}</span>
+          <span className="ov__title">{t('overview.realEstate')}</span>
           {homeLocked ? (
             <span className="ov__link" onClick={() => openPaywall('realEstate')}>
               <ProBadge />
             </span>
           ) : (
-            <span className="ov__link" onClick={() => openModal('home')}>
+            <span className="ov__link" onClick={() => openModal('realEstate')}>
               {t('common.edit')}
             </span>
           )}
@@ -202,37 +201,12 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         <div className="ov__body">
           <div className="ov__content">
             <span className="ov__big">
-              {homeEquityNow !== undefined ? fmt.compact(homeEquityNow) : '—'}
+              {realEstateCount > 0 ? fmt.compact(realEstateEquityNow) : '—'}
             </span>
             <span className="ov__sub">
-              {plan.home ? t('overview.homeSub') : t('overview.homeEmpty')}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="ov">
-        <div className="ov__head">
-          <span className="ov__title">{t('overview.rentals')}</span>
-          {homeLocked ? (
-            <span className="ov__link" onClick={() => openPaywall('realEstate')}>
-              <ProBadge />
-            </span>
-          ) : (
-            <span className="ov__link" onClick={() => openModal('rentalProperties')}>
-              {t('common.edit')}
-            </span>
-          )}
-        </div>
-        <div className="ov__body">
-          <div className="ov__content">
-            <span className="ov__big">
-              {rentalEquityNow !== undefined ? fmt.compact(rentalEquityNow) : '—'}
-            </span>
-            <span className="ov__sub">
-              {rentalCount > 0
-                ? t('overview.rentalsSub', { count: rentalCount })
-                : t('overview.rentalsEmpty')}
+              {realEstateCount > 0
+                ? t('overview.realEstateSub', { count: realEstateCount })
+                : t('overview.realEstateEmpty')}
             </span>
           </div>
         </div>

@@ -323,6 +323,13 @@ export const BankIcon = ({ size = 16, ...p }: IconProps) => (
     <line x1="18" y1="11" x2="18" y2="17" />
   </svg>
 );
+export const BuildingIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="5" y="3" width="14" height="18" rx="1.5" />
+    <path d="M9 7h0M13 7h0M9 11h0M13 11h0M9 15h0M13 15h0" />
+    <path d="M10.5 21v-3h3v3" />
+  </svg>
+);
 export const TrophyIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <path d="M7 4h10v5a5 5 0 0 1-10 0Z" />
