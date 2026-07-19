@@ -87,7 +87,7 @@ const RunwayMarker = ({
             'runway__marker',
             `runway__marker--${event.kind}`,
             runwayEventTone(event),
-            event.confidence && ZONE_CLASS[event.confidence],
+            event.kind !== 'wealth-milestone' && event.confidence && ZONE_CLASS[event.confidence],
           )}
         >
           <Icon size={20} />
