@@ -1660,6 +1660,7 @@ h4 {
   justify-content: center;
   margin: 0;
   pointer-events: none;
+  transform: translateY(5px);
 }
 .ov__empty {
   display: flex;
