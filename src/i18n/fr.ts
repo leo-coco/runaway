@@ -366,6 +366,8 @@ export const fr: Resources = {
     copyright: '© {{year}} {{title}}',
     methodologyLink: 'Méthodologie',
     contactLink: 'Contactez-nous',
+    privacyNote:
+      'Statistiques d’usage anonymes, sans cookie de traçage. Aucune donnée personnelle vendue.',
   },
   contact: {
     title: 'Contactez-nous',

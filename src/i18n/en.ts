@@ -351,6 +351,7 @@ export const en = {
     copyright: '© {{year}} {{title}}',
     methodologyLink: 'Methodology',
     contactLink: 'Contact us',
+    privacyNote: 'Anonymous usage statistics, no tracking cookies. We never sell personal data.',
   },
   contact: {
     title: 'Contact us',
