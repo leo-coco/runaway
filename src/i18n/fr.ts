@@ -60,8 +60,6 @@ export const fr: Resources = {
     realEstateSub: '{{count}} bien suivi',
     realEstateSub_other: '{{count}} biens suivis',
     realEstateEmpty: 'Aucun bien immobilier',
-    realEstateEmptyDescription:
-      'Ajoutez votre résidence principale ou un bien locatif à votre projection.',
     realEstateAdd: 'Ajouter un bien',
   },
   home: {

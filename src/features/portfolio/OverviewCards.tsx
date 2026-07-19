@@ -214,7 +214,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
               </span>
               <div className="ov__content">
                 <span className="ov__empty-title">{t('overview.realEstateEmpty')}</span>
-                <span className="ov__sub">{t('overview.realEstateEmptyDescription')}</span>
               </div>
             </div>
           )}
