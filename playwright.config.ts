@@ -9,6 +9,7 @@ import { defineConfig, devices } from '@playwright/test';
  * (SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD); see docs/testing-strategy.md.
  */
 const baseURL = process.env.SMOKE_BASE_URL ?? 'http://localhost:4321';
+const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: './e2e',
@@ -23,6 +24,9 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    ...(bypassSecret && {
+      extraHTTPHeaders: { 'x-vercel-protection-bypass': bypassSecret },
+    }),
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
