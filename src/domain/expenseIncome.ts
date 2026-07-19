@@ -99,6 +99,13 @@ export interface ExpenseIncome {
    * unaffected: only the tax base changes.
    */
   readonly taxableAmounts?: Readonly<Record<number, number>>;
+  /**
+   * Income kind only: marks this inflow as property sale proceeds and tells the
+   * projection how to reinvest the surplus it creates — `'spread'` across the
+   * portfolio, or `'cash'` into a non-growing reserve. Absent for ordinary
+   * income; see {@link saleReinvestModeForYear}.
+   */
+  readonly reinvest?: 'spread' | 'cash';
 }
 
 export interface YearExpenseIncome {
@@ -131,6 +138,32 @@ export const expenseIncomeItemAmountForYear = (
     return item.amount * Math.pow(1 + item.growthPct / 100, year - item.year);
   }
   return item.amount * ((item.inflate ?? true) ? inflationFactor : 1);
+};
+
+/**
+ * The reinvestment mode to apply to this year's reinvested surplus, taken from
+ * the sale-proceeds flow(s) landing in `year`. When several tagged sales land the
+ * same year with differing modes, the one with the largest nominal amount wins
+ * (sale proceeds dominate a year's surplus, so a single mode is a fair rule).
+ * Returns null when no tagged sale lands — the caller keeps its default handling.
+ */
+export const saleReinvestModeForYear = (
+  items: readonly ExpenseIncome[] | undefined,
+  year: number,
+  inflationFactor: number,
+): 'spread' | 'cash' | null => {
+  if (!items || items.length === 0) return null;
+  let mode: 'spread' | 'cash' | null = null;
+  let best = 0;
+  for (const item of items) {
+    if (item.kind !== 'income' || !item.reinvest) continue;
+    const amount = expenseIncomeItemAmountForYear(item, year, inflationFactor);
+    if (amount > best) {
+      best = amount;
+      mode = item.reinvest;
+    }
+  }
+  return mode;
 };
 
 /**

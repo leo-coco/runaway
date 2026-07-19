@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CASH_RESERVE_SYMBOL,
   contributionFutureValue,
   project,
   totalContributed,
@@ -1040,5 +1041,119 @@ describe('retirementCalculator.project', () => {
     expect(fv).toBeGreaterThan(cash);
     // With 0% CAGR the future value equals the cash contributed.
     expect(contributionFutureValue(100, 0, 10)).toBeCloseTo(cash, 5);
+  });
+});
+
+describe('sale-proceeds reinvest modes', () => {
+  // Retired from the start with a small budget, two very different-CAGR holdings,
+  // and a big tagged sale landing mid-plan — so the reinvested surplus dominates.
+  const common = {
+    startYear: 2026,
+    horizonYears: 30,
+    retirementYear: 2026,
+    annualSpending: 20_000,
+    inflationPct: 0,
+    applyInflation: false,
+    currentAge: 60,
+    scenario: { ...DEFAULT_SCENARIO_CONFIG, active: 'expected' as const },
+    assets: [
+      {
+        holdingId: 'fast',
+        symbol: 'FAST',
+        startValue: 400_000,
+        baseCagrPct: 12,
+        annualContribution: 0,
+      },
+      {
+        holdingId: 'slow',
+        symbol: 'SLOW',
+        startValue: 100_000,
+        baseCagrPct: 2,
+        annualContribution: 0,
+      },
+    ],
+  };
+  const saleFlow = (reinvest: 'spread' | 'cash') => ({
+    id: 'sale',
+    name: 'House',
+    amount: 600_000,
+    year: 2030,
+    kind: 'income' as const,
+    inflate: false,
+    taxable: false,
+    reinvest,
+  });
+
+  it("'spread' distributes the lump across every holding, not into one sink", () => {
+    const p = project(
+      { ...common, expensesIncomes: [saleFlow('spread')] } as ProjectionInput,
+      'expected',
+    );
+    const y = p.years.find((yr) => yr.year === 2030)!;
+    const before = p.years.find((yr) => yr.year === 2029)!;
+    const grew = (sym: string) => {
+      const now = y.perAsset.find((a) => a.symbol === sym)!;
+      const prev = before.perAsset.find((a) => a.symbol === sym)!;
+      // Value jump beyond the year's own appreciation ⇒ it received sale proceeds.
+      return now.value - prev.value > now.appreciation + 1;
+    };
+    expect(grew('FAST')).toBe(true);
+    expect(grew('SLOW')).toBe(true);
+    // No holding swallowed the whole $600k lump.
+    for (const a of y.perAsset) {
+      const prev = before.perAsset.find((x) => x.symbol === a.symbol)!;
+      expect(a.value - prev.value).toBeLessThan(600_000);
+    }
+  });
+
+  it("'cash' parks the lump in the non-growing cash reserve", () => {
+    const p = project(
+      {
+        ...common,
+        assets: [
+          ...common.assets,
+          // buildProjectionInput seeds this bucket; supply it directly here.
+          {
+            holdingId: 'cash:re',
+            symbol: CASH_RESERVE_SYMBOL,
+            startValue: 0,
+            baseCagrPct: 0,
+            annualContribution: 0,
+          },
+        ],
+        expensesIncomes: [saleFlow('cash')],
+      } as ProjectionInput,
+      'expected',
+    );
+    const y2030 = p.years.find((yr) => yr.year === 2030)!;
+    const cash2030 = y2030.perAsset.find((a) => a.symbol === CASH_RESERVE_SYMBOL)!;
+    // The reserve received the bulk of the proceeds the sale year.
+    expect(cash2030.value).toBeGreaterThan(400_000);
+    // And it does not appreciate afterwards (0% CAGR): next-year growth is 0.
+    const cash2031 = p.years
+      .find((yr) => yr.year === 2031)!
+      .perAsset.find((a) => a.symbol === CASH_RESERVE_SYMBOL)!;
+    expect(cash2031.appreciation).toBeCloseTo(0, 6);
+  });
+
+  it('an untagged one-off income still funnels surplus into the legacy single sink', () => {
+    const p = project(
+      {
+        ...common,
+        expensesIncomes: [
+          { ...saleFlow('spread'), reinvest: undefined, id: 'inh', name: 'Inheritance' },
+        ],
+      } as ProjectionInput,
+      'expected',
+    );
+    const y = p.years.find((yr) => yr.year === 2030)!;
+    const before = p.years.find((yr) => yr.year === 2029)!;
+    const received = y.perAsset
+      .map(
+        (a) => a.value - before.perAsset.find((x) => x.symbol === a.symbol)!.value - a.appreciation,
+      )
+      .filter((delta) => delta > 1);
+    // Exactly one holding received the untagged surplus (single-sink behaviour).
+    expect(received.length).toBe(1);
   });
 });

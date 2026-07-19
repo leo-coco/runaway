@@ -85,6 +85,13 @@ export const fr: Resources = {
     costBasis: 'Prix d’acquisition d’origine',
     costBasisHint:
       'Ce que vous avez payé à l’origine pour le bien. Seul le gain au-delà de ce montant est imposé, pas la totalité du produit de la vente.',
+    saleReinvest: 'Que faire du produit de la vente',
+    saleReinvestSpread: 'Réinvestir',
+    saleReinvestCash: 'Garder en cash',
+    saleReinvestSpreadHint:
+      'Le produit est réinvesti dans votre portefeuille, réparti au prorata de vos actifs (à parts égales si le portefeuille est épuisé).',
+    saleReinvestCashHint:
+      'Le produit est conservé en liquidités : il finance vos dépenses mais ne génère aucun rendement.',
     remove: 'Retirer la maison',
     previewTitle: 'Flux',
     equityNow: "Équité aujourd'hui",
@@ -137,6 +144,13 @@ export const fr: Resources = {
     costBasis: 'Prix d’acquisition initial',
     costBasisHint:
       'Ce que vous avez payé à l’origine. Seule la plus-value au-dessus est imposée, pas la totalité du produit.',
+    saleReinvest: 'Que faire du produit de la vente',
+    saleReinvestSpread: 'Réinvestir',
+    saleReinvestCash: 'Garder en cash',
+    saleReinvestSpreadHint:
+      'Le produit est réinvesti dans votre portefeuille, réparti au prorata de vos actifs (à parts égales si le portefeuille est épuisé).',
+    saleReinvestCashHint:
+      'Le produit est conservé en liquidités : il finance vos dépenses mais ne génère aucun rendement.',
     previewTitle: 'Flux',
     equityNow: 'Équité aujourd’hui',
     equityAt: 'Équité à la retraite',
@@ -204,6 +218,11 @@ export const fr: Resources = {
     flowsOfProperty: 'Flux de ce bien',
     flowsOfPropertyHint: 'Aperçu local : il se met à jour avec le formulaire courant.',
     currentBadge: 'Bien courant',
+    equityNowTip:
+      'Un bien acheté dans le futur affiche 0 aujourd’hui : son équité n’apparaît qu’à partir de son année d’achat.',
+    plannedPurchase: 'Achat prévu en {{year}}',
+    colNetTotal: 'Total net',
+    expandFlows: 'Voir le détail des flux',
   },
   language: {
     label: 'Langue',
@@ -548,6 +567,7 @@ export const fr: Resources = {
     legendOpening: 'Solde d’ouverture',
     legendClosing: 'Solde de clôture',
     yearsValue: '{{years}} ans',
+    cashReserve: 'Liquidités (vente immo.)',
   },
   modals: {
     planNameTitle: 'Modifier le nom du plan',

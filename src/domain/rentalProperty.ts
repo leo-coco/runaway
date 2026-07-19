@@ -5,9 +5,10 @@ import {
   type HomePurchase,
   type HomeSale,
   type Mortgage,
+  type ProceedsReinvest,
 } from './home';
 
-export type { HomePurchase, HomeSale, Mortgage };
+export type { HomePurchase, HomeSale, Mortgage, ProceedsReinvest };
 
 /**
  * A rental (investment) property attached to a plan. Unlike the primary
@@ -387,6 +388,7 @@ export const rentalPropertyFlows = (
       inflate: false,
       taxable,
       taxableFraction: proceeds > 0 ? gain / proceeds : 0,
+      reinvest: p.sale.proceedsReinvest ?? 'spread',
     });
   }
 

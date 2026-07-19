@@ -48,6 +48,7 @@ export const createHomeFormSchema = (t: TFunction, startYear: number) =>
       saleYear: z.number().int().min(1900).max(2200),
       saleFeePct: z.number().min(0, t('validation.common.cannotBeNegative')).max(20),
       saleCapitalGainsTaxable: z.boolean(),
+      saleProceedsReinvest: z.enum(['spread', 'cash']),
       costBasis: z.number().nonnegative(t('validation.common.cannotBeNegative')).max(1_000_000_000),
     })
     .refine((v) => !(v.hasSale && v.hasPurchase) || v.saleYear > v.purchaseYear, {

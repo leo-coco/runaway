@@ -79,6 +79,12 @@ export const en = {
     costBasis: 'Original cost basis',
     costBasisHint:
       'What you originally paid for the home. Only the gain above this is taxed, not the full sale proceeds.',
+    saleReinvest: 'What to do with the sale proceeds',
+    saleReinvestSpread: 'Reinvest',
+    saleReinvestCash: 'Keep as cash',
+    saleReinvestSpreadHint:
+      'Proceeds are reinvested into your portfolio, spread pro-rata across your holdings (split equally if the portfolio is depleted).',
+    saleReinvestCashHint: 'Proceeds are held as cash: they fund your spending but earn no return.',
     remove: 'Remove home',
     previewTitle: 'Flows',
     equityNow: 'Equity today',
@@ -130,6 +136,12 @@ export const en = {
     costBasis: 'Original cost basis',
     costBasisHint:
       'What you originally paid. Only the gain above this is taxed, not the full sale proceeds.',
+    saleReinvest: 'What to do with the sale proceeds',
+    saleReinvestSpread: 'Reinvest',
+    saleReinvestCash: 'Keep as cash',
+    saleReinvestSpreadHint:
+      'Proceeds are reinvested into your portfolio, spread pro-rata across your holdings (split equally if the portfolio is depleted).',
+    saleReinvestCashHint: 'Proceeds are held as cash: they fund your spending but earn no return.',
     previewTitle: 'Flows',
     equityNow: 'Equity today',
     equityAt: 'Equity at retirement',
@@ -193,6 +205,11 @@ export const en = {
     flowsOfProperty: 'Flows for this property',
     flowsOfPropertyHint: 'Local preview: it updates with the current form.',
     currentBadge: 'Current property',
+    equityNowTip:
+      'A property bought in the future shows 0 today: its equity only appears from its purchase year onward.',
+    plannedPurchase: 'Purchase planned for {{year}}',
+    colNetTotal: 'Net total',
+    expandFlows: 'Show flow breakdown',
   },
   language: {
     label: 'Language',
@@ -532,6 +549,7 @@ export const en = {
     legendOpening: 'Opening balance',
     legendClosing: 'Closing balance',
     yearsValue: '{{years}} years',
+    cashReserve: 'Cash (property sale)',
   },
   modals: {
     planNameTitle: 'Edit Plan Name',

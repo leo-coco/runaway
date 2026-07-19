@@ -44,6 +44,7 @@ const blankForm = (startYear: number): HomeForm => ({
   saleYear: startYear + 20,
   saleFeePct: 5,
   saleCapitalGainsTaxable: false,
+  saleProceedsReinvest: 'spread',
   costBasis: 500_000,
 });
 
@@ -67,6 +68,7 @@ const homeToForm = (home: Home, startYear: number): HomeForm => {
     saleYear: home.sale?.year ?? blank.saleYear,
     saleFeePct: home.sale?.feePct ?? blank.saleFeePct,
     saleCapitalGainsTaxable: home.sale?.capitalGainsTaxable ?? false,
+    saleProceedsReinvest: home.sale?.proceedsReinvest ?? 'spread',
     costBasis: home.sale?.costBasis ?? home.currentValue,
   };
 };
@@ -96,6 +98,7 @@ const formToHome = (form: HomeForm, id: string): Home => ({
         year: form.saleYear,
         feePct: form.saleFeePct,
         capitalGainsTaxable: form.saleCapitalGainsTaxable,
+        proceedsReinvest: form.saleProceedsReinvest,
         costBasis: form.costBasis,
       }
     : undefined,
@@ -476,6 +479,40 @@ export const HomePropertyForm = forwardRef<PropertyFormHandle, Props>(({ plan, o
                   <p className="field__hint">{t('home.costBasisHint')}</p>
                 </label>
               )}
+              <div className="phase-field">
+                <span className="ov__sub">{t('home.saleReinvest')}</span>
+                <Controller
+                  control={control}
+                  name="saleProceedsReinvest"
+                  render={({ field }) => (
+                    <div className="seg-tabs" role="radiogroup" aria-label={t('home.saleReinvest')}>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={field.value === 'spread'}
+                        className={cn('seg-tab', field.value === 'spread' && 'is-active')}
+                        onClick={() => field.onChange('spread')}
+                      >
+                        {t('home.saleReinvestSpread')}
+                      </button>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={field.value === 'cash'}
+                        className={cn('seg-tab', field.value === 'cash' && 'is-active')}
+                        onClick={() => field.onChange('cash')}
+                      >
+                        {t('home.saleReinvestCash')}
+                      </button>
+                    </div>
+                  )}
+                />
+                <p className="field__hint">
+                  {form.saleProceedsReinvest === 'cash'
+                    ? t('home.saleReinvestCashHint')
+                    : t('home.saleReinvestSpreadHint')}
+                </p>
+              </div>
               {errors.saleYear && <p className="field-error">{errors.saleYear.message}</p>}
             </div>
           )}

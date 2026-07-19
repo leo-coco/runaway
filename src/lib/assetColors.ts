@@ -20,6 +20,9 @@ const KNOWN: Record<string, string> = {
   'TSLA.TO': '#f43f5e',
   'VFV.TO': '#a855f7',
   'XEQT.TO': '#38bdf8',
+  // Synthetic cash reserve for `'cash'`-mode property sale proceeds (see
+  // CASH_RESERVE_SYMBOL): a muted grey so it reads as parked, not invested.
+  'CASH:RE': '#94a3b8',
 };
 
 export const colorForSymbol = (symbol: string, index: number): string =>

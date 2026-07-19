@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { PlusIcon, PencilIcon, HomeIcon, BuildingIcon } from '@/components/icons';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { PlusIcon, PencilIcon, HomeIcon, BuildingIcon, ChevronRightIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
 import { homeEquitySeries, homeFlows, isOpenEndedYear, HOME_FLOW_LABEL_KEY } from '@/domain/home';
@@ -73,6 +74,40 @@ export const RealEstateModal = ({ plan, onClose }: Props) => {
     return key ? t(key) : id;
   };
 
+  // Net over the flow's whole life, in today's-money magnitudes (the figures the
+  // detail rows show): one-offs signed as-is, recurring flows times their span.
+  const flowLifetimeNet = (f: ExpenseIncome): number => {
+    const span =
+      f.frequency === 'recurring'
+        ? Math.max(1, Math.min(f.endYear ?? f.year, maxYear) - f.year + 1)
+        : 1;
+    return (f.kind === 'income' ? 1 : -1) * f.amount * span;
+  };
+
+  // Group flows by property, preserving first-seen order (home first, then rentals).
+  const flowGroups = (() => {
+    const order: string[] = [];
+    const byName = new Map<string, ExpenseIncome[]>();
+    for (const f of flows) {
+      if (!byName.has(f.name)) {
+        byName.set(f.name, []);
+        order.push(f.name);
+      }
+      byName.get(f.name)!.push(f);
+    }
+    return order.map((name) => {
+      const items = byName.get(name)!;
+      return { name, items, net: items.reduce((s, f) => s + flowLifetimeNet(f), 0) };
+    });
+  })();
+
+  // A property bought after the plan starts owns nothing today — its equity is 0
+  // until its purchase year (see homeEquitySeries / rentalPropertyEquitySeries).
+  const homePurchaseYear =
+    home?.purchase && home.purchase.year > startYear ? home.purchase.year : null;
+  const futurePurchaseYear = (year: number | undefined): number | null =>
+    year !== undefined && year > startYear ? year : null;
+
   const rentalCountBadge = t('realEstate.countBadge', { count: properties.length });
   const homeCountBadge = t('realEstate.countBadge', { count: home ? 1 : 0 });
 
@@ -99,7 +134,10 @@ export const RealEstateModal = ({ plan, onClose }: Props) => {
           {/* Summary tiles */}
           <div className="contrib-summary contrib-summary--triple">
             <div className="contrib-summary__item">
-              <span className="ov__sub">{t('realEstate.equityNow')}</span>
+              <span className="ov__sub realestate-tile-label">
+                {t('realEstate.equityNow')}
+                <Tooltip text={t('realEstate.equityNowTip')} />
+              </span>
               <b>{fmt.compact(equityNow)}</b>
               <span className="ov__sub">{t('realEstate.equityNowSub')}</span>
             </div>
@@ -142,6 +180,11 @@ export const RealEstateModal = ({ plan, onClose }: Props) => {
                     <div className="realestate-row__name">
                       <strong>{home.name || t('home.defaultName')}</strong>
                       <span>{t('realEstate.typeHome')}</span>
+                      {homePurchaseYear !== null && (
+                        <span className="realestate-planned">
+                          {t('realEstate.plannedPurchase', { year: homePurchaseYear })}
+                        </span>
+                      )}
                     </div>
                     <div className="realestate-row__stats">
                       <span className="realestate-stat">
@@ -190,6 +233,13 @@ export const RealEstateModal = ({ plan, onClose }: Props) => {
                         <div className="realestate-row__name">
                           <strong>{p.name || t('rental.defaultName')}</strong>
                           <span>{t('realEstate.typeRental')}</span>
+                          {futurePurchaseYear(p.purchase?.year) !== null && (
+                            <span className="realestate-planned">
+                              {t('realEstate.plannedPurchase', {
+                                year: futurePurchaseYear(p.purchase?.year),
+                              })}
+                            </span>
+                          )}
                         </div>
                         <div className="realestate-row__stats">
                           <span className="realestate-stat">
@@ -240,57 +290,59 @@ export const RealEstateModal = ({ plan, onClose }: Props) => {
             {flows.length === 0 ? (
               <div className="state-box realestate-empty">{t('realEstate.flowsEmpty')}</div>
             ) : (
-              <div
-                className="realestate-flowtable"
-                role="table"
-                aria-label={t('realEstate.flowsTitle')}
-              >
-                <div className="realestate-flowtable__header" role="row">
-                  <span role="columnheader">{t('realEstate.colProperty')}</span>
-                  <span role="columnheader">{t('realEstate.colFlow')}</span>
-                  <span role="columnheader">{t('realEstate.colPeriod')}</span>
-                  <span role="columnheader" className="realestate-flowtable__amount-head">
-                    {t('realEstate.colAmount')}
-                  </span>
-                </div>
-                <div role="rowgroup">
-                  {flows.map((f) => {
-                    const isIncome = f.kind === 'income';
-                    const recurring = f.frequency === 'recurring';
-                    const openEnded = recurring && isOpenEndedYear(f.endYear ?? f.year, startYear);
-                    const period = recurring && !openEnded ? `${f.year}–${f.endYear}` : `${f.year}`;
-                    const amount = `${isIncome ? '+' : '-'}${fmt.compact(f.amount)}${
-                      recurring ? t('common.perYear') : ''
-                    }`;
-                    return (
-                      <div className="realestate-flowtable__row" role="row" key={f.id}>
-                        <span className="realestate-flowtable__property" role="cell">
-                          {f.name}
+              <div className="realestate-flowgroups">
+                {flowGroups.map((g) => {
+                  const positive = g.net >= 0;
+                  return (
+                    <details className="realestate-flowgroup" key={g.name}>
+                      <summary className="realestate-flowgroup__summary">
+                        <span className="realestate-flowgroup__chev" aria-hidden="true">
+                          <ChevronRightIcon size={15} />
                         </span>
-                        <span className="realestate-flowtable__flow" role="cell">
-                          {flowLabel(f.id)}
-                        </span>
-                        <span
-                          className="realestate-flowtable__period"
-                          role="cell"
-                          data-label={t('realEstate.colPeriod')}
-                        >
-                          {period}
+                        <span className="realestate-flowgroup__name">{g.name}</span>
+                        <span className="realestate-flowgroup__label">
+                          {t('realEstate.colNetTotal')}
                         </span>
                         <span
                           className={cn(
-                            'realestate-flowtable__amount',
-                            isIncome ? 'is-income' : 'is-expense',
+                            'realestate-flowgroup__total',
+                            positive ? 'is-income' : 'is-expense',
                           )}
-                          role="cell"
-                          data-label={t('realEstate.colAmount')}
                         >
-                          {amount}
+                          {positive ? '+' : '-'}
+                          {fmt.compact(Math.abs(g.net))}
                         </span>
+                      </summary>
+                      <div className="realestate-flowgroup__body">
+                        {g.items.map((f) => {
+                          const isIncome = f.kind === 'income';
+                          const recurring = f.frequency === 'recurring';
+                          const openEnded =
+                            recurring && isOpenEndedYear(f.endYear ?? f.year, startYear);
+                          const period =
+                            recurring && !openEnded ? `${f.year}–${f.endYear}` : `${f.year}`;
+                          const amount = `${isIncome ? '+' : '-'}${fmt.compact(f.amount)}${
+                            recurring ? t('common.perYear') : ''
+                          }`;
+                          return (
+                            <div className="realestate-flowrow" key={f.id}>
+                              <span className="realestate-flowrow__flow">{flowLabel(f.id)}</span>
+                              <span className="realestate-flowrow__period">{period}</span>
+                              <span
+                                className={cn(
+                                  'realestate-flowrow__amount',
+                                  isIncome ? 'is-income' : 'is-expense',
+                                )}
+                              >
+                                {amount}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    </details>
+                  );
+                })}
               </div>
             )}
           </section>
