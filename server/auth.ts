@@ -12,17 +12,16 @@ const languageSchema = z.enum(['en', 'fr']);
 const env = serverEnv();
 
 /**
- * Vercel provides the unique URL of each Preview deployment at runtime. Trust
- * only that exact origin so sign-in works from previews without accepting all
- * `*.vercel.app` applications.
+ * Vercel provides the unique URL of the current deployment at runtime, for
+ * both Preview and Production environments (the deployment_status target_url
+ * used by the post-deploy smoke test is this unique URL, not the canonical
+ * domain). Trust only that exact origin so sign-in works from it without
+ * accepting all `*.vercel.app` applications.
  */
-const previewDeploymentOrigin =
-  process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : undefined;
+const deploymentOrigin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined;
 
-const trustedOrigins = [env.BETTER_AUTH_URL, previewDeploymentOrigin].filter(
-  (origin): origin is string => Boolean(origin),
+const trustedOrigins = [env.BETTER_AUTH_URL, deploymentOrigin].filter((origin): origin is string =>
+  Boolean(origin),
 );
 
 /** Reads the additionalFields `language` off a Better Auth user via the same schema that validates it on input. */
