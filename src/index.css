@@ -1648,11 +1648,16 @@ h4 {
 }
 .ov--realestate-empty .ov__body {
   align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 .ov__empty {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   min-width: 0;
+  text-align: center;
 }
 .ov__empty-title {
   color: var(--text);
