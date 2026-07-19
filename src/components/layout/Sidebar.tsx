@@ -341,7 +341,6 @@ export const Sidebar = ({
         {activePlan && (
           <>
             <div className="sb-divider" />
-            <div className="sb-section-label">{activePlan.name}</div>
             <nav className="sb-nav">
               <NavLink
                 to={`/plan/${activePlan.id}/dashboard`}
