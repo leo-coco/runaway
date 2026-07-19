@@ -53,7 +53,10 @@ export const en = {
     realEstate: 'Real estate',
     realEstateSub: '{{count}} property tracked',
     realEstateSub_other: '{{count}} properties tracked',
-    realEstateEmpty: 'No property added',
+    realEstateEmpty: 'No real estate added',
+    realEstateEmptyDescription:
+      'Add your primary residence or a rental property to your projection.',
+    realEstateAdd: 'Add property',
   },
   home: {
     title: 'Real estate',

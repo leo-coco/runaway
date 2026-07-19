@@ -1646,6 +1646,31 @@ h4 {
   gap: 4px;
   min-width: 0;
 }
+.ov--realestate-empty .ov__body {
+  align-items: center;
+}
+.ov__empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ov__empty-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-strong);
+}
+.ov__empty-title {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
 .ov__big {
   font-size: clamp(1.125rem, 10cqw, 1.875rem);
   font-weight: 700;
