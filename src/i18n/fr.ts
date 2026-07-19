@@ -59,7 +59,8 @@ export const fr: Resources = {
     realEstate: 'Immobilier',
     realEstateSub: '{{count}} bien suivi',
     realEstateSub_other: '{{count}} biens suivis',
-    realEstateEmpty: 'Aucun bien ajouté',
+    realEstateEmpty: 'Aucun bien immobilier',
+    realEstateAdd: 'Ajouter un bien',
   },
   home: {
     title: 'Immobilier',
@@ -1648,6 +1649,8 @@ export const fr: Resources = {
     checkoutSuccessCta: 'Découvrir Premium',
     subscriptionTitle: 'Abonnement',
     currentPlan: 'Offre actuelle',
+    active: 'Actif',
+    premiumActiveDescription: 'Votre accès à toutes les fonctionnalités Premium est actif.',
     manageBilling: 'Gérer l’abonnement',
     notNow: 'Pas maintenant',
     comingSoon:

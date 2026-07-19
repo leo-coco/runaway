@@ -53,7 +53,8 @@ export const en = {
     realEstate: 'Real estate',
     realEstateSub: '{{count}} property tracked',
     realEstateSub_other: '{{count}} properties tracked',
-    realEstateEmpty: 'No property added',
+    realEstateEmpty: 'No real estate added',
+    realEstateAdd: 'Add property',
   },
   home: {
     title: 'Real estate',
@@ -1607,6 +1608,8 @@ export const en = {
     checkoutSuccessCta: 'Explore Premium',
     subscriptionTitle: 'Subscription',
     currentPlan: 'Current plan',
+    active: 'Active',
+    premiumActiveDescription: 'Your access to all Premium features is active.',
     manageBilling: 'Manage billing',
     notNow: 'Not now',
     comingSoon: 'Self-serve checkout is coming soon. Premium is enabled manually for now.',

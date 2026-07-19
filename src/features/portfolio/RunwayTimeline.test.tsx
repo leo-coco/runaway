@@ -171,6 +171,29 @@ describe('RunwayTimeline', () => {
     expect(container.querySelector('.runway__marker--weak')).not.toBeNull();
   });
 
+  it('keeps amount-reached milestones gold when the plan is at risk', () => {
+    vi.mocked(buildRunwayEvents).mockReturnValue([
+      EVENTS[0]!,
+      {
+        id: 'milestone:100000',
+        kind: 'wealth-milestone',
+        year: 2029,
+        labelKey: 'runway.milestone',
+        labelParams: { amount: 100_000 },
+        amount: 100_000,
+        icon: 'trophy',
+        confidence: 'weak',
+      },
+      EVENTS[2]!,
+    ]);
+
+    const { container } = render(<RunwayTimeline />);
+    const milestone = container.querySelector('.runway__marker--wealth-milestone');
+
+    expect(milestone).not.toBeNull();
+    expect(milestone).not.toHaveClass('runway__marker--weak');
+  });
+
   it('reuses the modal category tone on compact runway markers', () => {
     const { container } = render(<RunwayTimeline />);
     const marker = container.querySelector('.runway__marker.runway-event--category-vehicle');

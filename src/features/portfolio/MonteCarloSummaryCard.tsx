@@ -69,7 +69,7 @@ export const MonteCarloSummaryCard = () => {
           <>
             <h2 className="mc-card__title">{t(TITLE_KEY[sx.zone])}</h2>
             <p className="mc-card__desc">{t(DESC_KEY[sx.zone], { pct: sx.pct.toFixed(0) })}</p>
-            <Link to={`/plan/${plan.id}/monte-carlo`} className="btn btn--accent mc-card__cta">
+            <Link to={`/plan/${plan.id}/monte-carlo`} className="runway__more mc-card__cta">
               {t('dashboard.mc.cta')} →
             </Link>
           </>

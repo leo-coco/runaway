@@ -185,7 +185,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         </div>
       </Card>
 
-      <Card className="ov">
+      <Card className={`ov${realEstateCount === 0 ? ' ov--realestate-empty' : ''}`}>
         <div className="ov__head">
           <span className="ov__title">{t('overview.realEstate')}</span>
           {homeLocked ? (
@@ -194,21 +194,25 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             </span>
           ) : (
             <span className="ov__link" onClick={() => openModal('realEstate')}>
-              {t('common.edit')}
+              {realEstateCount === 0 ? t('overview.realEstateAdd') : t('common.edit')}
             </span>
           )}
         </div>
         <div className="ov__body">
-          <div className="ov__content">
-            <span className="ov__big">
-              {realEstateCount > 0 ? fmt.compact(realEstateEquityNow) : '—'}
-            </span>
-            <span className="ov__sub">
-              {realEstateCount > 0
-                ? t('overview.realEstateSub', { count: realEstateCount })
-                : t('overview.realEstateEmpty')}
-            </span>
-          </div>
+          {realEstateCount > 0 ? (
+            <div className="ov__content">
+              <span className="ov__big">{fmt.compact(realEstateEquityNow)}</span>
+              <span className="ov__sub">
+                {t('overview.realEstateSub', { count: realEstateCount })}
+              </span>
+            </div>
+          ) : (
+            <div className="ov__empty">
+              <div className="ov__content">
+                <span className="ov__empty-title">{t('overview.realEstateEmpty')}</span>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

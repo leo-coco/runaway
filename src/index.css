@@ -1455,6 +1455,59 @@ h4 {
   flex-wrap: wrap;
   gap: 10px;
 }
+.billing-card {
+  position: relative;
+  overflow: hidden;
+}
+.billing-card--premium {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--card-border));
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 42%
+    ),
+    var(--bg-card);
+}
+.billing-card__head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.billing-card__eyebrow {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.billing-card__head h2 {
+  font-size: var(--fs-xl);
+}
+.billing-card__description {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.billing-card__status {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-strong);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  padding: 4px 9px;
+}
+.billing-card__actions {
+  position: relative;
+  margin-top: 18px;
+}
 .account-success {
   color: var(--success);
   font-size: var(--fs-sm);
@@ -1593,6 +1646,35 @@ h4 {
   gap: 4px;
   min-width: 0;
 }
+.ov--realestate-empty {
+  position: relative;
+}
+.ov--realestate-empty .ov__head {
+  position: relative;
+  z-index: 1;
+}
+.ov--realestate-empty .ov__body {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  pointer-events: none;
+  transform: translateY(5px);
+}
+.ov__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+.ov__empty-title {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
 .ov__big {
   font-size: clamp(1.125rem, 10cqw, 1.875rem);
   font-weight: 700;
@@ -1682,6 +1764,12 @@ h4 {
 }
 .plan-title__copy {
   min-width: 0;
+}
+.plan-title__heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .plan-title__description {
   margin: 2px 0 0;
@@ -1915,9 +2003,6 @@ h4 {
 .mc-card__note {
   color: var(--text-muted);
   font-size: var(--fs-md);
-}
-.mc-card__cta {
-  margin-top: 4px;
 }
 .mc-card__donut-wrap {
   display: flex;
