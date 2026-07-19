@@ -57,7 +57,18 @@ export interface HomeSale {
    * Defaults to `currentValue` (zero gain) when omitted.
    */
   readonly costBasis?: number;
+  /**
+   * What happens to the net sale proceeds in the projection. `'spread'` (default)
+   * reinvests them across the existing portfolio holdings (pro-rata by value, or
+   * split equally when the portfolio is depleted); `'cash'` parks them in a
+   * non-growing cash reserve that funds later spending but never appreciates.
+   * Without this, a lump sale is dumped into a single arbitrary holding.
+   */
+  readonly proceedsReinvest?: ProceedsReinvest;
 }
+
+/** Where a property's net sale proceeds go in the projection. */
+export type ProceedsReinvest = 'spread' | 'cash';
 
 export interface Home {
   readonly id: string;
@@ -350,6 +361,7 @@ export const homeFlows = (home: Home | undefined, startYear: number): readonly E
       inflate: false,
       taxable,
       taxableFraction: proceeds > 0 ? gain / proceeds : 0,
+      reinvest: home.sale.proceedsReinvest ?? 'spread',
     });
   }
 

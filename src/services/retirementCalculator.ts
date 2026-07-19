@@ -8,7 +8,11 @@ import {
   type PhasedSpendingConfig,
   type SpendingMode,
 } from '@/domain/spendingModel';
-import { expenseIncomeAmountsForYear, type ExpenseIncome } from '@/domain/expenseIncome';
+import {
+  expenseIncomeAmountsForYear,
+  saleReinvestModeForYear,
+  type ExpenseIncome,
+} from '@/domain/expenseIncome';
 import { applyForcedFlows, deferredBalance, type ConversionPlan } from '@/domain/taxAdvantaged';
 import {
   accountEffectiveRate,
@@ -298,6 +302,61 @@ export const withdrawNet = (
   return { gross: grossTotal, net: netD, tax: grossTotal - netD };
 };
 
+/**
+ * Reserved holding used for the `'cash'` proceeds-reinvest mode: property sale
+ * proceeds parked here sit as cash (no growth, no volatility) and fund later
+ * spending. Seeded at value 0 by {@link buildProjectionInput}/`buildMonteCarloInput`
+ * only when a sale opts into it, and recognised by symbol in {@link reinvestSurplus}.
+ */
+export const CASH_RESERVE_SYMBOL = 'CASH:RE';
+export const CASH_RESERVE_HOLDING_ID = 'cash:re';
+
+/**
+ * Route this year's reinvested surplus to its destination:
+ *  - `'spread'`  — across all drawable holdings, pro-rata by value (equal split
+ *                  when the portfolio is depleted, so the money still lands).
+ *  - `'cash'`    — into the reserved cash bucket at `cashIndex` (no growth).
+ *  - `null`      — legacy single-sink (untagged surplus: RMD, one-off income).
+ * Falls back to the single sink when the requested destination is unavailable.
+ * Mutates `state`. Shared by the deterministic and Monte Carlo engines.
+ */
+export const reinvestSurplus = (
+  state: WithdrawableAsset[],
+  surplus: number,
+  mode: 'spread' | 'cash' | null,
+  kindOf: (accountId: string | null) => AccountKind | undefined,
+  cashIndex: number,
+): void => {
+  if (surplus <= 0) return;
+  if (mode === 'cash' && cashIndex >= 0) {
+    const cash = state[cashIndex];
+    if (cash) {
+      cash.value += surplus;
+      cash.basis = (cash.basis ?? 0) + surplus;
+      return;
+    }
+  }
+  if (mode === 'spread') {
+    const drawables = state.filter((a) => a.drawable !== false);
+    if (drawables.length > 0) {
+      const total = drawables.reduce((s, a) => s + a.value, 0);
+      for (const a of drawables) {
+        const share = total > 0 ? surplus * (a.value / total) : surplus / drawables.length;
+        a.value += share;
+        a.basis = (a.basis ?? 0) + share;
+      }
+      return;
+    }
+  }
+  const sink =
+    state.find((a) => a.drawable !== false && kindOf(a.accountId) === 'taxable') ??
+    state.find((a) => a.drawable !== false && kindOf(a.accountId) !== 'tax_deferred');
+  if (sink) {
+    sink.value += surplus;
+    sink.basis = (sink.basis ?? 0) + surplus;
+  }
+};
+
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
@@ -427,6 +486,8 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
     basis: a.costBasis ?? a.startValue * basisPctOf(a.accountId ?? null),
   }));
 
+  const cashIndex = state.findIndex((a) => a.symbol === CASH_RESERVE_SYMBOL);
+
   const years: ProjectionYear[] = [];
   let depletionYear: number | null = null;
 
@@ -549,17 +610,16 @@ export const project = (input: ProjectionInput, scenarioKey: ScenarioKey): Proje
     const needFromPortfolio = Math.max(0, cashNeed - cashAvailable);
 
     // Surplus cash (RMD beyond spending, or one-off income beyond need) stays
-    // invested → reinvest in a taxable account.
+    // invested. Property sale proceeds carry a reinvest mode (spread across the
+    // portfolio, or a non-growing cash bucket); other surplus uses the sink.
     const surplus = Math.max(0, cashAvailable - cashNeed);
-    if (surplus > 0) {
-      const sink =
-        state.find((a) => a.drawable !== false && kindOf(a.accountId) === 'taxable') ??
-        state.find((a) => a.drawable !== false && kindOf(a.accountId) !== 'tax_deferred');
-      if (sink) {
-        sink.value += surplus;
-        sink.basis += surplus; // reinvested after-tax cash is fresh basis
-      }
-    }
+    reinvestSurplus(
+      state,
+      surplus,
+      saleReinvestModeForYear(input.expensesIncomes, year, inflationFactor),
+      kindOf,
+      cashIndex,
+    );
 
     const withdrawal = withdrawNet(
       state,

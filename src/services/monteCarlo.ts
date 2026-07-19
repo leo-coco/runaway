@@ -12,6 +12,7 @@ import {
 } from '@/domain/spendingModel';
 import {
   expenseIncomeAmountsForYear,
+  saleReinvestModeForYear,
   type ExpenseIncome,
   type YearExpenseIncome,
 } from '@/domain/expenseIncome';
@@ -36,7 +37,10 @@ import {
 import { valueHoldings } from './portfolioService';
 import { bracketFxFactor } from './currencyService';
 import {
+  CASH_RESERVE_HOLDING_ID,
+  CASH_RESERVE_SYMBOL,
   futureValueOfContributions,
+  reinvestSurplus,
   withdrawNet,
   type ProjectionAccountInput,
   type WithdrawableAsset,
@@ -750,6 +754,7 @@ const makeForcedFlows = (input: MonteCarloInput) => {
   const kindById = new Map((input.accounts ?? []).map((a) => [a.id, a.kind]));
   const kindOf = (accountId: string | null): AccountKind | undefined =>
     accountId ? kindById.get(accountId) : undefined;
+  const cashIndex = input.assets.findIndex((a) => a.symbol === CASH_RESERVE_SYMBOL);
 
   const rmdBaseOf = (state: readonly WithdrawableAsset[]): number =>
     active ? deferredBalance(state, kindOf) : 0;
@@ -766,16 +771,13 @@ const makeForcedFlows = (input: MonteCarloInput) => {
   ): { needFromPortfolio: number; forcedBase: number } => {
     if (!active) {
       const surplus = Math.max(0, ordinaryNet - (spendNet + flowExpense));
-      if (surplus > 0) {
-        const sink =
-          state.find((a) => a.drawable !== false && kindOf(a.accountId) === 'taxable') ??
-          state.find((a) => a.drawable !== false && kindOf(a.accountId) !== 'tax_deferred');
-        if (sink) {
-          sink.value += surplus;
-          // Reinvested after-tax cash is fresh basis (mirrors the deterministic engine).
-          sink.basis = (sink.basis ?? 0) + surplus;
-        }
-      }
+      reinvestSurplus(
+        state,
+        surplus,
+        saleReinvestModeForYear(input.expensesIncomes, year, inflationFactor),
+        kindOf,
+        cashIndex,
+      );
       return {
         needFromPortfolio: Math.max(0, spendNet + flowExpense - ordinaryNet),
         forcedBase: ordinaryBase,
@@ -806,16 +808,13 @@ const makeForcedFlows = (input: MonteCarloInput) => {
     const cashAvailable = ordinaryNet + rmdNet;
     const cashNeed = spendNet + convTax + flowExpense;
     const surplus = Math.max(0, cashAvailable - cashNeed);
-    if (surplus > 0) {
-      const sink =
-        state.find((a) => a.drawable !== false && kindOf(a.accountId) === 'taxable') ??
-        state.find((a) => a.drawable !== false && kindOf(a.accountId) !== 'tax_deferred');
-      if (sink) {
-        sink.value += surplus;
-        // Reinvested after-tax cash is fresh basis (mirrors the deterministic engine).
-        sink.basis = (sink.basis ?? 0) + surplus;
-      }
-    }
+    reinvestSurplus(
+      state,
+      surplus,
+      saleReinvestModeForYear(input.expensesIncomes, year, inflationFactor),
+      kindOf,
+      cashIndex,
+    );
     return {
       needFromPortfolio: Math.max(0, cashNeed - cashAvailable),
       forcedBase: ordinaryBase + r + c,
@@ -1729,6 +1728,12 @@ export const buildMonteCarloInput = (
   const adj = scenarioAdjustmentPts(plan.scenario, plan.scenario.active);
   const volaById = new Map(plan.holdings.map((h) => [h.id, h.volatilityPct]));
 
+  const expensesIncomes: ExpenseIncome[] = [
+    ...(plan.settings.expensesIncomes ?? []),
+    ...homeFlows(plan.home, startYear),
+    ...rentalPropertiesFlows(plan.properties, startYear, plan.settings.inflationPct),
+  ];
+
   const enriched = values.map((v) => ({
     asset: {
       startValue: v.value,
@@ -1745,6 +1750,28 @@ export const buildMonteCarloInput = (
     } satisfies MonteCarloAsset,
     assetClass: v.assetClass,
   }));
+
+  // A non-growing, zero-volatility cash bucket for `'cash'`-mode sale proceeds
+  // (mirrors buildProjectionInput). Appended before the correlation matrix so it
+  // gets its (uncorrelated) row/column automatically.
+  if (expensesIncomes.some((f) => f.reinvest === 'cash')) {
+    const cashClass: AssetClass = 'cash';
+    enriched.push({
+      asset: {
+        startValue: 0,
+        driftPct: 0,
+        sigmaPct: 0,
+        annualContribution: 0,
+        accountId: null,
+        costBasis: 0,
+        drawable: true,
+        holdingId: CASH_RESERVE_HOLDING_ID,
+        symbol: CASH_RESERVE_SYMBOL,
+        assetClass: cashClass,
+      },
+      assetClass: cashClass,
+    });
+  }
 
   const overrides = plan.correlationOverrides ?? {};
   const correlation = enriched.map((ei, i) =>
@@ -1779,11 +1806,7 @@ export const buildMonteCarloInput = (
     currentAge: plan.settings.currentAge,
     // Home + rental cashflows (purchase/mortgage/ownership/rent/sale) are merged
     // in as flows; the properties are never drawable holdings. Mirrors buildProjectionInput.
-    expensesIncomes: [
-      ...(plan.settings.expensesIncomes ?? []),
-      ...homeFlows(plan.home, startYear),
-      ...rentalPropertiesFlows(plan.properties, startYear, plan.settings.inflationPct),
-    ],
+    expensesIncomes,
     conversions: plan.settings.conversions,
     rmdEnabled: plan.settings.rmdEnabled,
     rawAccounts: plan.accounts,

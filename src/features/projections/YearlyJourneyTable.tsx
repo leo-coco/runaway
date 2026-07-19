@@ -30,7 +30,10 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
   const toggle = (key: RowKey) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Show years through the plan's horizon (the year you reach your life-expectancy
-  // age). If savings deplete earlier, stop a year past depletion.
+  // age). If savings deplete earlier and never recover, stop a year past depletion —
+  // but a later cash injection (e.g. a property sale) can revive the portfolio after
+  // an early shortfall, and truncating then would hide those years while the
+  // composition chart (which always plots the full projection) keeps showing them.
   const years = useMemo(() => {
     const startYear = projection.years[0]?.year ?? new Date().getFullYear();
     const horizonYear = lifeExpectancyYear(
@@ -38,7 +41,11 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
       startYear,
       plan.settings.lifeExpectancyAge,
     );
-    const cap = projection.depletionYear !== null ? projection.depletionYear + 1 : horizonYear;
+    const depletionYear = projection.depletionYear;
+    const recoversAfterDepletion =
+      depletionYear !== null &&
+      projection.years.some((y) => y.year > depletionYear && y.closingBalance > 0.5);
+    const cap = depletionYear !== null && !recoversAfterDepletion ? depletionYear + 1 : horizonYear;
     return projection.years.filter((y) => y.year <= cap);
   }, [projection, plan.settings.currentAge, plan.settings.lifeExpectancyAge]);
 

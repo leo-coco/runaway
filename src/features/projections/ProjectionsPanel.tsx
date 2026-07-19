@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { colorForSymbol } from '@/lib/assetColors';
+import { CASH_RESERVE_SYMBOL } from '@/services/retirementCalculator';
 import type { Plan } from '@/domain/plan';
 import type { ProjectionResult } from '@/hooks/useProjection';
 import {
@@ -103,14 +104,21 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   const [xAxisMode, setXAxisMode] = useState<'year' | 'age'>('year');
   const fmt = useCurrencyFormatter(plan.currency);
 
-  const symbols = useMemo(
-    () =>
-      plan.holdings.map((h, i) => ({
-        symbol: h.instrument.symbol,
-        color: colorForSymbol(h.instrument.symbol, i),
-      })),
-    [plan.holdings],
-  );
+  // Series follow what the projection actually holds — including the synthetic
+  // cash reserve that `'cash'`-mode property sale proceeds land in — not just the
+  // plan's current holdings, so a reinvested lump renders instead of vanishing.
+  const symbols = useMemo(() => {
+    const perAsset = projection.active.years[0]?.perAsset ?? [];
+    const list =
+      perAsset.length > 0
+        ? perAsset.map((a) => a.symbol)
+        : plan.holdings.map((h) => h.instrument.symbol);
+    return list.map((symbol, i) => ({
+      symbol,
+      label: symbol === CASH_RESERVE_SYMBOL ? t('projChart.cashReserve') : symbol,
+      color: colorForSymbol(symbol, i),
+    }));
+  }, [projection, plan.holdings, t]);
 
   const compositionData = useMemo(() => buildCompositionData(projection.active), [projection]);
   const growthData = useMemo(() => buildGrowthData(projection.active), [projection]);
@@ -308,6 +316,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 key={s.symbol}
                 type="monotone"
                 dataKey={s.symbol}
+                name={s.label}
                 stackId="1"
                 stroke={s.color}
                 fill={s.color}
@@ -644,7 +653,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
           {symbols.map((s) => (
             <span key={s.symbol}>
               <i style={{ background: s.color }} />
-              {s.symbol}
+              {s.label}
             </span>
           ))}
         </div>

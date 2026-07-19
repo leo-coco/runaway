@@ -1,15 +1,13 @@
-import { useMemo } from 'react';
+import { forwardRef, useImperativeHandle, useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { Toggle } from '@/components/ui/Toggle';
 import { BankIcon, HomeIcon, KeyIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
-import { isOpenEndedYear, mortgageAnnualPayment } from '@/domain/home';
+import { mortgageAnnualPayment } from '@/domain/home';
 import {
   rentalPropertyEquitySeries,
   rentalPropertyFlows,
@@ -18,20 +16,21 @@ import {
 } from '@/domain/rentalProperty';
 import {
   createRentalPropertyFormSchema,
-  type RentalPropertyForm,
+  type RentalPropertyForm as RentalPropertyFormValues,
 } from '@/schemas/rentalPropertySchema';
+import { useAppStore } from '@/store';
 import { cn } from '@/lib/cn';
 import type { Plan } from '@/domain/plan';
+import { PropertyFlowPreview, type PreviewFlow } from './PropertyFlowPreview';
+import type { PropertyFormHandle } from './PropertyDialog';
 
 interface Props {
   plan: Plan;
-  /** The property being edited, or undefined to add a new one. */
   initial?: RentalProperty;
-  onSave: (data: Omit<RentalProperty, 'id'>) => void;
-  onClose: () => void;
+  onSaved: () => void;
 }
 
-const blankForm = (startYear: number): RentalPropertyForm => ({
+const blankForm = (startYear: number): RentalPropertyFormValues => ({
   name: '',
   currentValue: 300_000,
   appreciationPct: 3,
@@ -55,10 +54,11 @@ const blankForm = (startYear: number): RentalPropertyForm => ({
   saleYear: startYear + 20,
   saleFeePct: 5,
   saleCapitalGainsTaxable: true,
+  saleProceedsReinvest: 'spread',
   costBasis: 300_000,
 });
 
-const propertyToForm = (p: RentalProperty, startYear: number): RentalPropertyForm => {
+const propertyToForm = (p: RentalProperty, startYear: number): RentalPropertyFormValues => {
   const blank = blankForm(startYear);
   return {
     ...blank,
@@ -85,11 +85,12 @@ const propertyToForm = (p: RentalProperty, startYear: number): RentalPropertyFor
     saleYear: p.sale?.year ?? blank.saleYear,
     saleFeePct: p.sale?.feePct ?? blank.saleFeePct,
     saleCapitalGainsTaxable: p.sale?.capitalGainsTaxable ?? true,
+    saleProceedsReinvest: p.sale?.proceedsReinvest ?? 'spread',
     costBasis: p.sale?.costBasis ?? p.currentValue,
   };
 };
 
-const formToProperty = (form: RentalPropertyForm): Omit<RentalProperty, 'id'> => ({
+const formToProperty = (form: RentalPropertyFormValues): Omit<RentalProperty, 'id'> => ({
   name: form.name.trim(),
   currentValue: form.currentValue,
   appreciationPct: form.appreciationPct,
@@ -120,81 +121,74 @@ const formToProperty = (form: RentalPropertyForm): Omit<RentalProperty, 'id'> =>
         year: form.saleYear,
         feePct: form.saleFeePct,
         capitalGainsTaxable: form.saleCapitalGainsTaxable,
+        proceedsReinvest: form.saleProceedsReinvest,
         costBasis: form.costBasis,
       }
     : undefined,
 });
 
 /**
- * Describe a single rental property — value, appreciation, rent, vacancy, rent
- * indexation, operating costs (management, tax, maintenance, insurance), an
- * optional mortgage, a future purchase and a planned sale — and how its rent is
- * taxed. A live preview shows the cashflows and equity that will be generated
- * before saving. The property never enters the drawdown pool.
+ * The rental-property body of the unified property dialog: value, appreciation,
+ * rent, vacancy, operating costs, tax treatment, an optional mortgage, a future
+ * purchase and a planned sale, with a live equity + flows preview. Exposes
+ * {@link PropertyFormHandle.submit} for the dialog's shared footer. Mirrors the
+ * primary-residence body ({@link HomePropertyForm}); the domain treatment differs.
  */
-export const RentalPropertyDialog = ({ plan, initial, onSave, onClose }: Props) => {
-  const { t } = useTranslation();
-  const fmt = useCurrencyFormatter(plan.currency);
+export const RentalPropertyForm = forwardRef<PropertyFormHandle, Props>(
+  ({ plan, initial, onSaved }, ref) => {
+    const { t } = useTranslation();
+    const fmt = useCurrencyFormatter(plan.currency);
+    const addProperty = useAppStore((s) => s.addProperty);
+    const updateProperty = useAppStore((s) => s.updateProperty);
 
-  const startYear = new Date().getFullYear();
-  const inflationPct = plan.settings.inflationPct;
-  const maxYear = lifeExpectancyYear(
-    plan.settings.currentAge,
-    startYear,
-    plan.settings.lifeExpectancyAge,
-  );
-  const horizonYears = Math.max(1, maxYear - startYear);
+    const startYear = new Date().getFullYear();
+    const inflationPct = plan.settings.inflationPct;
+    const maxYear = lifeExpectancyYear(
+      plan.settings.currentAge,
+      startYear,
+      plan.settings.lifeExpectancyAge,
+    );
+    const horizonYears = Math.max(1, maxYear - startYear);
 
-  const schema = useMemo(() => createRentalPropertyFormSchema(t, startYear), [t, startYear]);
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RentalPropertyForm>({
-    resolver: zodResolver(schema),
-    defaultValues: initial ? propertyToForm(initial, startYear) : blankForm(startYear),
-  });
+    const schema = useMemo(() => createRentalPropertyFormSchema(t, startYear), [t, startYear]);
+    const {
+      control,
+      handleSubmit,
+      formState: { errors },
+    } = useForm<RentalPropertyFormValues>({
+      resolver: zodResolver(schema),
+      defaultValues: initial ? propertyToForm(initial, startYear) : blankForm(startYear),
+    });
 
-  const form = useWatch({ control }) as RentalPropertyForm;
-  const preview: RentalProperty = {
-    ...formToProperty({ ...form, name: form.name || t('rental.defaultName') }),
-    id: 'preview',
-  };
-  const flows = rentalPropertyFlows(preview, startYear, inflationPct);
-  const equity = rentalPropertyEquitySeries(preview, startYear, horizonYears);
-  const equityNow = equity[0];
-  const equityAtRetire =
-    equity.find((e) => e.year === plan.settings.retirementYear) ?? equity[equity.length - 1];
-  const mortgagePayment = form.hasMortgage
-    ? mortgageAnnualPayment(form.mortgageBalance, form.mortgageRatePct, form.mortgageTermYears)
-    : 0;
+    const onSubmit = (data: RentalPropertyFormValues) => {
+      const payload = formToProperty(data);
+      if (initial) updateProperty(plan.id, initial.id, payload);
+      else addProperty(plan.id, payload);
+      onSaved();
+    };
 
-  const onSubmit = (data: RentalPropertyForm) => {
-    onSave(formToProperty(data));
-    onClose();
-  };
+    useImperativeHandle(ref, () => ({ submit: () => handleSubmit(onSubmit)() }));
 
-  const flowLabel = (id: string): string => {
-    const key = rentalFlowLabelKey(id);
-    return key ? t(key) : id;
-  };
+    const form = useWatch({ control }) as RentalPropertyFormValues;
+    const preview: RentalProperty = {
+      ...formToProperty({ ...form, name: form.name || t('rental.defaultName') }),
+      id: 'preview',
+    };
+    const flows = rentalPropertyFlows(preview, startYear, inflationPct) as readonly PreviewFlow[];
+    const equity = rentalPropertyEquitySeries(preview, startYear, horizonYears);
+    const equityNow = equity[0];
+    const equityAtRetire =
+      equity.find((e) => e.year === plan.settings.retirementYear) ?? equity[equity.length - 1];
+    const mortgagePayment = form.hasMortgage
+      ? mortgageAnnualPayment(form.mortgageBalance, form.mortgageRatePct, form.mortgageTermYears)
+      : 0;
 
-  return (
-    <Modal
-      title={initial ? t('rental.editTitle') : t('rental.addTitle')}
-      description={t('rental.desc')}
-      onClose={onClose}
-      wide
-      className="home-modal"
-      footer={
-        <>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" onClick={handleSubmit(onSubmit)}>
-            {t('common.saveChanges')}
-          </Button>
-        </>
-      }
-    >
+    const flowLabel = (id: string): string => {
+      const key = rentalFlowLabelKey(id);
+      return key ? t(key) : id;
+    };
+
+    return (
       <div className="home-form">
         <div className="field home-name-field">
           <span className="ov__sub">{t('rental.name')}</span>
@@ -656,79 +650,63 @@ export const RentalPropertyDialog = ({ plan, initial, onSave, onClose }: Props) 
                     <p className="field__hint">{t('rental.costBasisHint')}</p>
                   </label>
                 )}
+                <div className="phase-field">
+                  <span className="ov__sub">{t('rental.saleReinvest')}</span>
+                  <Controller
+                    control={control}
+                    name="saleProceedsReinvest"
+                    render={({ field }) => (
+                      <div
+                        className="seg-tabs"
+                        role="radiogroup"
+                        aria-label={t('rental.saleReinvest')}
+                      >
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={field.value === 'spread'}
+                          className={cn('seg-tab', field.value === 'spread' && 'is-active')}
+                          onClick={() => field.onChange('spread')}
+                        >
+                          {t('rental.saleReinvestSpread')}
+                        </button>
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={field.value === 'cash'}
+                          className={cn('seg-tab', field.value === 'cash' && 'is-active')}
+                          onClick={() => field.onChange('cash')}
+                        >
+                          {t('rental.saleReinvestCash')}
+                        </button>
+                      </div>
+                    )}
+                  />
+                  <p className="field__hint">
+                    {form.saleProceedsReinvest === 'cash'
+                      ? t('rental.saleReinvestCashHint')
+                      : t('rental.saleReinvestSpreadHint')}
+                  </p>
+                </div>
                 {errors.saleYear && <p className="field-error">{errors.saleYear.message}</p>}
               </div>
             )}
           </section>
         </div>
 
-        {/* Live preview: equity + generated flows */}
-        <section className="home-preview">
-          <div className="home-equity-grid">
-            <div className="home-equity-card">
-              <HomeIcon size={16} aria-hidden="true" />
-              <div className="home-equity-card__copy">
-                <span>{t('rental.equityNow')}</span>
-                <strong>{fmt.compact(equityNow?.equity ?? 0)}</strong>
-                <small>
-                  {t('rental.equityBreakdown', {
-                    value: fmt.compact(equityNow?.value ?? 0),
-                    mortgage: fmt.compact(equityNow?.mortgageBalance ?? 0),
-                  })}
-                </small>
-              </div>
-            </div>
-            <div className="home-equity-card">
-              <HomeIcon size={16} aria-hidden="true" />
-              <div className="home-equity-card__copy">
-                <span>{t('rental.equityAt')}</span>
-                <strong>{fmt.compact(equityAtRetire?.equity ?? 0)}</strong>
-                <small>
-                  {t('rental.equityBreakdown', {
-                    value: fmt.compact(equityAtRetire?.value ?? 0),
-                    mortgage: fmt.compact(equityAtRetire?.mortgageBalance ?? 0),
-                  })}
-                </small>
-              </div>
-            </div>
-          </div>
-
-          <h4 className="home-preview__title">{t('rental.previewTitle')}</h4>
-          {flows.length === 0 ? (
-            <p className="field__hint home-preview__empty">{t('rental.noFlows')}</p>
-          ) : (
-            <div className="home-flow-table" role="table">
-              {flows.map((f) => {
-                const isIncome = f.kind === 'income';
-                const recurring = f.frequency === 'recurring';
-                const openEnded = recurring && isOpenEndedYear(f.endYear ?? f.year, startYear);
-                const yearLabel = recurring && !openEnded ? `${f.year}–${f.endYear}` : `${f.year}`;
-                const isMortgage = f.id.endsWith(':mortgage');
-                const amountLabel = isMortgage
-                  ? `${fmt.compact(mortgagePayment)}${t('common.perYear')}`
-                  : `${isIncome ? '+' : '-'}${fmt.compact(f.amount)}${recurring ? t('common.perYear') : ''}`;
-                const FlowIcon = isMortgage
-                  ? BankIcon
-                  : f.id.endsWith(':sale')
-                    ? KeyIcon
-                    : HomeIcon;
-                return (
-                  <div className="home-flow-row" role="row" key={f.id}>
-                    <span className="home-flow-row__icon" aria-hidden="true">
-                      <FlowIcon size={14} />
-                    </span>
-                    <span className="home-flow-row__name">{flowLabel(f.id)}</span>
-                    <strong className={cn(isIncome ? 'is-income' : 'is-expense')}>
-                      {amountLabel}
-                    </strong>
-                    <span className="home-flow-row__period">{yearLabel}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        <PropertyFlowPreview
+          plan={plan}
+          startYear={startYear}
+          flows={flows}
+          flowLabel={flowLabel}
+          mortgagePayment={mortgagePayment}
+          equityNow={equityNow}
+          equityAtRetire={equityAtRetire}
+          tPrefix="rental"
+        />
       </div>
-    </Modal>
-  );
-};
+    );
+  },
+);
+
+RentalPropertyForm.displayName = 'RentalPropertyForm';

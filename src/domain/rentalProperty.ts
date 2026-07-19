@@ -5,9 +5,10 @@ import {
   type HomePurchase,
   type HomeSale,
   type Mortgage,
+  type ProceedsReinvest,
 } from './home';
 
-export type { HomePurchase, HomeSale, Mortgage };
+export type { HomePurchase, HomeSale, Mortgage, ProceedsReinvest };
 
 /**
  * A rental (investment) property attached to a plan. Unlike the primary
@@ -205,6 +206,40 @@ export const rentalPropertyEquitySeries = (
   return out;
 };
 
+/**
+ * Net monthly cash the property throws off in its first owned year, for the
+ * summary tiles: collected rent (net of vacancy, indexed) less operating costs
+ * and the full mortgage payment (principal + interest), divided by 12. Not
+ * floored — a property that runs at a loss shows a negative figure. Display-only.
+ */
+export const rentalMonthlyNetCashflow = (
+  p: RentalProperty,
+  startYear: number,
+  inflationPct: number,
+): number => {
+  const ownStart = ownershipStartYear(p, startYear);
+  const year = Math.max(startYear, ownStart);
+  const rent = collectedRentAt(p, startYear, year);
+  const operating = operatingCostAt(p, startYear, year, inflationPct);
+  const mortgage = financedMortgage(p, startYear);
+  const payment =
+    mortgage && mortgageBalanceAt(mortgage, ownStart, year) > 0
+      ? mortgageAnnualPayment(mortgage.balance, mortgage.ratePct, mortgage.termYearsRemaining)
+      : 0;
+  return (rent - operating - payment) / 12;
+};
+
+/** Combined net monthly cashflow across every rental (nominal, first owned year). */
+export const rentalPropertiesMonthlyNetCashflow = (
+  properties: readonly RentalProperty[] | undefined,
+  startYear: number,
+  inflationPct: number,
+): number =>
+  (properties ?? []).reduce(
+    (sum, p) => sum + rentalMonthlyNetCashflow(p, startYear, inflationPct),
+    0,
+  );
+
 /** Combined equity across every rental for each year (nominal). */
 export const rentalPropertiesEquitySeries = (
   properties: readonly RentalProperty[] | undefined,
@@ -353,6 +388,7 @@ export const rentalPropertyFlows = (
       inflate: false,
       taxable,
       taxableFraction: proceeds > 0 ? gain / proceeds : 0,
+      reinvest: p.sale.proceedsReinvest ?? 'spread',
     });
   }
 

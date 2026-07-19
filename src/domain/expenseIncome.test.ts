@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EXPENSE_CATEGORIES,
   expenseIncomeAmountsForYear,
+  saleReinvestModeForYear,
   type ExpenseCategory,
   type ExpenseIncome,
 } from './expenseIncome';
@@ -238,5 +239,42 @@ describe('expenseIncomeAmountsForYear', () => {
       const item: ExpenseIncome = { ...rental, taxableAmounts: { 2030: -5_000 } };
       expect(expenseIncomeAmountsForYear([item], 2030, 1).taxableIncome).toBe(0);
     });
+  });
+});
+
+describe('saleReinvestModeForYear', () => {
+  const sale = (id: string, amount: number, reinvest: 'spread' | 'cash'): ExpenseIncome => ({
+    id,
+    name: id,
+    amount,
+    year: 2030,
+    kind: 'income',
+    inflate: false,
+    reinvest,
+  });
+
+  it('returns null when no tagged sale lands that year', () => {
+    expect(saleReinvestModeForYear([sale('s', 100_000, 'cash')], 2031, 1)).toBeNull();
+    expect(saleReinvestModeForYear(undefined, 2030, 1)).toBeNull();
+  });
+
+  it('returns the tagged mode for the year the sale lands', () => {
+    expect(saleReinvestModeForYear([sale('s', 100_000, 'cash')], 2030, 1)).toBe('cash');
+  });
+
+  it('ignores income without a reinvest tag', () => {
+    const pension: ExpenseIncome = {
+      id: 'p',
+      name: 'P',
+      amount: 500_000,
+      year: 2030,
+      kind: 'income',
+    };
+    expect(saleReinvestModeForYear([pension], 2030, 1)).toBeNull();
+  });
+
+  it('picks the larger sale when two land the same year with different modes', () => {
+    const flows = [sale('a', 100_000, 'spread'), sale('b', 300_000, 'cash')];
+    expect(saleReinvestModeForYear(flows, 2030, 1)).toBe('cash');
   });
 });
