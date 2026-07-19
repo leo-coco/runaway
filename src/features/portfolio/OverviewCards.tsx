@@ -11,7 +11,6 @@ import type { Plan } from '@/domain/plan';
 import { useAppStore } from '@/store';
 import { useFeature } from '@/hooks/useEntitlements';
 import { ProBadge } from '@/features/billing/ProBadge';
-import { HomeIcon } from '@/components/icons';
 import { totalMonthlyContribution, valueHoldings } from '@/services/portfolioService';
 import type { RatesTable } from '@/services/currencyService';
 
@@ -209,9 +208,6 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
             </div>
           ) : (
             <div className="ov__empty">
-              <span className="ov__empty-icon" aria-hidden="true">
-                <HomeIcon size={20} />
-              </span>
               <div className="ov__content">
                 <span className="ov__empty-title">{t('overview.realEstateEmpty')}</span>
               </div>
