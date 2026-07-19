@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { plans } from '../db/schema.js';
 import { encrypt, encryptJson, isEnvelope } from '../crypto/dataCrypto.js';
-import type { Plan } from '../../src/domain/plan';
+import type { Plan } from '../../src/domain/plan.js';
 
 /**
  * One-off backfill: encrypt any plan rows still stored in plaintext.

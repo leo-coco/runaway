@@ -9,6 +9,7 @@ export const SignInPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: sessionData, isPending } = useSession();
+  const [sessionCheckTimedOut, setSessionCheckTimedOut] = useState(false);
   const initialMode: AuthMode =
     window.location.pathname.endsWith('/signup') ||
     new URLSearchParams(window.location.search).get('mode') === 'signup'
@@ -34,7 +35,17 @@ export const SignInPage = () => {
     document.title = `${t('auth.signIn')} · Runaway`;
   }, [t]);
 
-  if (isPending) return <main className="auth-screen auth-screen--loading" />;
+  useEffect(() => {
+    if (!isPending) return;
+    // A slow or cold-starting session check shouldn't block the form
+    // indefinitely; fall back to showing it and let sign-in itself fail
+    // loudly if something is actually wrong.
+    const timer = window.setTimeout(() => setSessionCheckTimedOut(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [isPending]);
+
+  if (isPending && !sessionCheckTimedOut)
+    return <main className="auth-screen auth-screen--loading" />;
   if (sessionData?.user) return <Navigate to="/" replace />;
 
   return (

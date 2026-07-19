@@ -14,7 +14,7 @@ import {
   isEnvelope,
   type EncryptedEnvelope,
 } from '../crypto/dataCrypto.js';
-import type { Plan } from '../../src/domain/plan';
+import type { Plan } from '../../src/domain/plan.js';
 
 type Vars = { userId: string; user: AuthUser };
 
