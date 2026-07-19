@@ -1607,6 +1607,8 @@ export const en = {
     checkoutSuccessCta: 'Explore Premium',
     subscriptionTitle: 'Subscription',
     currentPlan: 'Current plan',
+    active: 'Active',
+    premiumActiveDescription: 'Your access to all Premium features is active.',
     manageBilling: 'Manage billing',
     notNow: 'Not now',
     comingSoon: 'Self-serve checkout is coming soon. Premium is enabled manually for now.',

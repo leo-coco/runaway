@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { StarIcon } from '@/components/icons';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';
 import { startCheckout, openBillingPortal, BillingUnavailableError } from './billingApi';
@@ -34,19 +33,24 @@ export const BillingCard = () => {
   const price = effectivePrice(pricing);
 
   return (
-    <Card padded className="account-card">
-      <div className="account-card__head">
+    <Card
+      padded
+      className={`account-card billing-card${isPremium ? ' billing-card--premium' : ''}`}
+    >
+      <div className="billing-card__head">
         <div>
-          <h2>{t('billing.subscriptionTitle')}</h2>
-          <p>
-            {t('billing.currentPlan')}:{' '}
-            <strong>{isPremium ? t('billing.premium') : t('billing.free')}</strong>
+          <p className="billing-card__eyebrow">{t('billing.subscriptionTitle')}</p>
+          <h2>{isPremium ? t('billing.premium') : t('billing.free')}</h2>
+          <p className="billing-card__description">
+            {isPremium
+              ? t('billing.premiumActiveDescription')
+              : `${t('billing.currentPlan')}: ${t('billing.free')}`}
           </p>
         </div>
-        {isPremium && <StarIcon size={22} aria-hidden="true" />}
+        {isPremium && <span className="billing-card__status">{t('billing.active')}</span>}
       </div>
 
-      <div className="account-card__actions">
+      <div className="account-card__actions billing-card__actions">
         {isPremium ? (
           <Button
             variant="default"
