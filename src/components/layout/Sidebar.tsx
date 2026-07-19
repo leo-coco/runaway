@@ -340,6 +340,7 @@ export const Sidebar = ({
 
         {activePlan && (
           <>
+            <div className="sb-divider" />
             <nav className="sb-nav">
               <NavLink
                 to={`/plan/${activePlan.id}/dashboard`}
