@@ -1646,10 +1646,20 @@ h4 {
   gap: 4px;
   min-width: 0;
 }
+.ov--realestate-empty {
+  position: relative;
+}
+.ov--realestate-empty .ov__head {
+  position: relative;
+  z-index: 1;
+}
 .ov--realestate-empty .ov__body {
+  position: absolute;
+  inset: 0;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  margin: 0;
+  pointer-events: none;
 }
 .ov__empty {
   display: flex;
