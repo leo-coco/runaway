@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/astro';
 import { AlertIcon } from '@/components/icons';
 
 interface Props {
@@ -25,8 +26,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Centralised place to forward to a logging service.
     console.error(`[${this.props.feature}]`, error, info.componentStack);
+    Sentry.captureException(error, { tags: { feature: this.props.feature } });
   }
 
   render(): ReactNode {

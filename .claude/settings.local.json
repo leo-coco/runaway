@@ -86,7 +86,9 @@
       "Bash(rg -n \"Immobilier|immobilier|RentalProperties|realEstate|RealEstate|HomeModal|homeModal|primaryResidence|residence\" src/features/settings src/store --glob '*.{ts,tsx}')",
       "Bash(rg -n \"openModal|'home'|'rentalProperties'|\\\\\"home\\\\\"|\\\\\"rentalProperties\\\\\"\" src --glob '*.{ts,tsx}')",
       "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/.claude/worktrees/sandbox-premium-override-docs-09b2d3\" && echo \"=== en.ts overview/home/rental ===\" && sed -n '/^  overview: {/,/^  },/p;/^  home: {/,/^  },/p;/^  rental: {/,/^  },/p' src/i18n/en.ts | head -160)",
-      "Bash(rg -rn \"HomeModal|RentalPropertiesModal|RentalPropertyDialog\" src --glob '*.{ts,tsx}')"
+      "Bash(rg -rn \"HomeModal|RentalPropertiesModal|RentalPropertyDialog\" src --glob '*.{ts,tsx}')",
+      "WebFetch(domain:docs.sentry.io)",
+      "Bash(ASTRO_TELEMETRY_DISABLED=1 npm run build)"
     ]
   }
 }

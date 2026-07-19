@@ -1,4 +1,5 @@
 ---
+import Analytics from '@vercel/analytics/astro';
 import '../index.css';
 import { AppRoot } from '../AppRoot';
 
@@ -20,6 +21,7 @@ const APP_TITLE: Record<'en' | 'fr', string> = {
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>{APP_TITLE[lang]}</title>
+    <Analytics />
   </head>
   <body>
     <AppRoot client:only="react" />

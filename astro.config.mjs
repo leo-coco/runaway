@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
+import sentry from '@sentry/astro';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
@@ -13,6 +14,7 @@ export default defineConfig({
   trailingSlash: 'never',
   integrations: [
     react(),
+    sentry({ telemetry: false }),
     sitemap({
       filter: (page) => !page.includes('/app'),
       lastmod: new Date(),
