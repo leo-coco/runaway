@@ -1,7 +1,7 @@
 import { pgTable, text, boolean, timestamp, jsonb, integer, index } from 'drizzle-orm/pg-core';
-import type { Plan } from '../../src/domain/plan';
-import type { EncryptedEnvelope } from '../crypto/dataCrypto';
-import type { TierConfig } from '../../src/domain/entitlements';
+import type { Plan } from '../../src/domain/plan.js';
+import type { EncryptedEnvelope } from '../crypto/dataCrypto.js';
+import type { TierConfig } from '../../src/domain/entitlements.js';
 
 /**
  * Better Auth core tables. Column shapes match what Better Auth 1.6 expects (see
