@@ -360,7 +360,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
               </p>
             )}
           </div>
-          <div className="adj-grid" style={{ gridTemplateColumns: '1.4fr 1fr' }}>
+          <div className="addasset-fields">
             <div className="field">
               <span className="field__label">{t('addAsset.price')}</span>
               <div className="price-cell">
@@ -397,18 +397,17 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 onChange={setQuantity}
               />
             </div>
-          </div>
-          <div className="field">
-            <span className="field__label">{t('addAsset.expectedCagr')}</span>
-            <Stepper
-              ariaLabel={t('addAsset.ariaCagr')}
-              step={1}
-              suffix="%"
-              hideButtons
-              compact
-              value={cagr}
-              onChange={setCagr}
-            />
+            <div className="field">
+              <span className="field__label">{t('addAsset.expectedCagr')}</span>
+              <Stepper
+                ariaLabel={t('addAsset.ariaCagr')}
+                step={1}
+                suffix="%"
+                hideButtons
+                value={cagr}
+                onChange={setCagr}
+              />
+            </div>
           </div>
         </>
       ) : (
@@ -497,7 +496,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 )}
               </div>
 
-              <div className="adj-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div className="addasset-fields addasset-fields--2">
                 <div className="field">
                   <span className="field__label">{t('addAsset.quantityHeld')}</span>
                   <Stepper

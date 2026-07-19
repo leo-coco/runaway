@@ -3344,6 +3344,7 @@ th[title] {
 /* Redesigned accounts & tax modal: compact table + inline editor. */
 .modal.accounts-modal {
   max-width: 920px;
+  min-height: min(680px, calc(100vh - 40px));
 }
 .accounts-modal .modal__head {
   padding: 30px 32px 6px;
@@ -5935,6 +5936,14 @@ th[title] {
   gap: 16px;
   align-items: end;
 }
+.addasset-fields {
+  display: grid;
+  grid-template-columns: 1.3fr 0.85fr 0.85fr;
+  gap: 16px;
+}
+.addasset-fields--2 {
+  grid-template-columns: 1fr 1fr;
+}
 .adj {
   display: flex;
   flex-direction: column;
@@ -6378,7 +6387,8 @@ th[title] {
     grid-template-columns: repeat(2, 1fr);
   }
   .scenario-grid,
-  .adj-grid {
+  .adj-grid,
+  .addasset-fields {
     grid-template-columns: 1fr;
   }
   .page-head {
