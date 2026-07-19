@@ -113,26 +113,28 @@ export const PlanLayout = () => {
       <div className="plan-topbar">
         <div className="plan-title">
           <div className="plan-title__copy">
-            <h1>{plan.name}</h1>
+            <div className="plan-title__heading">
+              <h1>{plan.name}</h1>
+              <span className="currency-control" data-tour="currency-selector">
+                <label htmlFor="master-currency">{t('plan.currency')}</label>
+                <select
+                  id="master-currency"
+                  className="select"
+                  value={plan.currency}
+                  onChange={(e) => changeCurrency(e.target.value as CurrencyCode)}
+                >
+                  {MASTER_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </div>
             {plan.description.trim() && (
               <p className="plan-title__description">{plan.description}</p>
             )}
           </div>
-          <span className="currency-control" data-tour="currency-selector">
-            <label htmlFor="master-currency">{t('plan.currency')}</label>
-            <select
-              id="master-currency"
-              className="select"
-              value={plan.currency}
-              onChange={(e) => changeCurrency(e.target.value as CurrencyCode)}
-            >
-              {MASTER_CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </span>
         </div>
       </div>
 
