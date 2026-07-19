@@ -1871,7 +1871,7 @@ h4 {
 /* ---------- Monte Carlo summary card (dashboard hero, left) ---------- */
 .mc-card {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
   flex-wrap: wrap;
@@ -1888,8 +1888,6 @@ h4 {
   gap: 10px;
   min-width: 0;
   flex: 1 1 260px;
-  /* Offset the vertically centred copy slightly toward the card's top edge. */
-  transform: translateY(-8px);
 }
 .mc-card__badge {
   display: inline-flex;
@@ -1966,7 +1964,6 @@ h4 {
   }
   .mc-card__text {
     align-items: center;
-    transform: none;
   }
   .mc-card__donut-wrap {
     align-self: center;
