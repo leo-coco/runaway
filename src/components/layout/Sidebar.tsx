@@ -9,10 +9,15 @@ import { useFeature, useLimit } from '@/hooks/useEntitlements';
 import { atLimit } from '@/domain/entitlements';
 import { ProBadge } from '@/features/billing/ProBadge';
 import {
+  BriefcaseIcon,
+  ChartScatterIcon,
+  ChartSplineIcon,
   CompassIcon,
   CopyIcon,
   GearIcon,
-  MenuIcon,
+  LayoutDashboardIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
@@ -291,7 +296,11 @@ export const Sidebar = ({
                   : 'sidebar.collapseMenu',
             )}
           >
-            <MenuIcon size={18} />
+            {effectiveCollapsed ? (
+              <PanelLeftOpenIcon size={18} />
+            ) : (
+              <PanelLeftCloseIcon size={18} />
+            )}
           </button>
           <Link to="/" className="sb-brand" aria-label="Runaway — home">
             <img
@@ -352,18 +361,7 @@ export const Sidebar = ({
                 onBlur={hideTip}
               >
                 <span aria-hidden="true" className="sb-nav__icon">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <line x1="4" y1="7" x2="20" y2="7" />
-                    <line x1="4" y1="12" x2="20" y2="12" />
-                    <line x1="4" y1="17" x2="14" y2="17" />
-                  </svg>
+                  <LayoutDashboardIcon size={16} />
                 </span>
                 <span className="sb-nav__label">{t('sidebar.dashboard')}</span>
               </NavLink>
@@ -377,18 +375,7 @@ export const Sidebar = ({
                 onBlur={hideTip}
               >
                 <span aria-hidden="true" className="sb-nav__icon">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="7" width="18" height="13" rx="2" />
-                    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                  </svg>
+                  <BriefcaseIcon size={16} />
                 </span>
                 <span className="sb-nav__label">{t('sidebar.portfolio')}</span>
               </NavLink>
@@ -402,17 +389,7 @@ export const Sidebar = ({
                 onBlur={hideTip}
               >
                 <span aria-hidden="true" className="sb-nav__icon">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="8" />
-                    <path d="M12 8v4l3 2" />
-                  </svg>
+                  <ChartSplineIcon size={16} />
                 </span>
                 <span className="sb-nav__label">{t('sidebar.projection')}</span>
               </NavLink>
@@ -427,18 +404,7 @@ export const Sidebar = ({
                   onBlur={hideTip}
                 >
                   <span aria-hidden="true" className="sb-nav__icon">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="4" y="4" width="16" height="16" rx="2" />
-                      <line x1="12" y1="4" x2="12" y2="20" />
-                      <line x1="4" y1="12" x2="20" y2="12" />
-                    </svg>
+                    <ChartScatterIcon size={16} />
                   </span>
                   <span className="sb-nav__label">{t('sidebar.monteCarlo')}</span>
                 </NavLink>
@@ -454,18 +420,7 @@ export const Sidebar = ({
                   onBlur={hideTip}
                 >
                   <span aria-hidden="true" className="sb-nav__icon">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="4" y="4" width="16" height="16" rx="2" />
-                      <line x1="12" y1="4" x2="12" y2="20" />
-                      <line x1="4" y1="12" x2="20" y2="12" />
-                    </svg>
+                    <ChartScatterIcon size={16} />
                   </span>
                   <span className="sb-nav__label">{t('sidebar.monteCarlo')}</span>
                   <ProBadge />

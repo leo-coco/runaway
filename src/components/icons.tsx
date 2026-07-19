@@ -63,6 +63,46 @@ export const MenuIcon = ({ size = 16, ...p }: IconProps) => (
     <line x1="4" y1="17" x2="20" y2="17" />
   </svg>
 );
+export const PanelLeftOpenIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="9" y1="3" x2="9" y2="21" />
+    <polyline points="13 9 16 12 13 15" />
+  </svg>
+);
+export const PanelLeftCloseIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="9" y1="3" x2="9" y2="21" />
+    <polyline points="16 9 13 12 16 15" />
+  </svg>
+);
+export const LayoutDashboardIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+export const ChartSplineIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M3 20h18" />
+    <path d="M4 16c3-6 5 1 8-4s4-8 8-7" />
+    <circle cx="4" cy="16" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="20" cy="5" r="1" />
+  </svg>
+);
+export const ChartScatterIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4 4v16h16" />
+    <circle cx="8" cy="15" r="1.5" />
+    <circle cx="11" cy="10" r="1.5" />
+    <circle cx="16" cy="14" r="1.5" />
+    <circle cx="19" cy="7" r="1.5" />
+  </svg>
+);
 export const CompassIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <circle cx="12" cy="12" r="9" />
