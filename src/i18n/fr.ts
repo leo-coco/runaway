@@ -1007,6 +1007,13 @@ export const fr: Resources = {
     ariaLatestPrice: 'Dernier prix',
     priceUnavailable: 'Prix indisponible — vous pourrez le récupérer plus tard depuis la table.',
     quantityHeld: 'Quantité détenue',
+    composition: 'Composition',
+    compFetching: 'Récupération de la composition…',
+    compUnavailable: 'Composition indisponible pour ce fonds.',
+    compStocks: 'Actions',
+    compBonds: 'Obligations',
+    compCash: 'Liquidités',
+    compOther: 'Autres',
   },
   goalSeek: {
     cutSpending: 'Réduire les dépenses',

@@ -973,6 +973,13 @@ export const en = {
     ariaLatestPrice: 'Latest price',
     priceUnavailable: 'Price unavailable — you can fetch it later from the table.',
     quantityHeld: 'Quantity Held',
+    composition: 'Composition',
+    compFetching: 'Fetching composition…',
+    compUnavailable: 'Composition unavailable for this fund.',
+    compStocks: 'Stocks',
+    compBonds: 'Bonds',
+    compCash: 'Cash',
+    compOther: 'Other',
   },
   goalSeek: {
     cutSpending: 'Cut spending',

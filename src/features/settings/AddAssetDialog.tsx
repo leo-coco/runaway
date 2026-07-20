@@ -73,9 +73,9 @@ const SearchResultRow = ({
           </span>
         </div>
       </div>
-      {instrument.assetClass === 'crypto' && (
+      {price !== undefined && (
         <div className="search-row__price">
-          {price?.status === 'success' && price.value !== undefined ? (
+          {price.status === 'success' && price.value !== undefined ? (
             <span className="search-row__amount">{fmt.price(price.value)}</span>
           ) : price?.status === 'loading' ? (
             <span className="search-row__amount muted">
@@ -148,6 +148,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   // Fund/ETF composition, fetched alongside price but never blocks adding the
   // holding — id-guarded so a slow response can't attach to a later selection.
   const [allocation, setAllocation] = useState<AssetAllocation | null>(null);
+  const [allocationLoading, setAllocationLoading] = useState(false);
   const selectedIdRef = useRef<string | null>(null);
 
   const [customName, setCustomName] = useState('');
@@ -160,16 +161,36 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
 
   const nativeFmt = useCurrencyFormatter(selected?.nativeCurrency ?? plan.currency);
 
+  // Composition pills (stocks / bonds / cash / other). Preferred and convertible
+  // holdings are folded into "other" so the row stays to the classes users know.
+  const compositionPills = useMemo(() => {
+    if (!allocation) return [];
+    const other =
+      (allocation.otherPct ?? 0) +
+      (allocation.preferredPct ?? 0) +
+      (allocation.convertiblePct ?? 0);
+    return [
+      { key: 'stocks', label: t('addAsset.compStocks'), pct: allocation.stockPct ?? 0 },
+      { key: 'bonds', label: t('addAsset.compBonds'), pct: allocation.bondPct ?? 0 },
+      { key: 'cash', label: t('addAsset.compCash'), pct: allocation.cashPct ?? 0 },
+      { key: 'other', label: t('addAsset.compOther'), pct: Math.round(other * 10) / 10 },
+    ].filter((p) => p.pct > 0);
+  }, [allocation, t]);
+
   const selectInstrument = async (instrument: Instrument) => {
     setSelected(instrument);
     setPriceError(null);
     setAllocation(null);
     selectedIdRef.current = instrument.id;
 
-    if (instrument.quoteType === 'ETF' || instrument.quoteType === 'MUTUALFUND') {
+    const isFund = instrument.quoteType === 'ETF' || instrument.quoteType === 'MUTUALFUND';
+    setAllocationLoading(isFund);
+    if (isFund) {
       // Fire-and-forget: supplementary metadata, must never block adding the asset.
       void services.price.allocation(instrument.symbol).then((result) => {
-        if (selectedIdRef.current === instrument.id && result.ok) setAllocation(result.value);
+        if (selectedIdRef.current !== instrument.id) return;
+        if (result.ok) setAllocation(result.value);
+        setAllocationLoading(false);
       });
     }
 
@@ -194,6 +215,9 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
       ref.provider === 'coingecko'
         ? await services.price.cryptoPrice(ref.ref, instrument.nativeCurrency)
         : await services.price.stockPrice(ref.ref);
+    // Guard against a stale response: a slower fetch for an earlier selection
+    // must not overwrite the price of the instrument now selected.
+    if (selectedIdRef.current !== instrument.id) return;
     setPriceLoading(false);
     if (result.ok) setPrice(result.value);
     else setPriceError(result.error);
@@ -495,6 +519,28 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                   <p className="field__hint">{t('addAsset.priceUnavailable')}</p>
                 )}
               </div>
+
+              {(selected.quoteType === 'ETF' || selected.quoteType === 'MUTUALFUND') && (
+                <div className="field">
+                  <span className="field__label">{t('addAsset.composition')}</span>
+                  {allocationLoading ? (
+                    <span className="fetch-link">
+                      <Spinner /> {t('addAsset.compFetching')}
+                    </span>
+                  ) : compositionPills.length > 0 ? (
+                    <div className="alloc-pills">
+                      {compositionPills.map((p) => (
+                        <span key={p.key} className={cn('alloc-pill', `alloc-pill--${p.key}`)}>
+                          <span className="alloc-pill__dot" />
+                          {p.label} {p.pct}%
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="field__hint">{t('addAsset.compUnavailable')}</p>
+                  )}
+                </div>
+              )}
 
               <div className="addasset-fields addasset-fields--2">
                 <div className="field">

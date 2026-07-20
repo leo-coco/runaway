@@ -55,6 +55,14 @@ const RATE_LIMIT = 'RATE_LIMIT';
 /** Marker for "the provider has no such symbol", mapped to 404 (not a 502). */
 const NOT_FOUND = 'NOT_FOUND';
 
+/**
+ * Yahoo has no fundamentals module for this listing: the request either threw
+ * (it 404/503s some exchange-specific tickers even for real funds) or returned
+ * an empty topHoldings. Distinct from a hard error so the sibling-retry below
+ * can decide whether an empty result is genuine (a plain equity) or transient.
+ */
+const NO_FUNDAMENTALS = 'NO_FUNDAMENTALS';
+
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 /** Instrument kinds worth offering; excludes options, futures and money-market noise. */
@@ -153,6 +161,112 @@ const toMarketAllocation = (raw: QuoteSummaryResult): MarketAllocation => {
     fundFamily: profile?.family ?? null,
     sectorWeightings,
   };
+};
+
+/** The plain-equity shape: every composition field null, no sector data. */
+const EMPTY_ALLOCATION: MarketAllocation = {
+  stockPct: null,
+  bondPct: null,
+  cashPct: null,
+  otherPct: null,
+  preferredPct: null,
+  convertiblePct: null,
+  categoryName: null,
+  fundFamily: null,
+  sectorWeightings: [],
+};
+
+/** True when topHoldings carried no position data at all (every weight null). */
+const hasNoComposition = (a: MarketAllocation): boolean =>
+  a.stockPct === null &&
+  a.bondPct === null &&
+  a.cashPct === null &&
+  a.otherPct === null &&
+  a.preferredPct === null &&
+  a.convertiblePct === null;
+
+type AllocationProbe =
+  | { readonly kind: 'data'; readonly allocation: MarketAllocation }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'error'; readonly cause: unknown };
+
+/**
+ * One allocation lookup for a single listing. Resolves to `data` when Yahoo has
+ * a composition, `empty` when the module is cleanly absent (a plain equity, or a
+ * fund Yahoo simply has no holdings for), and `error` when the call threw for a
+ * transient reason. A throttle is re-thrown so it surfaces as a 429, not an
+ * empty allocation cached for the full TTL.
+ */
+const probeAllocation = async (symbol: string): Promise<AllocationProbe> => {
+  try {
+    const raw = await yf.quoteSummary(symbol, { modules: ['topHoldings', 'fundProfile'] });
+    const allocation = toMarketAllocation(raw);
+    return hasNoComposition(allocation) ? { kind: 'empty' } : { kind: 'data', allocation };
+  } catch (cause) {
+    if (isYahooThrottle(cause)) throw cause;
+    return { kind: 'error', cause: new Error(NO_FUNDAMENTALS, { cause }) };
+  }
+};
+
+/**
+ * Same-fund listings on other exchanges. Found by searching Yahoo for the
+ * symbol's own display name and keeping only exact name matches with a different
+ * symbol, so an unrelated fund with a similar name is never substituted.
+ */
+const findSiblingSymbols = async (symbol: string): Promise<string[]> => {
+  const res = await yf.search(symbol, { quotesCount: 10, newsCount: 0 });
+  const yahooQuotes = (res?.quotes ?? []).filter((q): q is YahooSearchQuote => q.isYahooFinance);
+  const self = yahooQuotes.find((q) => q.symbol.toUpperCase() === symbol);
+  const name = (self?.shortname ?? self?.longname)?.trim().toLowerCase();
+  if (!name) return [];
+  return yahooQuotes
+    .filter(
+      (q) =>
+        q.symbol.toUpperCase() !== symbol &&
+        (q.shortname ?? q.longname ?? '').trim().toLowerCase() === name,
+    )
+    .map((q) => q.symbol);
+};
+
+/**
+ * Fetch a symbol's fund composition, retrying against same-fund listings on
+ * other exchanges when this one's module is empty (see NO_FUNDAMENTALS above).
+ * Siblings are found by searching Yahoo for the symbol's own name and keeping
+ * only exact name matches, so an unrelated fund with a similar name is never
+ * substituted. Falls back to the null-filled shape (same as a plain equity) if
+ * no sibling has the data either — but re-throws when every lookup failed
+ * transiently, so getCached can serve the last known-good value instead of
+ * pinning an empty result for the whole TTL.
+ */
+const fetchAllocationWithSiblings = async (symbol: string): Promise<MarketAllocation> => {
+  const primary = await probeAllocation(symbol);
+  if (primary.kind === 'data') return primary.allocation;
+
+  // A clean "empty" anywhere is a definitive answer (a plain equity, or a fund
+  // Yahoo has no holdings for), so it's cacheable even if a later lookup errors.
+  let sawEmpty = primary.kind === 'empty';
+  let errorCause: unknown = primary.kind === 'error' ? primary.cause : undefined;
+
+  let siblings: string[] = [];
+  try {
+    siblings = await findSiblingSymbols(symbol);
+  } catch (cause) {
+    if (isYahooThrottle(cause)) throw cause;
+    errorCause ??= cause;
+  }
+
+  for (const sibling of siblings) {
+    const probe = await probeAllocation(sibling);
+    if (probe.kind === 'data') return probe.allocation;
+    if (probe.kind === 'empty') sawEmpty = true;
+    else errorCause ??= probe.cause;
+  }
+
+  // No listing had a composition. If at least one lookup was a clean empty, this
+  // is a genuine "no composition" result worth caching. Only when every lookup
+  // errored do we throw, so a transient failure isn't cached for the full TTL.
+  if (!sawEmpty && errorCause !== undefined) throw errorCause;
+  return EMPTY_ALLOCATION;
 };
 
 /** One upstream call for many symbols. Unknown symbols are simply absent. */
@@ -254,10 +368,7 @@ marketRoutes.get('/equities/allocation', async (c) => {
     const { value, status } = await getCached<MarketAllocation>(
       `allocation:${symbol}`,
       ALLOCATION_TTL_MS,
-      async () => {
-        const raw = await yf.quoteSummary(symbol, { modules: ['topHoldings', 'fundProfile'] });
-        return toMarketAllocation(raw);
-      },
+      () => fetchAllocationWithSiblings(symbol),
     );
     return c.json(value, 200, cacheHeader(status));
   } catch (cause) {

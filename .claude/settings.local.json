@@ -88,7 +88,22 @@
       "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/.claude/worktrees/sandbox-premium-override-docs-09b2d3\" && echo \"=== en.ts overview/home/rental ===\" && sed -n '/^  overview: {/,/^  },/p;/^  home: {/,/^  },/p;/^  rental: {/,/^  },/p' src/i18n/en.ts | head -160)",
       "Bash(rg -rn \"HomeModal|RentalPropertiesModal|RentalPropertyDialog\" src --glob '*.{ts,tsx}')",
       "WebFetch(domain:docs.sentry.io)",
-      "Bash(ASTRO_TELEMETRY_DISABLED=1 npm run build)"
+      "Bash(ASTRO_TELEMETRY_DISABLED=1 npm run build)",
+      "Bash(xargs -I {} git push origin --delete {})",
+      "Bash(cd \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model\" && sed -n '/addAsset:/,/^  [a-zA-Z]*: {/p' src/i18n/en.ts | head -90)",
+      "Read(//Users/leococo/.claude/plugins/cache/agricidaniel-claude-seo/claude-seo/2.2.0/**)",
+      "Bash(python3 scripts/render_page.py https://www.runaway.money/ --mode auto --json)",
+      "Bash(curl -s https://www.runaway.money/robots.txt)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://www.runaway.money/sitemap.xml)",
+      "Bash(curl -s https://www.runaway.money/sitemap.xml)",
+      "Bash(curl -sL -o /dev/null -w \"%{http_code} %{url_effective}\\\\n\" https://runaway.money/sitemap-index.xml)",
+      "Bash(curl -sL https://runaway.money/sitemap-index.xml)",
+      "Bash(curl -sI https://runaway.money/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://www.runaway.money/llms.txt)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(curl -sL https://www.runaway.money/sitemap-0.xml -o /private/tmp/claude-501/-Users-leococo-Claude-Projects-Retire-Model-retire-on-model/df5c39ad-8550-4400-841e-003fd29d8e27/scratchpad/sitemap-0.xml)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,1\\)\\)\")",
+      "Bash(curl -s https://www.runaway.money/ -o /private/tmp/claude-501/-Users-leococo-Claude-Projects-Retire-Model-retire-on-model/df5c39ad-8550-4400-841e-003fd29d8e27/scratchpad/home.html)"
     ]
   }
 }

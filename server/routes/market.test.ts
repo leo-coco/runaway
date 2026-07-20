@@ -419,6 +419,63 @@ describe('GET /equities/allocation', () => {
     expect(res.status).toBe(502);
   });
 
+  it('retries a same-name sibling listing when this one has no composition', async () => {
+    // The requested listing carries no fund module; a sibling on another
+    // exchange (same exact name) does.
+    quoteSummaryMock.mockImplementation((sym: string) => {
+      if (sym === 'VGRO.TO') {
+        return Promise.resolve({
+          topHoldings: { stockPosition: 0.8, bondPosition: 0.2 },
+          fundProfile: { categoryName: 'Global Allocation', family: 'Vanguard' },
+        });
+      }
+      return Promise.resolve({});
+    });
+    searchMock.mockResolvedValue({
+      quotes: [
+        { isYahooFinance: true, symbol: 'VGRO.NE', shortname: 'Vanguard Growth ETF Portfolio' },
+        { isYahooFinance: true, symbol: 'VGRO.TO', shortname: 'Vanguard Growth ETF Portfolio' },
+        // Same ticker family, different fund name → must not be substituted.
+        { isYahooFinance: true, symbol: 'VGRO.L', shortname: 'Unrelated Growth Fund' },
+      ],
+    });
+
+    const res = await marketRoutes.request('/equities/allocation?symbol=VGRO.NE');
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { stockPct: number; bondPct: number; fundFamily: string };
+    expect(body.stockPct).toBe(80);
+    expect(body.bondPct).toBe(20);
+    expect(body.fundFamily).toBe('Vanguard');
+    expect(quoteSummaryMock).toHaveBeenCalledWith('VGRO.TO', expect.anything());
+    expect(quoteSummaryMock).not.toHaveBeenCalledWith('VGRO.L', expect.anything());
+  });
+
+  it('falls back to the null-filled shape when no sibling has data', async () => {
+    quoteSummaryMock.mockResolvedValue({});
+    searchMock.mockResolvedValue({
+      quotes: [
+        { isYahooFinance: true, symbol: 'FUND.A', shortname: 'Example Fund' },
+        { isYahooFinance: true, symbol: 'FUND.B', shortname: 'Example Fund' },
+      ],
+    });
+
+    const res = await marketRoutes.request('/equities/allocation?symbol=FUND.A');
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({ stockPct: null, bondPct: null });
+  });
+
+  it('a clean empty is cached even when the sibling search fails', async () => {
+    quoteSummaryMock.mockResolvedValue({});
+    searchMock.mockRejectedValue(new Error('search socket hang up'));
+
+    const res = await marketRoutes.request('/equities/allocation?symbol=AAPL');
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({ stockPct: null });
+  });
+
   it('requires a symbol', async () => {
     const res = await marketRoutes.request('/equities/allocation?symbol=');
 
