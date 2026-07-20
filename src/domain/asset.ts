@@ -13,6 +13,12 @@ export interface AssetAllocation {
   readonly otherPct: number | null;
   readonly preferredPct: number | null;
   readonly convertiblePct: number | null;
+  /**
+   * Crypto slice. Yahoo's fund modules never report this, so it is optional and
+   * absent on fetched fund allocations; it exists for user-defined custom assets
+   * that hold crypto and for a future crypto-aware allocation breakdown.
+   */
+  readonly cryptoPct?: number | null;
   readonly categoryName: string | null;
   readonly fundFamily: string | null;
   readonly sectorWeightings: readonly { readonly sector: string; readonly weightPct: number }[];

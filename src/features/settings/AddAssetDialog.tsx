@@ -30,6 +30,16 @@ interface Props {
 
 type Mode = 'search' | 'custom';
 
+type CompKey = 'stocks' | 'bonds' | 'cash' | 'crypto' | 'other';
+
+const CUSTOM_COMP_ROWS: readonly { key: CompKey; labelKey: string }[] = [
+  { key: 'stocks', labelKey: 'addAsset.compStocks' },
+  { key: 'bonds', labelKey: 'addAsset.compBonds' },
+  { key: 'cash', labelKey: 'addAsset.compCash' },
+  { key: 'crypto', labelKey: 'addAsset.compCrypto' },
+  { key: 'other', labelKey: 'addAsset.compOther' },
+];
+
 const customSymbol = (name: string): string =>
   name.trim().toUpperCase().replace(/\s+/g, '').slice(0, 8) || 'CUSTOM';
 
@@ -157,6 +167,15 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [customAssetClass, setCustomAssetClass] = useState<'other' | 'cash'>('other');
   // Illiquid custom assets (a home, a car…) should not be drawn down for spending.
   const [customDrawable, setCustomDrawable] = useState(true);
+  // Optional per-class composition for a custom asset (percent per class). Left at
+  // all-zero it is omitted; otherwise it is stored as the holding's assetAllocation.
+  const [customComp, setCustomComp] = useState<Record<CompKey, number>>({
+    stocks: 0,
+    bonds: 0,
+    cash: 0,
+    crypto: 0,
+    other: 0,
+  });
   const [infoTopic, setInfoTopic] = useState<'type' | 'drawable' | null>(null);
 
   const nativeFmt = useCurrencyFormatter(selected?.nativeCurrency ?? plan.currency);
@@ -177,6 +196,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         { key: 'stocks', label: t('addAsset.compStocks'), pct: allocation.stockPct ?? 0 },
         { key: 'bonds', label: t('addAsset.compBonds'), pct: allocation.bondPct ?? 0 },
         { key: 'cash', label: t('addAsset.compCash'), pct: allocation.cashPct ?? 0 },
+        { key: 'crypto', label: t('addAsset.compCrypto'), pct: allocation.cryptoPct ?? 0 },
         { key: 'other', label: t('addAsset.compOther'), pct: Math.round(other * 10) / 10 },
       ].filter((p) => p.pct > 0);
     }
@@ -252,6 +272,27 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     onClose();
   };
 
+  const customCompTotal = useMemo(
+    () => CUSTOM_COMP_ROWS.reduce((sum, { key }) => sum + customComp[key], 0),
+    [customComp],
+  );
+
+  const customAllocation = useMemo<AssetAllocation | undefined>(() => {
+    if (customCompTotal <= 0) return undefined;
+    return {
+      stockPct: customComp.stocks,
+      bondPct: customComp.bonds,
+      cashPct: customComp.cash,
+      cryptoPct: customComp.crypto,
+      otherPct: customComp.other,
+      preferredPct: null,
+      convertiblePct: null,
+      categoryName: null,
+      fundFamily: null,
+      sectorWeightings: [],
+    };
+  }, [customComp, customCompTotal]);
+
   const canAddCustom = customName.trim().length > 0 && customPrice >= 0 && quantity > 0;
 
   const handleAddCustom = () => {
@@ -265,6 +306,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         assetClass: customAssetClass,
         exchange: 'Custom',
         nativeCurrency: customCurrency,
+        ...(customAllocation ? { assetAllocation: customAllocation } : {}),
       },
       quantity,
       pricePerUnit: customPrice,
@@ -447,6 +489,35 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 onChange={setCagr}
               />
             </div>
+          </div>
+          <div className="field">
+            <span className="field__label">{t('addAsset.compositionOptional')}</span>
+            <p className="field__hint" style={{ marginTop: 0, marginBottom: 8 }}>
+              {t('addAsset.compositionOptionalHint')}
+            </p>
+            <div className="addasset-comp">
+              {CUSTOM_COMP_ROWS.map(({ key, labelKey }) => (
+                <div key={key} className="addasset-comp__row">
+                  <span className={cn('comp-dot', `comp-dot--${key}`)} />
+                  <span className="addasset-comp__label">{t(labelKey)}</span>
+                  <Stepper
+                    ariaLabel={t(labelKey)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    suffix="%"
+                    hideButtons
+                    value={customComp[key]}
+                    onChange={(v) => setCustomComp((c) => ({ ...c, [key]: v }))}
+                  />
+                </div>
+              ))}
+            </div>
+            {customCompTotal > 0 && customCompTotal !== 100 && (
+              <p className="field__hint" style={{ marginTop: 8 }}>
+                {t('addAsset.compositionTotal', { total: customCompTotal })}
+              </p>
+            )}
           </div>
         </>
       ) : (

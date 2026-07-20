@@ -981,6 +981,10 @@ export const en = {
     compCash: 'Cash',
     compCrypto: 'Crypto',
     compOther: 'Other',
+    compositionOptional: 'Composition (optional)',
+    compositionOptionalHint:
+      'Split this asset across classes if you want it reflected in your allocation. Leave at zero to skip.',
+    compositionTotal: 'Currently {{total}}% — classes usually add up to 100%.',
   },
   goalSeek: {
     cutSpending: 'Cut spending',

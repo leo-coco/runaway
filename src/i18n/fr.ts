@@ -1015,6 +1015,10 @@ export const fr: Resources = {
     compCash: 'Liquidités',
     compCrypto: 'Crypto',
     compOther: 'Autres',
+    compositionOptional: 'Composition (optionnel)',
+    compositionOptionalHint:
+      'Répartissez cet actif entre les classes pour qu’il apparaisse dans votre allocation. Laissez à zéro pour ignorer.',
+    compositionTotal: 'Actuellement {{total}} % — les classes totalisent en général 100 %.',
   },
   goalSeek: {
     cutSpending: 'Réduire les dépenses',

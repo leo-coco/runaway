@@ -6386,6 +6386,43 @@ th[title] {
 .alloc-pill--crypto .alloc-pill__dot {
   background: #f59e0b;
 }
+.addasset-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.addasset-comp__row {
+  display: grid;
+  grid-template-columns: 10px 1fr 120px;
+  align-items: center;
+  gap: 10px;
+}
+.addasset-comp__label {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.comp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+}
+.comp-dot--stocks {
+  background: #38bdf8;
+}
+.comp-dot--bonds {
+  background: #a855f7;
+}
+.comp-dot--cash {
+  background: #22c55e;
+}
+.comp-dot--crypto {
+  background: #f59e0b;
+}
+.comp-dot--other {
+  background: #94a3b8;
+}
 .tag {
   font-size: var(--fs-2xs);
   color: var(--text-dim);
