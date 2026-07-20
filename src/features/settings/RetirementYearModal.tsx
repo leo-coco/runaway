@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
-import { SunIcon, UmbrellaIcon, UserIcon } from '@/components/icons';
+import { ChequeredFlagIcon, PalmTreeIcon, UserIcon } from '@/components/icons';
 import { useAppStore } from '@/store';
 import { ageForEndYear, lifeExpectancyYear } from '@/domain/retirementSettings';
 import type { Plan } from '@/domain/plan';
@@ -104,7 +104,7 @@ export const RetirementYearModal = ({ plan, onClose }: Props) => {
 
           <section className="retirement-milestone retirement-milestone--retirement">
             <span className="retirement-milestone__marker" aria-hidden="true">
-              <UmbrellaIcon size={17} />
+              <PalmTreeIcon size={17} />
             </span>
             <div className="retirement-milestone__copy">
               <h3>{t('modals.timelineRetirement')}</h3>
@@ -140,7 +140,7 @@ export const RetirementYearModal = ({ plan, onClose }: Props) => {
 
           <section className="retirement-milestone retirement-milestone--end">
             <span className="retirement-milestone__marker" aria-hidden="true">
-              <SunIcon size={17} />
+              <ChequeredFlagIcon size={17} />
             </span>
             <div className="retirement-milestone__copy">
               <h3>{t('modals.timelineEnd')}</h3>
