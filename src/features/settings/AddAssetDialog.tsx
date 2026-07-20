@@ -181,7 +181,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
       ].filter((p) => p.pct > 0);
     }
     if (selected.assetClass === 'crypto') {
-      return [{ key: 'crypto', label: selected.symbol, pct: 100 }];
+      return [{ key: 'crypto', label: t('addAsset.compCrypto'), pct: 100 }];
     }
     if (selected.assetClass === 'cash') {
       return [{ key: 'cash', label: t('addAsset.compCash'), pct: 100 }];

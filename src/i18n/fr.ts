@@ -1013,6 +1013,7 @@ export const fr: Resources = {
     compStocks: 'Actions',
     compBonds: 'Obligations',
     compCash: 'Liquidités',
+    compCrypto: 'Crypto',
     compOther: 'Autres',
   },
   goalSeek: {

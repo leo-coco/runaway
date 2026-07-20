@@ -979,6 +979,7 @@ export const en = {
     compStocks: 'Stocks',
     compBonds: 'Bonds',
     compCash: 'Cash',
+    compCrypto: 'Crypto',
     compOther: 'Other',
   },
   goalSeek: {
