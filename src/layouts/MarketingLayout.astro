@@ -13,6 +13,7 @@ interface Props {
   alternateEnPath?: string;
   faq?: { question: string; answer: string }[];
   kind?: 'landing' | 'page';
+  dateModified?: string;
 }
 
 const {
@@ -24,6 +25,7 @@ const {
   alternateEnPath = '/en',
   faq = [],
   kind = 'page',
+  dateModified,
 } = Astro.props;
 const canonical = new URL(canonicalPath, Astro.site);
 const ogImage = new URL('/og-image.png', Astro.site);
@@ -43,7 +45,13 @@ const schema = kind === 'landing'
     operatingSystem: 'Web',
     url: canonical.href,
     description,
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'USD',
+      lowPrice: '0',
+      highPrice: '69',
+      offerCount: '2',
+    },
   }, ...(faq.length > 0 ? [{
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -60,6 +68,7 @@ const schema = kind === 'landing'
     url: canonical.href,
     description,
     inLanguage: lang,
+    ...(dateModified ? { dateModified } : {}),
   }];
 ---
 

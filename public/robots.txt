@@ -4,4 +4,4 @@ Disallow: /app/
 Disallow: /*/app/
 Disallow: /api/
 
-Sitemap: https://runaway.money/sitemap-index.xml
+Sitemap: https://www.runaway.money/sitemap-index.xml

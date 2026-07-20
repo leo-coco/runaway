@@ -107,7 +107,9 @@
       "Bash(python3 -c ' *)",
       "Bash(python3 scripts/pagespeed_check.py --help)",
       "Bash(python3 scripts/pagespeed_check.py https://www.runaway.money/)",
-      "Bash(python3 scripts/pagespeed_check.py https://www.runaway.money/ --strategy mobile --json)"
+      "Bash(python3 scripts/pagespeed_check.py https://www.runaway.money/ --strategy mobile --json)",
+      "Bash(curl -sI https://runaway.money)",
+      "Bash(curl -sI https://www.runaway.money)"
     ]
   }
 }

@@ -12,6 +12,7 @@ interface Props {
   eyebrow: string;
   heading: string;
   intro: string;
+  dateModified?: string;
 }
 
 const {
@@ -24,6 +25,7 @@ const {
   eyebrow,
   heading,
   intro,
+  dateModified,
 } = Astro.props;
 const isFr = lang === 'fr';
 const home = isFr ? '/' : '/en';
@@ -38,6 +40,7 @@ const appBase = `/${lang}/app`;
   {canonicalPath}
   {alternateFrPath}
   {alternateEnPath}
+  {dateModified}
 >
   <header class="site-header editorial-header">
     <a class="brand" href={home} aria-label={isFr ? 'Runaway — accueil' : 'Runaway — home'}>
