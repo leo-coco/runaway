@@ -105,6 +105,12 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     side: 'bottom',
     align: 'end',
   }),
+  step('editAssetButton', {
+    page: 'portfolio',
+    tourKey: 'edit-asset-btn',
+    side: 'top',
+    align: 'end',
+  }),
   step('quantity', { page: 'portfolio', tourKey: 'quantity-input', side: 'top', align: 'center' }),
   step('cagr', { page: 'portfolio', tourKey: 'cagr-input', side: 'top', align: 'center' }),
   step('drag', { page: 'portfolio', tourKey: 'drag-handle', side: 'right', align: 'start' }),
@@ -189,12 +195,31 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     side: 'bottom',
     align: 'end',
   }),
+  step('portfolioGraph', {
+    // Only mounts once the plan has holdings, so it's skipped for an empty plan.
+    page: 'dashboard',
+    tourKey: 'portfolio-trend-card',
+    side: 'top',
+    align: 'center',
+  }),
+  step('assetsTable', {
+    page: 'dashboard',
+    tourKey: 'dash-assets-card',
+    side: 'top',
+    align: 'center',
+  }),
   step('dashboardOutro', {}),
 ];
 
 /** Projection guide: the deterministic year-by-year view and its lenses. */
 export const PROJECTION_GUIDE_STEPS: readonly TourStep[] = [
   step('projectionIntro', {}),
+  step('projectionSummary', {
+    page: 'projection',
+    tourKey: 'projection-summary-cards',
+    side: 'bottom',
+    align: 'start',
+  }),
   step('chartView', { page: 'projection', tourKey: 'chart-view', side: 'bottom', align: 'end' }),
   step('projectionChart', {
     page: 'projection',
@@ -227,6 +252,20 @@ export const MONTE_CARLO_GUIDE_STEPS: readonly TourStep[] = [
     page: 'monte-carlo',
     tourKey: 'mc-fan-chart',
     side: 'left',
+    align: 'start',
+    timeoutMs: 12000,
+  }),
+  step('mcOutcomes', {
+    page: 'monte-carlo',
+    tourKey: 'mc-outcome-breakdown',
+    side: 'left',
+    align: 'start',
+    timeoutMs: 12000,
+  }),
+  step('mcNetWorth', {
+    page: 'monte-carlo',
+    tourKey: 'mc-net-worth',
+    side: 'right',
     align: 'start',
     timeoutMs: 12000,
   }),

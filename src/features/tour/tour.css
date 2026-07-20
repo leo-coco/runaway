@@ -5,26 +5,26 @@
   border: 1px solid var(--border, #26272b);
   border-radius: var(--radius, 14px);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
-  max-width: 340px;
+  max-width: 360px;
   padding: 16px 16px 12px;
 }
 
 .driver-popover.tour-popover .driver-popover-title {
   color: var(--text, #f4f5f7);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   margin-bottom: 6px;
 }
 
 .driver-popover.tour-popover .driver-popover-description {
-  color: var(--text-dim, #9ca3af);
-  font-size: 13.5px;
+  color: var(--text, #f4f5f7);
+  font-size: 15px;
   line-height: 1.55;
 }
 
 .driver-popover.tour-popover .driver-popover-progress-text {
   color: var(--text-dim, #9ca3af);
-  font-size: 12px;
+  font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
 

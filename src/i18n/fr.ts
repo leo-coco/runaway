@@ -1501,7 +1501,7 @@ export const fr: Resources = {
     steps: {
       dashboardIntro: {
         title: 'Bienvenue sur Runaway',
-        body: 'Cette visite parcourt votre plan en deux temps : d’abord ce que vous possédez (horizon, comptes, actifs, immobilier), puis comment vous le financez et le dépensez (épargne, dépenses, flux ponctuels, retraits). Utilisez Suivant et Retour pour avancer, et fermez à tout moment avec Échap.',
+        body: 'Cette visite parcourt votre plan en deux temps : d’abord ce que vous possédez (horizon, comptes, actifs, immobilier), puis comment vous le financez et le dépensez (épargne, dépenses, flux ponctuels, retraits). Utilisez Suivant et Retour pour avancer (les flèches ← et → du clavier fonctionnent aussi), et fermez à tout moment avec Échap.',
       },
       runway: {
         title: 'Votre trajectoire en un coup d’œil',
@@ -1517,7 +1517,7 @@ export const fr: Resources = {
       },
       spendingButton: {
         title: 'Revenu de retraite cible',
-        body: 'Cliquez sur Éditer sur cette carte pour définir combien vous prévoyez de dépenser chaque année à la retraite.',
+        body: 'Cliquez sur Modifier sur cette carte pour définir combien vous prévoyez de dépenser chaque année à la retraite.',
       },
       spending: {
         title: 'Linéaire ou par phase',
@@ -1525,7 +1525,7 @@ export const fr: Resources = {
       },
       expensesIncomesButton: {
         title: 'Dépenses & revenus ponctuels',
-        body: 'Au-delà de l’épargne et des dépenses régulières, modélisez des événements ponctuels ou récurrents : achat immobilier, héritage, études, rentrée d’argent. Cliquez sur Éditer sur cette carte pour les ajouter.',
+        body: 'Au-delà de l’épargne et des dépenses régulières, modélisez des événements ponctuels ou récurrents : héritage, études, rentrée d’argent. Cliquez sur Modifier sur cette carte pour les ajouter.',
       },
       expensesIncomes: {
         title: 'Ajouter un flux',
@@ -1537,7 +1537,7 @@ export const fr: Resources = {
       },
       accountsButton: {
         title: 'Comptes & fiscalité',
-        body: 'Les actifs vivent dans des comptes — des enveloppes fiscales comme un CELI ou un compte imposable. Cliquez sur Éditer sur cette carte pour les gérer.',
+        body: 'Les actifs vivent dans des comptes — des enveloppes fiscales comme un CELI ou un compte imposable. Cliquez sur Modifier sur cette carte pour les gérer.',
       },
       accounts: {
         title: 'Indiquez votre résidence fiscale',
@@ -1549,7 +1549,7 @@ export const fr: Resources = {
       },
       withdrawalButton: {
         title: 'Stratégie de retrait',
-        body: 'Cliquez sur Éditer sur cette carte pour définir l’ordre dans lequel vos comptes sont décaissés.',
+        body: 'Cliquez sur Modifier sur cette carte pour définir l’ordre dans lequel vos comptes sont décaissés.',
       },
       withdrawal: {
         title: 'Ordonnez vos comptes',
@@ -1561,11 +1561,15 @@ export const fr: Resources = {
       },
       addAsset: {
         title: 'Rechercher ou personnaliser',
-        body: 'La recherche ajoute des actions et des cryptos avec un prix en direct. L’onglet Personnalisé sert pour tout le reste : une voiture, du cash… S’il s’agit de cash, tapez simplement « cash » dans la barre de recherche et l’actif sera visible.',
+        body: 'La recherche ajoute des actions et des cryptos avec un prix en direct. L’onglet Personnalisé sert pour tout le reste. S’il s’agit de cash, tapez simplement « cash » dans la barre de recherche et l’actif sera visible.',
       },
       fetchPrices: {
         title: 'Récupérer les prix',
-        body: 'Obtenez le dernier prix de marché de chaque titre en un clic. Chaque ligne a aussi son propre bouton d’actualisation.',
+        body: 'Obtenez le dernier prix de marché de chaque titre en un clic.',
+      },
+      editAssetButton: {
+        title: 'Modifier un actif',
+        body: 'Cliquez sur ce bouton pour passer la ligne en mode modification et faire apparaître les champs de quantité et de TCAC.',
       },
       drag: {
         title: 'Organiser par glisser-déposer',
@@ -1581,7 +1585,7 @@ export const fr: Resources = {
       },
       realEstateButton: {
         title: 'Immobilier',
-        body: 'Vos biens comptent dans votre patrimoine au même titre que vos placements. Cliquez sur Éditer sur cette carte pour modéliser votre résidence et vos locatifs.',
+        body: 'Vos biens comptent dans votre patrimoine au même titre que vos placements. Cliquez sur Modifier sur cette carte pour modéliser votre résidence et vos locatifs.',
       },
       realEstate: {
         title: 'Résidence & locatifs',
@@ -1595,6 +1599,14 @@ export const fr: Resources = {
         title: 'Devise du plan',
         body: 'Changez ici la devise du plan. Chaque prix et total est converti à la volée, tandis que chaque actif conserve son prix de marché d’origine.',
       },
+      portfolioGraph: {
+        title: 'Graphique du portefeuille',
+        body: 'La valeur totale projetée de votre portefeuille, année après année.',
+      },
+      assetsTable: {
+        title: 'Vos actifs en un coup d’œil',
+        body: 'Une mini table qui récapitule chaque actif — valeur, rendement et part du portefeuille — regroupé par compte.',
+      },
       dashboardOutro: {
         title: 'Tableau de bord configuré',
         body: 'Voilà la boucle complète : tout ce que vous possédez, et la façon dont vous le financez et le dépensez. Ensuite, suivez la visite de la projection ou la visite Monte Carlo depuis « Suivre la visite » pour voir votre plan à l’œuvre.',
@@ -1602,6 +1614,10 @@ export const fr: Resources = {
       projectionIntro: {
         title: 'La visite de la projection',
         body: 'Cette visite couvre votre projection déterministe, année par année : les vues, le graphique et le tableau qui la composent.',
+      },
+      projectionSummary: {
+        title: 'Les 3 chiffres clés',
+        body: 'Portefeuille aujourd’hui, portefeuille projeté à la retraite, et année d’épuisement de l’épargne (le cas échéant) — les trois chiffres qui résument toute la projection.',
       },
       chartView: {
         title: 'Vues de projection',
@@ -1630,6 +1646,14 @@ export const fr: Resources = {
       mcFanChart: {
         title: 'Résultats Monte Carlo',
         body: 'Au lieu d’une seule trajectoire, on simule des milliers de futurs de marché aléatoires. La bande montre la plage probable et la ligne la médiane ; le taux de réussite est la part qui ne s’épuise jamais.',
+      },
+      mcOutcomes: {
+        title: 'Répartition des résultats',
+        body: 'Chaque futur simulé est classé selon son issue : Gros surplus, Confortable, Presque réussi ou Échec en cours de route. Cliquez une catégorie pour l’explorer dans l’explorateur de tirages.',
+      },
+      mcNetWorth: {
+        title: 'Valeur nette du portefeuille',
+        body: 'La valeur du portefeuille à la fin de l’horizon dans le quart le plus favorable des simulations (Top 25 %), au milieu (Médiane), et dans les moins bonnes (Bottom 25 %, Bottom 10 %).',
       },
       mcModel: {
         title: 'Modèles de rendement',
