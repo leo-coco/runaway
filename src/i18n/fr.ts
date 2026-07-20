@@ -610,13 +610,12 @@ export const fr: Resources = {
     scenarioDescOptimistic: 'Augmente le CAGR de chaque actif.',
   },
   withdrawal: {
-    title: 'Dans quel ordre ponctionnez-vous ?',
-    desc: 'Vos comptes croissent jusqu’à votre retraite en {{year}} ; à partir de là vous dépensez le même montant chaque année. Vous choisissez l’ordre de vidage des comptes — le modèle finance chaque année depuis le compte du haut jusqu’à épuisement, puis passe au suivant. Cela pilote la table de projection de la page principale.',
+    title: 'Stratégie de retrait',
     needAccounts: 'Vous devez créer des comptes fiscaux avant de planifier un ordre de ponction.',
     setupAccounts: 'Configurer les comptes',
     fullyFunded: 'ENTIÈREMENT FINANCÉ',
     runsOut: 'ÉPUISÉ EN {{year}}',
-    drawOrder: 'Ordre de ponction · le haut se vide en premier',
+    drawOrder: 'Ordre de retrait',
     taxFree: 'non imposé',
     taxed: 'imposé {{rate}} %',
     taxedTip:
@@ -646,6 +645,10 @@ export const fr: Resources = {
     atAge: 'à {{age}} ans',
     savingsRunOut: 'épargne épuisée',
     vsOther: 'vs autres ordres',
+    vsOtherTitle: 'Cet ordre vs les autres',
+    bestOrderPill: 'Meilleur ordre',
+    worstOrderPill: 'Pire ordre',
+    midOrderPill: 'Ordre intermédiaire',
     bestWorst: 'meilleur {{best}} · pire {{worst}}',
     bestOrdering: 'c’est le meilleur ordre',
     legendEmpties: '{{name}} vidé en {{year}}',
@@ -656,17 +659,14 @@ export const fr: Resources = {
     conversionsTitle: 'Conversions & RMD',
     conversionsDesc: 'Conversions Roth / meltdown et retraits minimums obligatoires',
     balancesTitle: 'Soldes des comptes dans le temps',
-    outflowTitle: 'Où va l’argent de la retraite',
-    outflowHint:
-      'Total ponctionné de chaque compte sur la retraite, réparti entre le net qui finance les dépenses et l’impôt payé — voyez comment l’ordre choisi achemine l’argent et l’impôt.',
+    outflowTitleYearly: 'Retraits par année',
+    outflowTitleFlow: 'Où va l’argent de la retraite',
     outflowEmpty:
       'Aucun retrait du portefeuille à afficher (les dépenses sont peut-être couvertes par d’autres revenus).',
     sankeySpending: 'Dépenses',
     sankeyTaxes: 'Impôts',
-    viewFlow: 'Flux (total)',
-    viewYearly: 'Montants annuels',
-    outflowYearlyHint:
-      'Combien est ponctionné de chaque compte chaque année — observez comment l’ordre choisi vide les comptes l’un après l’autre.',
+    viewFlow: 'Répartition',
+    viewYearly: 'Dans le temps',
     sameFigures:
       'Ce sont les mêmes chiffres que la table de projection de la page principale. Réordonner ici met aussi cette table à jour.',
   },

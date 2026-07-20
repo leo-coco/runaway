@@ -4336,11 +4336,6 @@ th[title] {
 }
 
 /* ---------- withdrawal order modal ---------- */
-.wo-status {
-  display: flex;
-  justify-content: flex-end;
-  margin: -8px 0 14px;
-}
 .wo-badge {
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -4358,6 +4353,20 @@ th[title] {
   color: var(--amber);
   border-color: color-mix(in srgb, var(--amber) 40%, transparent);
   background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+.wo-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+.wo-cards .contrib-summary__item {
+  min-height: 94px;
+}
+.wo-cards .wo-badge {
+  align-self: flex-start;
+  margin-bottom: 2px;
 }
 .wo-grid {
   display: grid;
@@ -4487,14 +4496,6 @@ th[title] {
 }
 .wo-preset.active .wo-preset__action {
   color: var(--accent-strong);
-}
-.wo-spend {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
 }
 .mc-horizon {
   display: flex;
@@ -5762,18 +5763,6 @@ th[title] {
 .mc-stats b {
   font-size: var(--fs-xl);
 }
-.wo-infl {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.wo-infl__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-}
 .wo-right {
   display: flex;
   flex-direction: column;
@@ -5783,36 +5772,10 @@ th[title] {
   padding: 18px;
   background: var(--bg-card);
 }
-.wo-right__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 6px;
-}
-.wo-big {
-  font-size: 2.75rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.wo-big__sub {
-  font-size: var(--fs-md);
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-left: 8px;
-}
-.wo-compare {
-  text-align: right;
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-}
-.wo-best {
-  color: var(--success);
-  font-size: var(--fs-xs);
-  margin-top: 2px;
-}
-
 @media (max-width: 820px) {
+  .wo-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .wo-grid {
     grid-template-columns: 1fr;
   }

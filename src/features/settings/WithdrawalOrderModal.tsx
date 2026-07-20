@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { ChartTooltip } from '@/features/projections/ChartTooltip';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
@@ -349,6 +350,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
       bestYear: cap(best),
       worstYear: cap(worst),
       currentIsBest: current.deplete >= best,
+      currentIsWorst: current.deplete <= worst && best > worst,
       minTax,
       maxTax,
       currentIsLowestTax: current.tax <= minTax + 0.5,
@@ -391,6 +393,14 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
     setWithdrawalOrder(plan.id, next);
   };
 
+  const vsPill = comparison
+    ? comparison.currentIsBest
+      ? { label: t('withdrawal.bestOrderPill'), cls: 'is-funded' }
+      : comparison.currentIsWorst
+        ? { label: t('withdrawal.worstOrderPill'), cls: 'is-risk' }
+        : { label: t('withdrawal.midOrderPill'), cls: '' }
+    : null;
+
   const moneyLastsLabel = fullyFunded ? `${horizonEndYear}+` : String(depletionYear);
   const subLabel = fullyFunded
     ? currentAge > 0
@@ -403,7 +413,6 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
   return (
     <Modal
       title={t('withdrawal.title')}
-      description={t('withdrawal.desc', { year: retirementYear })}
       onClose={onClose}
       xl
       footer={
@@ -423,13 +432,58 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
         </div>
       ) : (
         <>
-          <div className="wo-status">
-            <span className={cn('wo-badge', fullyFunded ? 'is-funded' : 'is-risk')}>
-              ●{' '}
-              {fullyFunded
-                ? t('withdrawal.fullyFunded')
-                : t('withdrawal.runsOut', { year: depletionYear })}
-            </span>
+          <div className="contrib-summary wo-cards">
+            <div className="contrib-summary__item">
+              <span className="ov__sub">{t('withdrawal.moneyLastsUntil')}</span>
+              <b style={{ color: fullyFunded ? 'var(--success)' : 'var(--amber)' }}>
+                {moneyLastsLabel}
+              </b>
+              <span className="ov__sub">{subLabel}</span>
+            </div>
+
+            <div className="contrib-summary__item">
+              <span className="ov__sub">{t('withdrawal.lifetimeTax')}</span>
+              <b>{fmt.compact(lifetimeTax)}</b>
+              {comparison?.currentIsLowestTax ? (
+                <span className="ov__sub" style={{ color: 'var(--success)' }}>
+                  {t('withdrawal.lowestTax')}
+                </span>
+              ) : comparison ? (
+                <span className="ov__sub">
+                  {t('withdrawal.taxRange', {
+                    min: fmt.compact(comparison.minTax),
+                    max: fmt.compact(comparison.maxTax),
+                  })}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="contrib-summary__item">
+              <span className="ov__sub">{t('withdrawal.vsOtherTitle')}</span>
+              {vsPill ? (
+                <>
+                  <span className={cn('wo-badge', vsPill.cls)}>{vsPill.label}</span>
+                  <span className="ov__sub">
+                    {t('withdrawal.bestWorst', {
+                      best: comparison!.bestYear,
+                      worst: comparison!.worstYear,
+                    })}
+                  </span>
+                </>
+              ) : (
+                <b>—</b>
+              )}
+            </div>
+
+            <div className="contrib-summary__item">
+              <span className="ov__sub">{t('withdrawal.annualSpending')}</span>
+              <b>{fmt.compact(annualSpending)}</b>
+              <span className="ov__sub">
+                {inflationOn
+                  ? `${t('withdrawal.inflation')} · ${t('withdrawal.inflationRate', { rate: inflationPct })}`
+                  : `${t('withdrawal.inflation')} ${t('withdrawal.inflationOff')}`}
+              </span>
+            </div>
           </div>
 
           <div className="wo-grid">
@@ -523,74 +577,9 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                 </div>
                 <span className="wo-preset__action">{t('common.open')}</span>
               </button>
-
-              <div className="wo-spend">
-                <div className="field" style={{ margin: 0, flex: 1 }}>
-                  <span className="field__label">{t('withdrawal.annualSpending')}</span>
-                  <div className="stepper" aria-readonly>
-                    <input
-                      value={fmt.format(annualSpending)}
-                      readOnly
-                      aria-label={t('withdrawal.annualSpending')}
-                    />
-                  </div>
-                </div>
-                <div className="wo-infl">
-                  <span className="ov__sub">{t('withdrawal.inflation')}</span>
-                  <span className="wo-infl__row">
-                    <span className={cn('switch', inflationOn && 'on')} aria-disabled>
-                      <span className="switch__dot" />
-                    </span>
-                    {inflationOn
-                      ? t('withdrawal.inflationRate', { rate: inflationPct })
-                      : t('withdrawal.inflationOff')}
-                  </span>
-                </div>
-              </div>
             </div>
 
             <div className="wo-right">
-              <div className="wo-right__head">
-                <div>
-                  <div className="wo-section-label">{t('withdrawal.moneyLastsUntil')}</div>
-                  <div
-                    className="wo-big"
-                    style={{ color: fullyFunded ? 'var(--success)' : 'var(--amber)' }}
-                  >
-                    {moneyLastsLabel} <span className="wo-big__sub">{subLabel}</span>
-                  </div>
-                  <div className="wo-section-label" style={{ marginTop: 10 }}>
-                    {t('withdrawal.lifetimeTax')}
-                  </div>
-                  <div className="wo-big" style={{ color: 'var(--danger, #f43f5e)' }}>
-                    {fmt.compact(lifetimeTax)}
-                    {comparison?.currentIsLowestTax && (
-                      <span className="wo-big__sub">{t('withdrawal.lowestTax')}</span>
-                    )}
-                  </div>
-                </div>
-                {comparison && (
-                  <div className="wo-compare">
-                    <div className="wo-section-label">{t('withdrawal.vsOther')}</div>
-                    <div>
-                      {t('withdrawal.bestWorst', {
-                        best: comparison.bestYear,
-                        worst: comparison.worstYear,
-                      })}
-                    </div>
-                    {comparison.currentIsBest && (
-                      <div className="wo-best">{t('withdrawal.bestOrdering')}</div>
-                    )}
-                    <div style={{ marginTop: 8 }}>
-                      {t('withdrawal.taxRange', {
-                        min: fmt.compact(comparison.minTax),
-                        max: fmt.compact(comparison.maxTax),
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               <div className="wo-section-label">{t('withdrawal.balancesTitle')}</div>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={chartData} margin={{ top: 10, right: 8, left: 4, bottom: 0 }}>
@@ -613,15 +602,14 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                     }}
                   />
                   <Tooltip
-                    contentStyle={{
-                      background: '#0b0b0c',
-                      border: '1px solid var(--border)',
-                      borderRadius: 10,
-                    }}
-                    formatter={(value: unknown, name: unknown) => [
-                      fmt.format(Number(value)),
-                      summaryById.get(String(name))?.label ?? String(name),
-                    ]}
+                    content={
+                      <ChartTooltip
+                        formatter={(value: unknown, name: unknown) => [
+                          fmt.format(Number(value)),
+                          summaryById.get(String(name))?.label ?? String(name),
+                        ]}
+                      />
+                    }
                   />
                   {plan.accounts.map((a) => (
                     <Area
@@ -647,10 +635,16 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
               </div>
 
               <div className="wo-section-label" style={{ marginTop: 16 }}>
-                {t('withdrawal.outflowTitle')}
+                {outflowView === 'flow'
+                  ? t('withdrawal.outflowTitleFlow')
+                  : t('withdrawal.outflowTitleYearly')}
               </div>
 
-              <div className="seg-tabs" role="radiogroup" aria-label={t('withdrawal.outflowTitle')}>
+              <div
+                className="seg-tabs"
+                role="radiogroup"
+                aria-label={t('withdrawal.outflowTitleYearly')}
+              >
                 <button
                   type="button"
                   role="radio"
@@ -684,14 +678,24 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                       margin={{ top: 8, right: 130, bottom: 8, left: 130 }}
                     >
                       <Tooltip
-                        contentStyle={{
-                          background: '#0b0b0c',
-                          border: '1px solid var(--border)',
-                          borderRadius: 10,
+                        content={({ active, payload }) => {
+                          if (!active || !payload || payload.length === 0) return null;
+                          const link = payload[0]?.payload as
+                            | { source?: SankeyNodeDatum; target?: SankeyNodeDatum; value?: number }
+                            | undefined;
+                          if (!link?.source || !link?.target) return null;
+                          return (
+                            <div className="mc-fan-tip">
+                              <div className="mc-fan-tip__row">
+                                <i style={{ background: link.source.color }} />
+                                <span>
+                                  {link.source.name} → {link.target.name}
+                                </span>
+                                <b>{fmt.format(link.value ?? 0)}</b>
+                              </div>
+                            </div>
+                          );
                         }}
-                        itemStyle={{ color: 'var(--text)' }}
-                        labelStyle={{ color: 'var(--text-muted)' }}
-                        formatter={(value: unknown) => fmt.format(Number(value))}
                       />
                     </Sankey>
                   </ResponsiveContainer>
@@ -715,15 +719,14 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                     />
                     <Tooltip
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                      contentStyle={{
-                        background: '#0b0b0c',
-                        border: '1px solid var(--border)',
-                        borderRadius: 10,
-                      }}
-                      formatter={(value: unknown, name: unknown) => [
-                        fmt.format(Number(value)),
-                        summaryById.get(String(name))?.label ?? String(name),
-                      ]}
+                      content={
+                        <ChartTooltip
+                          formatter={(value: unknown, name: unknown) => [
+                            fmt.format(Number(value)),
+                            summaryById.get(String(name))?.label ?? String(name),
+                          ]}
+                        />
+                      }
                     />
                     {plan.accounts.map((a) => (
                       <Bar
@@ -737,12 +740,6 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                   </BarChart>
                 </ResponsiveContainer>
               )}
-
-              <p className="field__hint" style={{ marginTop: 12 }}>
-                {outflowView === 'flow'
-                  ? t('withdrawal.outflowHint')
-                  : t('withdrawal.outflowYearlyHint')}
-              </p>
             </div>
           </div>
         </>
