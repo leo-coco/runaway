@@ -135,7 +135,7 @@ export const buildRunwayEvents = (
       kind: 'retirement',
       year: settings.retirementYear,
       labelKey: 'runway.retirement',
-      icon: 'umbrella',
+      icon: 'palm-tree',
     });
   }
 
@@ -159,7 +159,7 @@ export const buildRunwayEvents = (
     year: endYear,
     labelKey: 'runway.projectionEnd',
     labelParams: { age: settings.lifeExpectancyAge },
-    icon: 'star',
+    icon: 'checkered-flag',
   });
 
   // --- Family 2: financial events ---

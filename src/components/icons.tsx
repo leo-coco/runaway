@@ -431,6 +431,38 @@ export const KeyIcon = ({ size = 16, ...p }: IconProps) => (
     <path d="m11 12 8-8M16 7l3 3M14 9l2 2" />
   </svg>
 );
+export const PalmTreeIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M11 21c.3-5 .8-8.5 2-11" />
+    <path d="M13 9c-2-3-6-3.5-8-1 2.5 1.5 5.5 1.7 8 1Z" />
+    <path d="M13 9c1-3.5 4-5 7-4-1 3-4 4.5-7 4Z" />
+    <path d="M13 9c-1-4 .5-6.5 2-8-3 .5-5 3-4 7.5Z" />
+    <circle cx="12.3" cy="10" r="0.8" fill="currentColor" stroke="none" />
+    <circle cx="13.6" cy="10.4" r="0.8" fill="currentColor" stroke="none" />
+  </svg>
+);
+export const ChequeredFlagIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <line x1="5" y1="21" x2="5" y2="3" />
+    <path d="M5 4h13l-2.5 3.5L18 11H5Z" />
+    <rect x="7" y="5" width="2" height="2" fill="currentColor" stroke="none" />
+    <rect x="11" y="5" width="2" height="2" fill="currentColor" stroke="none" />
+    <rect x="9" y="7" width="2" height="2" fill="currentColor" stroke="none" />
+    <rect x="13" y="7" width="2" height="2" fill="currentColor" stroke="none" />
+    <rect x="7" y="9" width="2" height="2" fill="currentColor" stroke="none" />
+    <rect x="11" y="9" width="2" height="2" fill="currentColor" stroke="none" />
+  </svg>
+);
+export const DiceIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="3" />
+    <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="16" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 /** Named icons a runway event can carry (see src/services/runwayEvents.ts). */
 export type RunwayIconName =
@@ -457,7 +489,9 @@ export type RunwayIconName =
   | 'credit-card'
   | 'tax'
   | 'paycheck'
-  | 'key';
+  | 'key'
+  | 'palm-tree'
+  | 'checkered-flag';
 
 export const RUNWAY_ICONS: Record<RunwayIconName, (p: IconProps) => ReactElement> = {
   dot: DotIcon,
@@ -484,4 +518,6 @@ export const RUNWAY_ICONS: Record<RunwayIconName, (p: IconProps) => ReactElement
   tax: TaxIcon,
   paycheck: PaycheckIcon,
   key: KeyIcon,
+  'palm-tree': PalmTreeIcon,
+  'checkered-flag': ChequeredFlagIcon,
 };
