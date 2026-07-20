@@ -7864,9 +7864,33 @@ th[title] {
   color: #1c1917;
   color-scheme: light;
 }
-.auth-screen--loading {
-  display: block;
-  background: #f5f4f2;
+.app-splash {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+.app-splash__mark {
+  width: 48px;
+  height: 48px;
+  animation: app-splash-pulse 1.4s ease-in-out infinite;
+}
+@keyframes app-splash-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-splash__mark {
+    animation: none;
+    opacity: 0.85;
+  }
 }
 .auth-screen__hero {
   position: relative;

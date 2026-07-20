@@ -3,6 +3,7 @@ import { Navigate, Outlet, useOutletContext, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { InlineError } from '@/components/InlineError';
+import { Spinner } from '@/components/ui/Spinner';
 import { useAppStore } from '@/store';
 import { MASTER_CURRENCIES, type CurrencyCode } from '@/domain/money';
 import { usePlan } from '@/hooks/usePlans';
@@ -31,6 +32,7 @@ export const PlanLayout = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const { sandbox } = useAppMode();
+  const plansSynced = useAppStore((s) => s.plansSynced);
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
   const updateSettings = useAppStore((s) => s.updateSettings);
@@ -66,6 +68,19 @@ export const PlanLayout = () => {
     if (noHoldings) setPlanSuccess(planId, null);
     else if (liveSuccess !== null) setPlanSuccess(planId, liveSuccess);
   }, [planId, noHoldings, liveSuccess, setPlanSuccess]);
+
+  // Plans are still reconciling with the server, or FX rates for a real plan
+  // haven't loaded yet: show a spinner rather than "not found" / stale amounts
+  // that would flip to their real state a moment later.
+  if (!plansSynced || (plan && fx.isLoading)) {
+    return (
+      <div className="container">
+        <div className="state-box">
+          <Spinner />
+        </div>
+      </div>
+    );
+  }
 
   if (!plan) {
     if (sandbox) return <Navigate to="/" replace />;

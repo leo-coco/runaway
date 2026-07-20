@@ -8,8 +8,8 @@ import runawayLogo from '@/assets/runaway-logo.png';
 import { Footer } from '@/components/layout/Footer';
 import { TourProvider } from '@/features/tour/TourProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useAppStore } from '@/store';
-import { useFeature } from '@/hooks/useEntitlements';
+import { useAppStore, useStoreHydrated } from '@/store';
+import { useFeature, useEntitlementsReady } from '@/hooks/useEntitlements';
 import { Button } from '@/components/ui/Button';
 import { PlusIcon } from '@/components/icons';
 import { PlanLayout } from '@/features/portfolio/PlanLayout';
@@ -167,13 +167,32 @@ const AppShell = ({ sandbox }: { sandbox: boolean }) => {
   );
 };
 
+const AppSplash = () => (
+  <main className="app-splash" role="status" aria-live="polite">
+    <img
+      className="app-splash__mark"
+      src={runawayLogo.src}
+      width={runawayLogo.width}
+      height={runawayLogo.height}
+      alt=""
+    />
+  </main>
+);
+
 const ProtectedApp = () => {
   const { data: sessionData, isPending } = useSession();
+  const hydrated = useStoreHydrated();
+  const entitlementsReady = useEntitlementsReady();
 
   // Do not render a persisted plan while the session is being checked. This
   // prevents a brief data flash after sign-out or a direct plan URL visit.
-  if (isPending) return <main className="auth-screen auth-screen--loading" />;
+  if (isPending) return <AppSplash />;
   if (!sessionData?.user) return <Navigate to="/signin" replace />;
+  // Wait for the store to finish rehydrating from localStorage and for
+  // entitlements to resolve before mounting the product shell — otherwise the
+  // dashboard briefly renders with no plans / locked premium cards, then flashes
+  // to the real state once both land.
+  if (!hydrated || !entitlementsReady) return <AppSplash />;
 
   return <ProductShell syncPlans />;
 };
