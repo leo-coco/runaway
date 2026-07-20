@@ -1,9 +1,7 @@
 ---
-import '../index.css';
-import { AppRoot } from '../AppRoot';
-
 const candidateLang = Astro.url.pathname.split('/')[1];
 const lang = candidateLang === 'fr' ? 'fr' : 'en';
+const isDev = import.meta.env.DEV;
 
 const APP_TITLE: Record<'en' | 'fr', string> = {
   en: "Runaway - Know when you're free",
@@ -23,6 +21,19 @@ const APP_TITLE: Record<'en' | 'fr', string> = {
     <script is:inline defer src="/_vercel/insights/script.js"></script>
   </head>
   <body>
-    <AppRoot client:only="react" />
+    <div id="root"></div>
+    {
+      isDev && (
+        <script is:inline type="module">
+          import RefreshRuntime from '/@react-refresh';
+
+          RefreshRuntime.injectIntoGlobalHook(window);
+          window.$RefreshReg$ = () => {};
+          window.$RefreshSig$ = () => (type) => type;
+          window.__vite_plugin_react_preamble_installed__ = true;
+        </script>
+      )
+    }
+    <script src="../main.tsx"></script>
   </body>
 </html>

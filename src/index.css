@@ -3312,7 +3312,9 @@ th[title] {
    flip to a white bubble with black text in dark theme (contrast against the
    dark canvas) — see the theme blocks near the top of this file. */
 :root {
-  --tip-radius: var(--radius-pill);
+  /* A compact corner radius still looks soft on short labels, while keeping
+     multi-line explanations from turning into oversized capsules. */
+  --tip-radius: 10px;
 }
 
 .acct-explain {
@@ -5155,8 +5157,6 @@ th[title] {
   transform: translateX(-50%);
   width: 300px;
   max-width: min(300px, 70vw);
-  max-height: 60vh;
-  overflow-y: auto;
   background: var(--tip-bg);
   border: 1px solid var(--tip-border);
   border-radius: var(--tip-radius);
@@ -7998,7 +7998,10 @@ th[title] {
   line-height: 1.6;
 }
 .auth-screen__brand-image {
+  display: block;
   width: min(500px, 82%);
+  max-width: 100%;
+  height: auto;
   margin: 0;
   border-radius: 28px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
