@@ -44,6 +44,7 @@ export const MonteCarloSummaryCard = () => {
     return (
       <div
         className="hero__card mc-card mc-card--locked"
+        data-tour="mc-summary-card"
         role="button"
         tabIndex={0}
         onClick={() => openPaywall('monteCarlo')}
@@ -61,7 +62,10 @@ export const MonteCarloSummaryCard = () => {
   }
 
   return (
-    <div className={cn('hero__card', 'mc-card', sx?.zone === 'weak' && 'hero__card--risk')}>
+    <div
+      className={cn('hero__card', 'mc-card', sx?.zone === 'weak' && 'hero__card--risk')}
+      data-tour="mc-summary-card"
+    >
       <div className="mc-card__text">
         {!hasAssets ? (
           <span className="mc-card__note">{t('dashboard.mc.noData')}</span>

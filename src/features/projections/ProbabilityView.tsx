@@ -254,7 +254,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
         <div className="state-box">{t('mc.running', { count: iterations.toLocaleString() })}</div>
       ) : (
         <>
-          <div className="hero hero--triple">
+          <div className="hero hero--triple" data-tour="mc-summary-cards">
             <div
               className="hero__card prob-success-card"
               style={{ borderColor: ZONE_COLOR[sx.zone] }}

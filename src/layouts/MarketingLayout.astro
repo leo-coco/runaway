@@ -1,5 +1,4 @@
 ---
-import Analytics from '@vercel/analytics/astro';
 import '../styles/marketing.css';
 import geistRegular from '@fontsource/geist-sans/files/geist-sans-latin-400-normal.woff2?url';
 import geistBold from '@fontsource/geist-sans/files/geist-sans-latin-700-normal.woff2?url';
@@ -102,7 +101,7 @@ const schema = kind === 'landing'
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={ogImage} />
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
-    <Analytics />
+    <script is:inline defer src="/_vercel/insights/script.js"></script>
   </head>
   <body>
     <slot />

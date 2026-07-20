@@ -413,16 +413,22 @@ h4 {
   padding: 0 24px;
 }
 .app-footer__row {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 8px 16px;
   padding: 16px 0 24px;
   font-size: 0.78125rem;
   color: var(--text-muted);
 }
+.app-footer__copyright {
+  text-align: center;
+}
 .app-footer__links {
+  position: absolute;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -461,11 +467,12 @@ h4 {
     padding: 0 20px;
   }
   .app-footer__row {
-    align-items: flex-start;
+    align-items: center;
     flex-direction: column-reverse;
     padding: 14px 0 20px;
   }
   .app-footer__links {
+    position: static;
     gap: 14px;
   }
 }

@@ -155,6 +155,13 @@ export function createTour(deps: TourDeps): TourInstance {
       window.addEventListener('keydown', onKeyDown);
       d = driver({
         allowClose: true,
+        // Disable driver.js's fade-in: when a step highlights the full-height,
+        // position:fixed plan modal, driver's reposition churn keeps restarting
+        // the popover's opacity animation, so it stays pinned near 0 and the
+        // popover (with the Next button) is invisible — the tour looks frozen on
+        // every modal step. We drive steps manually via highlight(), so the fade
+        // is cosmetic anyway.
+        animate: false,
         // driver.js gates the close button and Esc handling behind `allowClose`,
         // so we can't use that to disable overlay-click-to-close alone. Overriding
         // the overlay click behavior with a no-op does that instead.

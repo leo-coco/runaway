@@ -125,7 +125,6 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
       <div className="section__head">
         <div>
           <h2 className="section__title">{t('portfolio.title')}</h2>
-          <p className="section__desc">{t('portfolio.desc')}</p>
         </div>
       </div>
 

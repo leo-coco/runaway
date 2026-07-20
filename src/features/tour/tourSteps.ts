@@ -54,6 +54,15 @@ const step = (id: string, extra: Omit<TourStep, 'id' | 'titleKey' | 'bodyKey'>):
  */
 export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
   step('dashboardIntro', {}),
+  step('mcSummary', {
+    // First card of the dashboard: the Monte-Carlo verdict. Premium-only (free
+    // sees a locked paywall card), so gated like the other Pro surfaces.
+    page: 'dashboard',
+    tourKey: 'mc-summary-card',
+    side: 'bottom',
+    align: 'start',
+    requires: 'monteCarlo',
+  }),
   step('runway', {
     page: 'dashboard',
     // Hero timeline card; universal (renders on every tier), so no `data-tour` of
@@ -248,6 +257,16 @@ export const PROJECTION_GUIDE_STEPS: readonly TourStep[] = [
  */
 export const MONTE_CARLO_GUIDE_STEPS: readonly TourStep[] = [
   step('monteCarloIntro', {}),
+  step('mcSummaryCards', {
+    // The three headline figures at the top of the page (success rate, median
+    // end value, median depletion). Like the fan chart, they only mount once the
+    // simulation has run, so they share the longer wait budget.
+    page: 'monte-carlo',
+    tourKey: 'mc-summary-cards',
+    side: 'bottom',
+    align: 'start',
+    timeoutMs: 12000,
+  }),
   step('mcFanChart', {
     page: 'monte-carlo',
     tourKey: 'mc-fan-chart',
