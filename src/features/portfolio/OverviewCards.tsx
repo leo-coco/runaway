@@ -161,7 +161,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         </div>
       </Card>
 
-      <Card className="ov">
+      <Card className="ov" data-tour="expenses-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.expensesIncomes')}</span>
           <span className="ov__link" onClick={() => openModal('expensesIncomes')}>
@@ -185,7 +185,10 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         </div>
       </Card>
 
-      <Card className={`ov${realEstateCount === 0 ? ' ov--realestate-empty' : ''}`}>
+      <Card
+        className={`ov${realEstateCount === 0 ? ' ov--realestate-empty' : ''}`}
+        data-tour="realestate-card"
+      >
         <div className="ov__head">
           <span className="ov__title">{t('overview.realEstate')}</span>
           {homeLocked ? (

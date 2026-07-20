@@ -1460,7 +1460,11 @@ export const en = {
     steps: {
       dashboardIntro: {
         title: 'Welcome to Runaway',
-        body: 'This guide shows how to set up your plan: timeline, accounts, assets and spending. Use Next and Back to move through it, and close anytime with Esc.',
+        body: 'This guide walks your whole plan in two parts: first what you own (timeline, accounts, assets, real estate), then how you fund and spend it (savings, spending, one-off flows, withdrawals). Use Next and Back to move through it, and close anytime with Esc.',
+      },
+      runway: {
+        title: 'Your runway at a glance',
+        body: 'This hero timeline is your headline: your financial-independence date and the key milestones between now and the age your plan funds through. Every input in this guide moves it, so it is the number to watch as you build.',
       },
       timeline: {
         title: 'Retirement timeline',
@@ -1477,6 +1481,14 @@ export const en = {
       spending: {
         title: 'Linear or by phase',
         body: 'This is the net amount you want to have per month in retirement. Choose Linear — one steady, inflation-adjusted budget — or By phase, with higher Go-Go years easing into lower No-Go years.',
+      },
+      expensesIncomesButton: {
+        title: 'One-off expenses & income',
+        body: 'Beyond steady saving and spending, model one-time or recurring events: a home purchase, an inheritance, tuition, a windfall. Click Edit on this card to add them.',
+      },
+      expensesIncomes: {
+        title: 'Add a cash flow',
+        body: 'Set an amount, a year (or a range for recurring flows), and whether the money comes in or goes out. Each event lands on your projection and runway at the right time.',
       },
       scenario: {
         title: 'Projection scenario',
@@ -1526,13 +1538,25 @@ export const en = {
         title: 'Expected growth (CAGR)',
         body: "Set each asset's expected annual growth rate. The active scenario nudges this up or down.<br><br>CAGR (Compound Annual Growth Rate) is the steady yearly rate that would take a starting value to its ending value over a period, as if it grew smoothly every year — smoothing out the real ups and downs into one average annual return.",
       },
+      realEstateButton: {
+        title: 'Real estate',
+        body: 'Property sits alongside your investments in your net worth. Click Edit on this card to model your home and any rentals.',
+      },
+      realEstate: {
+        title: 'Home & rentals',
+        body: 'Add your primary residence and rental properties: value, mortgage, appreciation, and for rentals the rent and running costs. Equity is tracked year by year and feeds both your net worth and the projection.',
+      },
+      allocation: {
+        title: 'Net-worth composition',
+        body: 'A live donut of everything you own, investments plus real-estate equity, split by asset type, account or region. It is read-only here; edit the underlying assets on the Portfolio page.',
+      },
       currency: {
         title: 'Plan currency',
         body: 'Switch the plan currency here. Every price and total is converted on the fly, while each asset keeps its native market price.',
       },
       dashboardOutro: {
         title: 'Dashboard set up',
-        body: 'That\'s the full loop for building your plan. Next, take the Projection guide or the Monte Carlo guide from "Take the tour" to see it in action.',
+        body: 'That\'s the full loop: everything you own, and how you fund and spend it. Next, take the Projection guide or the Monte Carlo guide from "Take the tour" to see your plan in action.',
       },
       projectionIntro: {
         title: 'The projection guide',

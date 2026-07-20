@@ -1501,7 +1501,11 @@ export const fr: Resources = {
     steps: {
       dashboardIntro: {
         title: 'Bienvenue sur Runaway',
-        body: 'Cette visite montre comment construire votre plan : horizon, comptes, actifs et dépenses. Utilisez Suivant et Retour pour avancer, et fermez à tout moment avec Échap.',
+        body: 'Cette visite parcourt votre plan en deux temps : d’abord ce que vous possédez (horizon, comptes, actifs, immobilier), puis comment vous le financez et le dépensez (épargne, dépenses, flux ponctuels, retraits). Utilisez Suivant et Retour pour avancer, et fermez à tout moment avec Échap.',
+      },
+      runway: {
+        title: 'Votre trajectoire en un coup d’œil',
+        body: 'Cette frise en tête de page est votre repère principal : votre date d’indépendance financière et les grandes étapes d’ici l’âge jusqu’auquel le plan doit tenir. Chaque réglage de cette visite la fait bouger, c’est donc le chiffre à surveiller pendant que vous construisez.',
       },
       timeline: {
         title: 'Horizon de retraite',
@@ -1518,6 +1522,14 @@ export const fr: Resources = {
       spending: {
         title: 'Linéaire ou par phase',
         body: 'C’est le montant net que vous souhaitez avoir par mois à votre retraite. Choisissez Linéaire — un budget stable ajusté à l’inflation — ou Par phase, avec des années « Go-Go » plus élevées qui s’atténuent vers des années « No-Go ».',
+      },
+      expensesIncomesButton: {
+        title: 'Dépenses & revenus ponctuels',
+        body: 'Au-delà de l’épargne et des dépenses régulières, modélisez des événements ponctuels ou récurrents : achat immobilier, héritage, études, rentrée d’argent. Cliquez sur Éditer sur cette carte pour les ajouter.',
+      },
+      expensesIncomes: {
+        title: 'Ajouter un flux',
+        body: 'Indiquez un montant, une année (ou une plage pour les flux récurrents) et si l’argent entre ou sort. Chaque événement se place au bon moment sur votre projection et votre trajectoire.',
       },
       scenario: {
         title: 'Scénario de projection',
@@ -1567,13 +1579,25 @@ export const fr: Resources = {
         title: 'Croissance attendue (TCAC)',
         body: 'Fixez le taux de croissance annuel attendu de chaque actif. Le scénario actif l’ajuste à la hausse ou à la baisse.<br><br>Le TCAC (Taux de Croissance Annuel Composé) est le taux annuel constant qui mènerait une valeur de départ à sa valeur d’arrivée sur une période donnée, comme si elle progressait régulièrement chaque année — il lisse les hausses et baisses réelles en un seul rendement annuel moyen.',
       },
+      realEstateButton: {
+        title: 'Immobilier',
+        body: 'Vos biens comptent dans votre patrimoine au même titre que vos placements. Cliquez sur Éditer sur cette carte pour modéliser votre résidence et vos locatifs.',
+      },
+      realEstate: {
+        title: 'Résidence & locatifs',
+        body: 'Ajoutez votre résidence principale et vos biens locatifs : valeur, crédit, appréciation, et pour les locatifs le loyer et les charges. La valeur nette est suivie année après année et alimente votre patrimoine comme la projection.',
+      },
+      allocation: {
+        title: 'Composition du patrimoine',
+        body: 'Un anneau en direct de tout ce que vous possédez, placements et valeur nette immobilière, réparti par type d’actif, compte ou région. Il est en lecture seule ici ; modifiez les actifs sous-jacents dans la page Portefeuille.',
+      },
       currency: {
         title: 'Devise du plan',
         body: 'Changez ici la devise du plan. Chaque prix et total est converti à la volée, tandis que chaque actif conserve son prix de marché d’origine.',
       },
       dashboardOutro: {
         title: 'Tableau de bord configuré',
-        body: 'Voilà pour construire votre plan. Ensuite, suivez la visite de la projection ou la visite Monte Carlo depuis « Suivre la visite » pour le voir à l’œuvre.',
+        body: 'Voilà la boucle complète : tout ce que vous possédez, et la façon dont vous le financez et le dépensez. Ensuite, suivez la visite de la projection ou la visite Monte Carlo depuis « Suivre la visite » pour voir votre plan à l’œuvre.',
       },
       projectionIntro: {
         title: 'La visite de la projection',
