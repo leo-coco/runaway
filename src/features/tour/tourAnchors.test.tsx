@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type * as Recharts from 'recharts';
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ServicesProvider } from '@/providers/ServicesContext';
@@ -49,10 +49,10 @@ const mockServices: Services = {
   search: { search: vi.fn(async () => ok([])) },
 };
 
-const renderAt = (section: 'dashboard' | 'portfolio') => {
+const renderAt = async (section: 'dashboard' | 'portfolio') => {
   const planId = useAppStore.getState().plans[0]!.id;
   const client = createQueryClient();
-  return render(
+  const result = render(
     <QueryClientProvider client={client}>
       <ServicesProvider services={mockServices}>
         <MemoryRouter initialEntries={[`/plan/${planId}/${section}`]}>
@@ -66,6 +66,12 @@ const renderAt = (section: 'dashboard' | 'portfolio') => {
       </ServicesProvider>
     </QueryClientProvider>,
   );
+  // PlanLayout shows a spinner until the FX query resolves; wait it out so
+  // callers can assert against the real page content.
+  await waitFor(() => {
+    expect(screen.queryByRole('status', { name: 'Loading' })).not.toBeInTheDocument();
+  });
+  return result;
 };
 
 const has = (container: HTMLElement, key: string): boolean =>
@@ -87,15 +93,15 @@ describe('dashboard guide anchors resolve on their declared page', () => {
     'drag-handle',
   ];
 
-  it('asset anchors are on the portfolio page, not the dashboard', () => {
-    const { container: dash } = renderAt('dashboard');
+  it('asset anchors are on the portfolio page, not the dashboard', async () => {
+    const { container: dash } = await renderAt('dashboard');
     for (const key of ASSET_KEYS) {
       expect(has(dash, key), `${key} should NOT be on the dashboard`).toBe(false);
     }
   });
 
-  it('the portfolio page renders every asset anchor', () => {
-    const { container: pf } = renderAt('portfolio');
+  it('the portfolio page renders every asset anchor', async () => {
+    const { container: pf } = await renderAt('portfolio');
     for (const key of ASSET_KEYS) {
       expect(has(pf, key), `${key} should be on the portfolio page`).toBe(true);
     }
@@ -116,8 +122,8 @@ describe('dashboard guide anchors resolve on their declared page', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('overview anchors remain on the dashboard', () => {
-    const { container: dash } = renderAt('dashboard');
+  it('overview anchors remain on the dashboard', async () => {
+    const { container: dash } = await renderAt('dashboard');
     for (const key of ['timeline-card', 'accounts-card', 'savings-card', 'spending-card']) {
       expect(has(dash, key), `${key} should be on the dashboard`).toBe(true);
     }
