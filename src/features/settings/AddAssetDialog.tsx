@@ -161,21 +161,36 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
 
   const nativeFmt = useCurrencyFormatter(selected?.nativeCurrency ?? plan.currency);
 
-  // Composition pills (stocks / bonds / cash / other). Preferred and convertible
-  // holdings are folded into "other" so the row stays to the classes users know.
+  // Composition pills. Funds use their fetched breakdown (preferred + convertible
+  // folded into "other"); a plain equity is 100% stocks and a crypto is 100% of
+  // its own coin, so every selection shows a composition, not just funds.
   const compositionPills = useMemo(() => {
-    if (!allocation) return [];
-    const other =
-      (allocation.otherPct ?? 0) +
-      (allocation.preferredPct ?? 0) +
-      (allocation.convertiblePct ?? 0);
-    return [
-      { key: 'stocks', label: t('addAsset.compStocks'), pct: allocation.stockPct ?? 0 },
-      { key: 'bonds', label: t('addAsset.compBonds'), pct: allocation.bondPct ?? 0 },
-      { key: 'cash', label: t('addAsset.compCash'), pct: allocation.cashPct ?? 0 },
-      { key: 'other', label: t('addAsset.compOther'), pct: Math.round(other * 10) / 10 },
-    ].filter((p) => p.pct > 0);
-  }, [allocation, t]);
+    if (!selected) return [];
+    const isFund = selected.quoteType === 'ETF' || selected.quoteType === 'MUTUALFUND';
+    if (isFund) {
+      if (!allocation) return [];
+      const other =
+        (allocation.otherPct ?? 0) +
+        (allocation.preferredPct ?? 0) +
+        (allocation.convertiblePct ?? 0);
+      return [
+        { key: 'stocks', label: t('addAsset.compStocks'), pct: allocation.stockPct ?? 0 },
+        { key: 'bonds', label: t('addAsset.compBonds'), pct: allocation.bondPct ?? 0 },
+        { key: 'cash', label: t('addAsset.compCash'), pct: allocation.cashPct ?? 0 },
+        { key: 'other', label: t('addAsset.compOther'), pct: Math.round(other * 10) / 10 },
+      ].filter((p) => p.pct > 0);
+    }
+    if (selected.assetClass === 'crypto') {
+      return [{ key: 'crypto', label: selected.symbol, pct: 100 }];
+    }
+    if (selected.assetClass === 'cash') {
+      return [{ key: 'cash', label: t('addAsset.compCash'), pct: 100 }];
+    }
+    if (selected.assetClass === 'other') {
+      return [{ key: 'other', label: t('addAsset.compOther'), pct: 100 }];
+    }
+    return [{ key: 'stocks', label: t('addAsset.compStocks'), pct: 100 }];
+  }, [selected, allocation, t]);
 
   const selectInstrument = async (instrument: Instrument) => {
     setSelected(instrument);
@@ -520,27 +535,25 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 )}
               </div>
 
-              {(selected.quoteType === 'ETF' || selected.quoteType === 'MUTUALFUND') && (
-                <div className="field">
-                  <span className="field__label">{t('addAsset.composition')}</span>
-                  {allocationLoading ? (
-                    <span className="fetch-link">
-                      <Spinner /> {t('addAsset.compFetching')}
-                    </span>
-                  ) : compositionPills.length > 0 ? (
-                    <div className="alloc-pills">
-                      {compositionPills.map((p) => (
-                        <span key={p.key} className={cn('alloc-pill', `alloc-pill--${p.key}`)}>
-                          <span className="alloc-pill__dot" />
-                          {p.label} {p.pct}%
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="field__hint">{t('addAsset.compUnavailable')}</p>
-                  )}
-                </div>
-              )}
+              <div className="field">
+                <span className="field__label">{t('addAsset.composition')}</span>
+                {allocationLoading ? (
+                  <span className="fetch-link">
+                    <Spinner /> {t('addAsset.compFetching')}
+                  </span>
+                ) : compositionPills.length > 0 ? (
+                  <div className="alloc-pills">
+                    {compositionPills.map((p) => (
+                      <span key={p.key} className={cn('alloc-pill', `alloc-pill--${p.key}`)}>
+                        <span className="alloc-pill__dot" />
+                        {p.label} {p.pct}%
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="field__hint">{t('addAsset.compUnavailable')}</p>
+                )}
+              </div>
 
               <div className="addasset-fields addasset-fields--2">
                 <div className="field">
