@@ -77,7 +77,7 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
   let rowIndex = 0;
 
   return (
-    <Card padded className="dash-assets-card">
+    <Card padded className="dash-assets-card" data-tour="dash-assets-card">
       <div className="mini-assets-scroll">
         <div className="mini-assets">
           <div className="mini-row mini-row--head">

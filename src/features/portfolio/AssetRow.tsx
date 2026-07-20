@@ -273,6 +273,7 @@ export const AssetRow = ({
         <button
           type="button"
           className={`fetch-btn icon-action ${editing ? 'is-active' : ''}`}
+          data-tour={index === 0 ? 'edit-asset-btn' : undefined}
           onClick={onToggleEdit}
           aria-label={t(editing ? 'portfolio.doneAria' : 'portfolio.editAria', {
             symbol: holding.instrument.symbol,

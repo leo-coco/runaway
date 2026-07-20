@@ -36,13 +36,15 @@ describe('dashboard guide is filtered to the viewer tier', () => {
 
   it('keeps the free-relevant steps for a free viewer', () => {
     const free = ids(FREE);
-    // Includes the ungated additions: the hero runway, the net-worth donut, and
-    // the one-off expenses/income flow — all reachable on the free tier.
+    // Includes the ungated additions: the hero runway, the net-worth donut, the
+    // one-off expenses/income flow, the edit-asset button, and the portfolio
+    // chart/assets table — all reachable on the free tier.
     for (const open of [
       'dashboardIntro',
       'runway',
       'timeline',
       'addAssetButton',
+      'editAssetButton',
       'allocation',
       'savings',
       'spendingButton',
@@ -50,6 +52,8 @@ describe('dashboard guide is filtered to the viewer tier', () => {
       'expensesIncomes',
       'scenario',
       'currency',
+      'portfolioGraph',
+      'assetsTable',
       'dashboardOutro',
     ]) {
       expect(free, `${open} should stay for free`).toContain(open);

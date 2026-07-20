@@ -35,7 +35,7 @@ export const PortfolioTrendCard = ({ projection, currency }: PortfolioTrendCardP
   const axisTick = { fill: 'var(--text-dim)', fontSize: 11 };
 
   return (
-    <Card padded>
+    <Card padded data-tour="portfolio-trend-card">
       <div className="settings-head">
         <span className="settings-head__title">{t('dashboard.trendTitle')}</span>
       </div>

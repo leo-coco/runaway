@@ -1460,7 +1460,7 @@ export const en = {
     steps: {
       dashboardIntro: {
         title: 'Welcome to Runaway',
-        body: 'This guide walks your whole plan in two parts: first what you own (timeline, accounts, assets, real estate), then how you fund and spend it (savings, spending, one-off flows, withdrawals). Use Next and Back to move through it, and close anytime with Esc.',
+        body: 'This guide walks your whole plan in two parts: first what you own (timeline, accounts, assets, real estate), then how you fund and spend it (savings, spending, one-off flows, withdrawals). Use Next and Back to move through it (the ← and → arrow keys work too), and close anytime with Esc.',
       },
       runway: {
         title: 'Your runway at a glance',
@@ -1484,7 +1484,7 @@ export const en = {
       },
       expensesIncomesButton: {
         title: 'One-off expenses & income',
-        body: 'Beyond steady saving and spending, model one-time or recurring events: a home purchase, an inheritance, tuition, a windfall. Click Edit on this card to add them.',
+        body: 'Beyond steady saving and spending, model one-time or recurring events: an inheritance, tuition, a windfall. Click Edit on this card to add them.',
       },
       expensesIncomes: {
         title: 'Add a cash flow',
@@ -1524,7 +1524,11 @@ export const en = {
       },
       fetchPrices: {
         title: 'Fetch live prices',
-        body: 'Pull the latest market price for every holding in one click. Each row also has its own refresh button.',
+        body: 'Pull the latest market price for every holding in one click.',
+      },
+      editAssetButton: {
+        title: 'Edit an asset',
+        body: 'Click this button to switch the row into edit mode and reveal the quantity and CAGR fields.',
       },
       drag: {
         title: 'Organize by drag & drop',
@@ -1550,6 +1554,14 @@ export const en = {
         title: 'Net-worth composition',
         body: 'A live donut of everything you own, investments plus real-estate equity, split by asset type, account or region. It is read-only here; edit the underlying assets on the Portfolio page.',
       },
+      portfolioGraph: {
+        title: 'Portfolio chart',
+        body: 'Your total projected portfolio value, year by year.',
+      },
+      assetsTable: {
+        title: 'Your assets at a glance',
+        body: 'A compact table of every asset — value, return, and share of the portfolio — grouped by account.',
+      },
       currency: {
         title: 'Plan currency',
         body: 'Switch the plan currency here. Every price and total is converted on the fly, while each asset keeps its native market price.',
@@ -1561,6 +1573,10 @@ export const en = {
       projectionIntro: {
         title: 'The projection guide',
         body: 'This guide covers your deterministic, year-by-year projection: the views, the chart and the table behind it.',
+      },
+      projectionSummary: {
+        title: 'The three headline numbers',
+        body: 'Portfolio today, projected portfolio at retirement, and when (if ever) savings deplete — the three numbers that summarize the whole projection.',
       },
       chartView: {
         title: 'Projection views',
@@ -1589,6 +1605,14 @@ export const en = {
       mcFanChart: {
         title: 'Monte Carlo outcomes',
         body: 'Instead of one path, this runs thousands of random market futures. The band shows the likely range and the line the median; the success rate is the share that never run dry.',
+      },
+      mcOutcomes: {
+        title: 'Outcome breakdown',
+        body: 'Every simulated future is sorted into an outcome: Large surplus, Comfortable, Almost made it, or Failed in the middle. Click a category to explore it in the trial explorer.',
+      },
+      mcNetWorth: {
+        title: 'Portfolio net worth',
+        body: 'Portfolio value at the end of the horizon in the best quarter of simulations (Top 25%), the middle (Median), and the weaker outcomes (Bottom 25%, Bottom 10%).',
       },
       mcModel: {
         title: 'Return models',

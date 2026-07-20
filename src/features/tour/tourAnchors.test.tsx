@@ -88,6 +88,7 @@ describe('dashboard guide anchors resolve on their declared page', () => {
   const ASSET_KEYS = [
     'addasset-btn',
     'fetch-prices-btn',
+    'edit-asset-btn',
     'quantity-input',
     'cagr-input',
     'drag-handle',
@@ -112,6 +113,7 @@ describe('dashboard guide anchors resolve on their declared page', () => {
       'addAssetButton',
       'addAsset',
       'fetchPrices',
+      'editAssetButton',
       'quantity',
       'cagr',
       'drag',

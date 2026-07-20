@@ -467,7 +467,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                 )}
               </div>
 
-              <div className="mc-body-card">
+              <div className="mc-body-card" data-tour="mc-outcome-breakdown">
                 <div className="wo-section-label">
                   {t('mc.outcomeBreakdown')}
                   {status === 'running' && (
@@ -538,7 +538,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
             </div>
 
             <div className="mc-cards-row">
-              <div className="mc-body-card">
+              <div className="mc-body-card" data-tour="mc-net-worth">
                 <div className="wo-section-label">
                   {t('mc.netWorthTitle', { year: horizonEndYear })}
                 </div>
