@@ -2433,18 +2433,18 @@ h4 {
 /* ---------- breakdown table ---------- */
 .breakdown {
   overflow-x: auto;
-  --row-action-col: 64px;
-  --row-min-width: 940px;
-  --row-cols: minmax(160px, 1.5fr) minmax(90px, 1fr) minmax(90px, 0.9fr) minmax(90px, 0.9fr)
-    minmax(64px, 0.7fr) minmax(90px, 0.75fr) minmax(110px, 1fr) minmax(70px, 1.2fr)
+  --row-action-col: 54px;
+  --row-min-width: 983px;
+  --row-cols: minmax(133px, 1.45fr) minmax(88px, 0.72fr) minmax(95px, 0.78fr) minmax(88px, 0.78fr)
+    minmax(50px, 0.48fr) minmax(130px, 1.25fr) minmax(185px, 1.6fr) minmax(72px, 0.55fr)
     var(--row-action-col);
 }
 .brow {
   display: grid;
   grid-template-columns: var(--row-cols);
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 8px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
   /* Must match the row's true minimum content width (sum of the --row-cols
      minmax() floors + gaps + padding), so the row's own box — and therefore
@@ -2455,6 +2455,7 @@ h4 {
   min-width: var(--row-min-width);
 }
 .brow > * {
+  min-width: 0;
   text-align: center;
 }
 .brow > *:first-child {
@@ -2463,6 +2464,9 @@ h4 {
 .brow .price-cell,
 .brow .converted-price {
   justify-content: center;
+}
+.brow .converted-price {
+  white-space: nowrap;
 }
 .brow .stepper input {
   font-size: var(--fs-sm);
@@ -2542,9 +2546,9 @@ h4 {
 .acct-section {
   display: grid;
   grid-template-columns: var(--row-cols);
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 8px 16px;
+  padding: 8px 12px;
   background: var(--bg);
   border-top: 1px solid var(--border-strong);
   border-bottom: 1px solid var(--border);
@@ -8964,7 +8968,7 @@ th[title] {
   }
   .breakdown {
     --row-action-col: 100px;
-    --row-min-width: 976px;
+    --row-min-width: 1029px;
   }
   .asset-row__confirm .btn {
     min-height: 44px;
