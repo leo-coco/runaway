@@ -1,7 +1,4 @@
 ---
-import '../index.css';
-import { AppRoot } from '../AppRoot';
-
 const candidateLang = Astro.url.pathname.split('/')[1];
 const lang = candidateLang === 'fr' ? 'fr' : 'en';
 
@@ -23,6 +20,7 @@ const APP_TITLE: Record<'en' | 'fr', string> = {
     <script is:inline defer src="/_vercel/insights/script.js"></script>
   </head>
   <body>
-    <AppRoot client:only="react" />
+    <div id="root"></div>
+    <script src="../main.tsx"></script>
   </body>
 </html>
