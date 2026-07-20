@@ -22,15 +22,22 @@ const collectCspViolations = (page: Page) =>
   });
 
 const readCspViolations = (page: Page) =>
-  page.evaluate(() =>
-    // Chromium reports Playwright's own Runtime.evaluate call as a blocked
-    // `eval` while this callback reads the page state. It is test-runner
-    // instrumentation, not application code; keep all real resource and
-    // inline-script violations.
-    (window as unknown as { __cspViolations: string[] }).__cspViolations.filter(
-      (violation) => !violation.endsWith(': eval'),
-    ),
-  );
+  page.evaluate(() => {
+    const violations = [...(window as unknown as { __cspViolations: string[] }).__cspViolations];
+
+    // Chromium reports Playwright's Runtime.evaluate call as one blocked
+    // `eval` while this callback reads the page state. Remove only that final
+    // instrumentation event so an earlier eval from application code still
+    // fails the smoke test.
+    for (let i = violations.length - 1; i >= 0; i -= 1) {
+      if (violations[i].endsWith(': eval')) {
+        violations.splice(i, 1);
+        break;
+      }
+    }
+
+    return violations;
+  });
 
 test.describe('marketing landing CTAs reach the app cleanly (no CSP violations)', () => {
   test('"Se connecter" reaches the sign-in screen', async ({ page }) => {

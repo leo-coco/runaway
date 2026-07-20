@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { parseEnv } from './env';
 
 describe('parseEnv', () => {
+  it('keeps Zod compatible with the strict production CSP', () => {
+    expect(z.config().jitless).toBe(true);
+  });
+
   it('accepts a fully configured environment', () => {
     const r = parseEnv({
       VITE_COINGECKO_BASE_URL: 'https://api.coingecko.com/api/v3',

@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+// The site enforces `script-src 'self'` without `unsafe-eval`. Disable Zod's
+// JIT compiler so it does not probe `Function("")` and trigger a CSP violation.
+z.config({ jitless: true });
+
 /**
  * Environment configuration, validated with Zod at module load.
  *
