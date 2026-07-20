@@ -14,7 +14,20 @@ export default defineConfig({
   trailingSlash: 'never',
   integrations: [
     react(),
-    sentry({ telemetry: false }),
+    // release.inject and debug-ID injection default to on and emit inline
+    // bootstrap <script> tags (window.SENTRY_RELEASE, _sentryDebugIds) into
+    // page <head>s and island scripts, which violate our strict
+    // script-src 'self' CSP. The top-level `release` option is a no-op
+    // passthrough in @sentry/astro (see its integration/index.ts), so
+    // `release.inject` must go through unstable_sentryVitePluginOptions to
+    // actually reach the underlying @sentry/vite-plugin. We don't upload
+    // source maps (no auth token configured), so disable that machinery
+    // entirely rather than just hiding its output.
+    sentry({
+      telemetry: false,
+      sourcemaps: { disable: true },
+      unstable_sentryVitePluginOptions: { release: { inject: false } },
+    }),
     sitemap({
       filter: (page) => !page.includes('/app'),
       lastmod: new Date(),

@@ -22,8 +22,6 @@ export const Footer = () => {
         <div className="app-footer__row">
           <span className="app-footer__copyright">
             {t('footer.copyright', { year, title: t('appTitle') })}
-            {' · '}
-            {t('footer.privacyNote')}
           </span>
           {!sandbox && (
             <div className="app-footer__links">

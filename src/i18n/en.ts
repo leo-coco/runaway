@@ -352,7 +352,6 @@ export const en = {
     copyright: '© {{year}} {{title}}',
     methodologyLink: 'Methodology',
     contactLink: 'Contact us',
-    privacyNote: 'Anonymous usage statistics, no tracking cookies. We never sell personal data.',
   },
   contact: {
     title: 'Contact us',
@@ -1417,7 +1416,6 @@ export const en = {
   },
   portfolio: {
     title: 'My Portfolio',
-    desc: 'View and manage all assets in your retirement portfolio',
     fetchPrices: 'Fetch Latest Prices',
     addAsset: 'Add New Asset',
     createAccountToCustomize: 'Create an account to customize the portfolio',
@@ -1473,6 +1471,10 @@ export const en = {
       dashboardIntro: {
         title: 'Welcome to Runaway',
         body: 'This guide walks your whole plan in two parts: first what you own (timeline, accounts, assets, real estate), then how you fund and spend it (savings, spending, one-off flows, withdrawals). Use Next and Back to move through it (the ← and → arrow keys work too), and close anytime with Esc.',
+      },
+      mcSummary: {
+        title: 'Your odds of success',
+        body: 'The dashboard’s first card: your Monte Carlo verdict. It boils the odds that your plan lasts the distance down to a single figure, with a ring for the success rate. Open the full simulation to dig into it.',
       },
       runway: {
         title: 'Your runway at a glance',
@@ -1613,6 +1615,10 @@ export const en = {
       monteCarloIntro: {
         title: 'The Monte Carlo guide',
         body: 'This guide covers stress-testing your plan against thousands of simulated market futures.',
+      },
+      mcSummaryCards: {
+        title: 'The 3 key numbers',
+        body: 'At the top of the page, the simulation summary: your success rate (the share of futures where your money lasts), the median value of your portfolio at the end of the plan, and the median depletion year if there is one.',
       },
       mcFanChart: {
         title: 'Monte Carlo outcomes',

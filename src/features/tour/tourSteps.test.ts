@@ -21,6 +21,7 @@ describe('dashboard guide is filtered to the viewer tier', () => {
     // Accounts & tax, withdrawal ordering, phased spending, and real estate are
     // premium-only.
     for (const gated of [
+      'mcSummary',
       'accountsButton',
       'accounts',
       'accountsPresets',

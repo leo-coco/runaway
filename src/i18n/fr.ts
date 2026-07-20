@@ -367,8 +367,6 @@ export const fr: Resources = {
     copyright: '© {{year}} {{title}}',
     methodologyLink: 'Méthodologie',
     contactLink: 'Contactez-nous',
-    privacyNote:
-      'Statistiques d’usage anonymes, sans cookie de traçage. Aucune donnée personnelle vendue.',
   },
   contact: {
     title: 'Contactez-nous',
@@ -1456,7 +1454,6 @@ export const fr: Resources = {
   },
   portfolio: {
     title: 'Mon portefeuille',
-    desc: 'Consultez et gérez tous les actifs de votre portefeuille de retraite',
     fetchPrices: 'Actualiser les prix',
     addAsset: 'Ajouter un actif',
     createAccountToCustomize: 'Créer un compte pour personnaliser le portefeuille',
@@ -1514,6 +1511,10 @@ export const fr: Resources = {
       dashboardIntro: {
         title: 'Bienvenue sur Runaway',
         body: 'Cette visite parcourt votre plan en deux temps : d’abord ce que vous possédez (horizon, comptes, actifs, immobilier), puis comment vous le financez et le dépensez (épargne, dépenses, flux ponctuels, retraits). Utilisez Suivant et Retour pour avancer (les flèches ← et → du clavier fonctionnent aussi), et fermez à tout moment avec Échap.',
+      },
+      mcSummary: {
+        title: 'Vos chances de réussite',
+        body: 'La première carte du tableau de bord : le verdict Monte Carlo. Elle résume en un seul chiffre la probabilité que votre plan tienne jusqu’au bout, avec un anneau du taux de réussite. Ouvrez la simulation complète pour l’explorer en détail.',
       },
       runway: {
         title: 'Votre trajectoire en un coup d’œil',
@@ -1654,6 +1655,10 @@ export const fr: Resources = {
       monteCarloIntro: {
         title: 'La visite Monte Carlo',
         body: 'Cette visite couvre l’épreuve de votre plan face à des milliers de futurs de marché simulés.',
+      },
+      mcSummaryCards: {
+        title: 'Les 3 chiffres clés',
+        body: 'En tête de page, le résumé de la simulation : le taux de réussite (la part des futurs où votre argent tient), la valeur médiane de votre portefeuille en fin de plan, et l’année médiane d’épuisement s’il y en a une.',
       },
       mcFanChart: {
         title: 'Résultats Monte Carlo',

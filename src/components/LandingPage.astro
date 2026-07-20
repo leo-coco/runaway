@@ -8,7 +8,7 @@ interface Copy {
   lang: 'fr' | 'en';
   seoTitle: string;
   seoDescription: string;
-  nav: { product: string; method: string; faq: string; login: string };
+  nav: { product: string; method: string; faq: string; about: string; login: string };
   hero: { eyebrow: string; title: string; lead: string; primary: string; secondary: string; cue: string };
   strip: string[];
   problem: { eyebrow: string; title: string; body: string; quote: string };
@@ -44,6 +44,7 @@ const appBase = `/${copy.lang}/app`;
       <a href="#product">{copy.nav.product}</a>
       <a href="#method">{copy.nav.method}</a>
       <a href="#faq">{copy.nav.faq}</a>
+      <a href={isFr ? '/a-propos' : '/en/about'}>{copy.nav.about}</a>
     </nav>
     <div class="header-actions">
       <a class="lang-link" href={isFr ? '/en' : '/'} hreflang={isFr ? 'en' : 'fr'}>{isFr ? 'EN' : 'FR'}</a>
