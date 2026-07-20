@@ -10,6 +10,11 @@
 ## Git workflow
 - When making the first commit for a feature branch, open the PR automatically right after the commit (no need to ask).
 
+## Localization
+- Whenever user-facing text is added or changed, update it consistently in every language supported by the application, including both translation resources and localized Astro pages.
+- Whenever user-facing text is removed, remove it in every supported language as part of the same change.
+- Remove translation keys and localized copy fields that are no longer used; do not leave obsolete entries behind.
+
 ## Premium features in local dev
 - If a task needs to render/exercise a feature gated behind the `premium` tier (see `src/domain/entitlements.ts`), don't touch real accounts or `tier_config`. Instead, temporarily patch `src/hooks/useEntitlements.ts` so sandbox mode (`useAppMode().sandbox`) resolves to premium, e.g.:
   ```ts
