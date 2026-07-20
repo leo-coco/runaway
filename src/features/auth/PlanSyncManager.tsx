@@ -35,8 +35,13 @@ export const PlanSyncManager = (): React.ReactElement | null => {
     if (!userId) {
       syncing.current = false;
       snapshot.current = new Map();
+      useAppStore.getState().setPlansSynced(true);
       return;
     }
+    // Held false for the round-trip below so plan pages show a skeleton instead
+    // of rendering whatever the store already has (empty, or a prior session's
+    // localStorage leftovers) before the server's plans are known.
+    useAppStore.getState().setPlansSynced(false);
     let cancelled = false;
     void (async () => {
       const server = await fetchPlans();
@@ -50,7 +55,11 @@ export const PlanSyncManager = (): React.ReactElement | null => {
         if (local.length > 0) setImportPrompt(local);
         else beginSyncing([]);
       }
-    })().catch((e: unknown) => console.error('Plan sync: hydration failed', e));
+      useAppStore.getState().setPlansSynced(true);
+    })().catch((e: unknown) => {
+      console.error('Plan sync: hydration failed', e);
+      if (!cancelled) useAppStore.getState().setPlansSynced(true);
+    });
     return () => {
       cancelled = true;
     };

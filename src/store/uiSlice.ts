@@ -45,6 +45,14 @@ export interface UiSlice {
    */
   successByPlan: Record<string, number | null>;
   setPlanSuccess: (id: string, rate: number | null) => void;
+  /**
+   * Whether `PlanSyncManager` has completed its initial reconciliation with the
+   * server for the signed-in account. Lets plan pages show a skeleton instead of
+   * rendering local/stale plan data before the server round-trip lands. Always
+   * `true` outside the synced (signed-in) flow — see `PlanLayout`.
+   */
+  plansSynced: boolean;
+  setPlansSynced: (synced: boolean) => void;
 }
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
@@ -60,4 +68,6 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
       if (s.successByPlan[id] === rate) return s;
       return { successByPlan: { ...s.successByPlan, [id]: rate } };
     }),
+  plansSynced: true,
+  setPlansSynced: (synced) => set({ plansSynced: synced }),
 });
