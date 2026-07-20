@@ -30,6 +30,16 @@ interface Props {
 
 type Mode = 'search' | 'custom';
 
+type CompKey = 'stocks' | 'bonds' | 'cash' | 'crypto' | 'other';
+
+const CUSTOM_COMP_ROWS: readonly { key: CompKey; labelKey: string }[] = [
+  { key: 'stocks', labelKey: 'addAsset.compStocks' },
+  { key: 'bonds', labelKey: 'addAsset.compBonds' },
+  { key: 'cash', labelKey: 'addAsset.compCash' },
+  { key: 'crypto', labelKey: 'addAsset.compCrypto' },
+  { key: 'other', labelKey: 'addAsset.compOther' },
+];
+
 const customSymbol = (name: string): string =>
   name.trim().toUpperCase().replace(/\s+/g, '').slice(0, 8) || 'CUSTOM';
 
@@ -73,9 +83,9 @@ const SearchResultRow = ({
           </span>
         </div>
       </div>
-      {instrument.assetClass === 'crypto' && (
+      {price !== undefined && (
         <div className="search-row__price">
-          {price?.status === 'success' && price.value !== undefined ? (
+          {price.status === 'success' && price.value !== undefined ? (
             <span className="search-row__amount">{fmt.price(price.value)}</span>
           ) : price?.status === 'loading' ? (
             <span className="search-row__amount muted">
@@ -148,6 +158,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   // Fund/ETF composition, fetched alongside price but never blocks adding the
   // holding — id-guarded so a slow response can't attach to a later selection.
   const [allocation, setAllocation] = useState<AssetAllocation | null>(null);
+  const [allocationLoading, setAllocationLoading] = useState(false);
   const selectedIdRef = useRef<string | null>(null);
 
   const [customName, setCustomName] = useState('');
@@ -156,9 +167,50 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [customAssetClass, setCustomAssetClass] = useState<'other' | 'cash'>('other');
   // Illiquid custom assets (a home, a car…) should not be drawn down for spending.
   const [customDrawable, setCustomDrawable] = useState(true);
+  // Optional per-class composition for a custom asset (percent per class). Left at
+  // all-zero it is omitted; otherwise it is stored as the holding's assetAllocation.
+  const [customComp, setCustomComp] = useState<Record<CompKey, number>>({
+    stocks: 0,
+    bonds: 0,
+    cash: 0,
+    crypto: 0,
+    other: 0,
+  });
   const [infoTopic, setInfoTopic] = useState<'type' | 'drawable' | null>(null);
 
   const nativeFmt = useCurrencyFormatter(selected?.nativeCurrency ?? plan.currency);
+
+  // Composition pills. Funds use their fetched breakdown (preferred + convertible
+  // folded into "other"); a plain equity is 100% stocks and a crypto is 100% of
+  // its own coin, so every selection shows a composition, not just funds.
+  const compositionPills = useMemo(() => {
+    if (!selected) return [];
+    const isFund = selected.quoteType === 'ETF' || selected.quoteType === 'MUTUALFUND';
+    if (isFund) {
+      if (!allocation) return [];
+      const other =
+        (allocation.otherPct ?? 0) +
+        (allocation.preferredPct ?? 0) +
+        (allocation.convertiblePct ?? 0);
+      return [
+        { key: 'stocks', label: t('addAsset.compStocks'), pct: allocation.stockPct ?? 0 },
+        { key: 'bonds', label: t('addAsset.compBonds'), pct: allocation.bondPct ?? 0 },
+        { key: 'cash', label: t('addAsset.compCash'), pct: allocation.cashPct ?? 0 },
+        { key: 'crypto', label: t('addAsset.compCrypto'), pct: allocation.cryptoPct ?? 0 },
+        { key: 'other', label: t('addAsset.compOther'), pct: Math.round(other * 10) / 10 },
+      ].filter((p) => p.pct > 0);
+    }
+    if (selected.assetClass === 'crypto') {
+      return [{ key: 'crypto', label: t('addAsset.compCrypto'), pct: 100 }];
+    }
+    if (selected.assetClass === 'cash') {
+      return [{ key: 'cash', label: t('addAsset.compCash'), pct: 100 }];
+    }
+    if (selected.assetClass === 'other') {
+      return [{ key: 'other', label: t('addAsset.compOther'), pct: 100 }];
+    }
+    return [{ key: 'stocks', label: t('addAsset.compStocks'), pct: 100 }];
+  }, [selected, allocation, t]);
 
   const selectInstrument = async (instrument: Instrument) => {
     setSelected(instrument);
@@ -166,10 +218,14 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     setAllocation(null);
     selectedIdRef.current = instrument.id;
 
-    if (instrument.quoteType === 'ETF' || instrument.quoteType === 'MUTUALFUND') {
+    const isFund = instrument.quoteType === 'ETF' || instrument.quoteType === 'MUTUALFUND';
+    setAllocationLoading(isFund);
+    if (isFund) {
       // Fire-and-forget: supplementary metadata, must never block adding the asset.
       void services.price.allocation(instrument.symbol).then((result) => {
-        if (selectedIdRef.current === instrument.id && result.ok) setAllocation(result.value);
+        if (selectedIdRef.current !== instrument.id) return;
+        if (result.ok) setAllocation(result.value);
+        setAllocationLoading(false);
       });
     }
 
@@ -194,6 +250,9 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
       ref.provider === 'coingecko'
         ? await services.price.cryptoPrice(ref.ref, instrument.nativeCurrency)
         : await services.price.stockPrice(ref.ref);
+    // Guard against a stale response: a slower fetch for an earlier selection
+    // must not overwrite the price of the instrument now selected.
+    if (selectedIdRef.current !== instrument.id) return;
     setPriceLoading(false);
     if (result.ok) setPrice(result.value);
     else setPriceError(result.error);
@@ -213,6 +272,27 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     onClose();
   };
 
+  const customCompTotal = useMemo(
+    () => CUSTOM_COMP_ROWS.reduce((sum, { key }) => sum + customComp[key], 0),
+    [customComp],
+  );
+
+  const customAllocation = useMemo<AssetAllocation | undefined>(() => {
+    if (customCompTotal <= 0) return undefined;
+    return {
+      stockPct: customComp.stocks,
+      bondPct: customComp.bonds,
+      cashPct: customComp.cash,
+      cryptoPct: customComp.crypto,
+      otherPct: customComp.other,
+      preferredPct: null,
+      convertiblePct: null,
+      categoryName: null,
+      fundFamily: null,
+      sectorWeightings: [],
+    };
+  }, [customComp, customCompTotal]);
+
   const canAddCustom = customName.trim().length > 0 && customPrice >= 0 && quantity > 0;
 
   const handleAddCustom = () => {
@@ -226,6 +306,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         assetClass: customAssetClass,
         exchange: 'Custom',
         nativeCurrency: customCurrency,
+        ...(customAllocation ? { assetAllocation: customAllocation } : {}),
       },
       quantity,
       pricePerUnit: customPrice,
@@ -409,6 +490,35 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
               />
             </div>
           </div>
+          <div className="field">
+            <span className="field__label">{t('addAsset.compositionOptional')}</span>
+            <p className="field__hint" style={{ marginTop: 0, marginBottom: 8 }}>
+              {t('addAsset.compositionOptionalHint')}
+            </p>
+            <div className="addasset-comp">
+              {CUSTOM_COMP_ROWS.map(({ key, labelKey }) => (
+                <div key={key} className="addasset-comp__row">
+                  <span className={cn('comp-dot', `comp-dot--${key}`)} />
+                  <span className="addasset-comp__label">{t(labelKey)}</span>
+                  <Stepper
+                    ariaLabel={t(labelKey)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    suffix="%"
+                    hideButtons
+                    value={customComp[key]}
+                    onChange={(v) => setCustomComp((c) => ({ ...c, [key]: v }))}
+                  />
+                </div>
+              ))}
+            </div>
+            {customCompTotal > 0 && customCompTotal !== 100 && (
+              <p className="field__hint" style={{ marginTop: 8 }}>
+                {t('addAsset.compositionTotal', { total: customCompTotal })}
+              </p>
+            )}
+          </div>
         </>
       ) : (
         <>
@@ -493,6 +603,26 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                   </div>
                 ) : (
                   <p className="field__hint">{t('addAsset.priceUnavailable')}</p>
+                )}
+              </div>
+
+              <div className="field">
+                <span className="field__label">{t('addAsset.composition')}</span>
+                {allocationLoading ? (
+                  <span className="fetch-link">
+                    <Spinner /> {t('addAsset.compFetching')}
+                  </span>
+                ) : compositionPills.length > 0 ? (
+                  <div className="alloc-pills">
+                    {compositionPills.map((p) => (
+                      <span key={p.key} className={cn('alloc-pill', `alloc-pill--${p.key}`)}>
+                        <span className="alloc-pill__dot" />
+                        {p.label} {p.pct}%
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="field__hint">{t('addAsset.compUnavailable')}</p>
                 )}
               </div>
 

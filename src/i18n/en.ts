@@ -973,6 +973,18 @@ export const en = {
     ariaLatestPrice: 'Latest price',
     priceUnavailable: 'Price unavailable — you can fetch it later from the table.',
     quantityHeld: 'Quantity Held',
+    composition: 'Composition',
+    compFetching: 'Fetching composition…',
+    compUnavailable: 'Composition unavailable for this fund.',
+    compStocks: 'Stocks',
+    compBonds: 'Bonds',
+    compCash: 'Cash',
+    compCrypto: 'Crypto',
+    compOther: 'Other',
+    compositionOptional: 'Composition (optional)',
+    compositionOptionalHint:
+      'Split this asset across classes if you want it reflected in your allocation. Leave at zero to skip.',
+    compositionTotal: 'Currently {{total}}% — classes usually add up to 100%.',
   },
   goalSeek: {
     cutSpending: 'Cut spending',

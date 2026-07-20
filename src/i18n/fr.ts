@@ -1007,6 +1007,18 @@ export const fr: Resources = {
     ariaLatestPrice: 'Dernier prix',
     priceUnavailable: 'Prix indisponible — vous pourrez le récupérer plus tard depuis la table.',
     quantityHeld: 'Quantité détenue',
+    composition: 'Composition',
+    compFetching: 'Récupération de la composition…',
+    compUnavailable: 'Composition indisponible pour ce fonds.',
+    compStocks: 'Actions',
+    compBonds: 'Obligations',
+    compCash: 'Liquidités',
+    compCrypto: 'Crypto',
+    compOther: 'Autres',
+    compositionOptional: 'Composition (optionnel)',
+    compositionOptionalHint:
+      'Répartissez cet actif entre les classes pour qu’il apparaisse dans votre allocation. Laissez à zéro pour ignorer.',
+    compositionTotal: 'Actuellement {{total}} % — les classes totalisent en général 100 %.',
   },
   goalSeek: {
     cutSpending: 'Réduire les dépenses',
