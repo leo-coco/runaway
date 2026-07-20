@@ -3,6 +3,9 @@ import EditorialLayout from '../layouts/EditorialLayout.astro';
 
 const { lang } = Astro.props as { lang: 'fr' | 'en' };
 const isFr = lang === 'fr';
+// Bump both values whenever the tax schedules, sources, or assumptions on this page change.
+const lastReviewed = '2026-07-16';
+const lastReviewedDisplay = isFr ? '16 juillet 2026' : 'July 16, 2026';
 const copy = isFr
   ? {
       title: 'Méthodologie des projections financières | Runaway',
@@ -37,7 +40,7 @@ const copy = isFr
         'Les historiques ne garantissent aucun résultat futur et certaines classes récentes, notamment les cryptomonnaies, disposent d’un historique limité.',
         'Un taux de succès est une propriété du modèle et de ses entrées, pas une probabilité certaine concernant la vie réelle.',
       ],
-      update: 'Méthodologie correspondant au moteur Runaway 2026. Les hypothèses et sources sont mises à jour avec le produit.',
+      update: `Méthodologie correspondant au moteur Runaway 2026, relue le ${lastReviewedDisplay}. Les hypothèses et sources sont mises à jour avec le produit.`,
       disclaimer: 'Projections hypothétiques à but informatif et éducatif uniquement. Runaway ne fournit pas de conseil financier, fiscal ou juridique et ne garantit aucun résultat.',
       try: 'Tester la méthodologie dans le sandbox',
     }
@@ -74,7 +77,7 @@ const copy = isFr
         'History does not guarantee future results, and newer asset classes such as cryptocurrencies have limited histories.',
         'A success rate is a property of the model and its inputs, not a certain probability about real life.',
       ],
-      update: 'Methodology for the 2026 Runaway engine. Assumptions and sources evolve with the product.',
+      update: `Methodology for the 2026 Runaway engine, last reviewed ${lastReviewedDisplay}. Assumptions and sources evolve with the product.`,
       disclaimer: 'Hypothetical projections for informational and educational purposes only. Runaway does not provide financial, tax, or legal advice and does not guarantee any outcome.',
       try: 'Test the methodology in sandbox',
     };
@@ -90,6 +93,7 @@ const copy = isFr
   eyebrow={copy.eyebrow}
   heading={copy.heading}
   intro={copy.intro}
+  dateModified={lastReviewed}
 >
   <article class="editorial-article methodology-public">
     <section class="method-principle">
