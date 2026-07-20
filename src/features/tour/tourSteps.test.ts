@@ -18,7 +18,8 @@ const ids = (features: TierFeatures) =>
 describe('dashboard guide is filtered to the viewer tier', () => {
   it('drops every premium-gated step for a free viewer', () => {
     const free = ids(FREE);
-    // Accounts & tax, withdrawal ordering, and phased spending are premium-only.
+    // Accounts & tax, withdrawal ordering, phased spending, and real estate are
+    // premium-only.
     for (const gated of [
       'accountsButton',
       'accounts',
@@ -26,6 +27,8 @@ describe('dashboard guide is filtered to the viewer tier', () => {
       'withdrawalButton',
       'withdrawal',
       'spending',
+      'realEstateButton',
+      'realEstate',
     ]) {
       expect(free, `${gated} should be hidden from free`).not.toContain(gated);
     }
@@ -33,12 +36,18 @@ describe('dashboard guide is filtered to the viewer tier', () => {
 
   it('keeps the free-relevant steps for a free viewer', () => {
     const free = ids(FREE);
+    // Includes the ungated additions: the hero runway, the net-worth donut, and
+    // the one-off expenses/income flow — all reachable on the free tier.
     for (const open of [
       'dashboardIntro',
+      'runway',
       'timeline',
       'addAssetButton',
+      'allocation',
       'savings',
       'spendingButton',
+      'expensesIncomesButton',
+      'expensesIncomes',
       'scenario',
       'currency',
       'dashboardOutro',

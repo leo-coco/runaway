@@ -37,14 +37,31 @@ const step = (id: string, extra: Omit<TourStep, 'id' | 'titleKey' | 'bodyKey'>):
 });
 
 /**
- * Dashboard guide: timeline → accounts & tax → adding assets → per-asset values
- * → organizing by account → savings capacity → retirement spending → scenario
- * → withdrawal strategy → currency. Every step anchors on a `data-tour` key (or
- * an existing id) so it survives design changes; the controller skips any step
- * whose anchor is absent.
+ * Dashboard guide, told in two acts so it reads like the order you'd actually
+ * build a plan.
+ *
+ * Act 1 — what you own: headline runway → timeline → accounts & tax → adding
+ * assets → per-asset values → organizing by account → real estate → net-worth
+ * composition.
+ * Act 2 — how you fund & spend: savings capacity → retirement spending →
+ * one-off expenses & income → scenario → withdrawal strategy → currency.
+ *
+ * Every step anchors on a `data-tour` key (or an existing class/id) so it
+ * survives design changes; the controller skips any step whose anchor is absent
+ * (e.g. the asset-row and allocation anchors, which only exist once the plan has
+ * a holding). Premium-only steps declare `requires` and are dropped for a viewer
+ * whose tier lacks the feature, so a free user never lands on a locked surface.
  */
 export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
   step('dashboardIntro', {}),
+  step('runway', {
+    page: 'dashboard',
+    // Hero timeline card; universal (renders on every tier), so no `data-tour` of
+    // its own — anchor on its stable layout class.
+    selector: '.runway--hero',
+    side: 'bottom',
+    align: 'start',
+  }),
   step('timeline', { page: 'dashboard', tourKey: 'timeline-card', side: 'bottom', align: 'start' }),
   step('accountsButton', {
     page: 'dashboard',
@@ -91,6 +108,29 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
   step('quantity', { page: 'portfolio', tourKey: 'quantity-input', side: 'top', align: 'center' }),
   step('cagr', { page: 'portfolio', tourKey: 'cagr-input', side: 'top', align: 'center' }),
   step('drag', { page: 'portfolio', tourKey: 'drag-handle', side: 'right', align: 'start' }),
+  step('realEstateButton', {
+    page: 'dashboard',
+    tourKey: 'realestate-card',
+    side: 'bottom',
+    align: 'start',
+    requires: 'realEstate',
+  }),
+  step('realEstate', {
+    page: 'dashboard',
+    openModal: 'realEstate',
+    tourKey: 'plan-modal',
+    side: 'left',
+    align: 'start',
+    requires: 'realEstate',
+  }),
+  step('allocation', {
+    // Net-worth donut; only mounts once the plan has holdings, so it's skipped for
+    // an empty plan (like the asset-row steps above). Not tier-gated.
+    page: 'dashboard',
+    tourKey: 'allocation-card',
+    side: 'top',
+    align: 'center',
+  }),
   step('savings', { page: 'dashboard', tourKey: 'savings-card', side: 'bottom', align: 'start' }),
   step('spendingButton', {
     page: 'dashboard',
@@ -108,6 +148,19 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     // dive is only offered when the viewer can actually use phased spending. Free
     // users still get the `spendingButton` step for setting their target income.
     requires: 'phasedSpending',
+  }),
+  step('expensesIncomesButton', {
+    page: 'dashboard',
+    tourKey: 'expenses-card',
+    side: 'bottom',
+    align: 'start',
+  }),
+  step('expensesIncomes', {
+    page: 'dashboard',
+    openModal: 'expensesIncomes',
+    tourKey: 'plan-modal',
+    side: 'left',
+    align: 'start',
   }),
   step('scenario', {
     page: 'dashboard',

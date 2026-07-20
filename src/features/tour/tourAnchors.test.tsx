@@ -124,7 +124,16 @@ describe('dashboard guide anchors resolve on their declared page', () => {
 
   it('overview anchors remain on the dashboard', async () => {
     const { container: dash } = await renderAt('dashboard');
-    for (const key of ['timeline-card', 'accounts-card', 'savings-card', 'spending-card']) {
+    // Includes the anchors added for the newer plan-settings cards (one-off
+    // expenses/income and real estate), which always render regardless of tier.
+    for (const key of [
+      'timeline-card',
+      'accounts-card',
+      'savings-card',
+      'spending-card',
+      'expenses-card',
+      'realestate-card',
+    ]) {
       expect(has(dash, key), `${key} should be on the dashboard`).toBe(true);
     }
   });
