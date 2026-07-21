@@ -44,7 +44,6 @@ vi.mock('../env.js', () => ({
 }));
 
 const fetchMock = vi.fn();
-vi.stubGlobal('fetch', fetchMock);
 
 const { marketRoutes } = await import('./market.js');
 
@@ -57,6 +56,9 @@ const yahooQuote = (symbol: string, price: number, currency: string) => ({
 });
 
 beforeEach(() => {
+  // Stubbed per-test, not at module scope: msw's `server.listen()` runs in a
+  // `beforeAll` (src/test/setup.ts) and would otherwise replace this mock.
+  vi.stubGlobal('fetch', fetchMock);
   store.clear();
   quoteMock.mockReset();
   searchMock.mockReset();

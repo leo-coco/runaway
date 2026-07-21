@@ -32,7 +32,10 @@ export const getJson = async <T>(
     });
   } catch (cause) {
     clearTimeout(timeout);
-    const aborted = cause instanceof DOMException && cause.name === 'AbortError';
+    // Checked by name, not `instanceof DOMException`: the class is per-realm, so
+    // the instance check silently fails whenever fetch and the global come from
+    // different realms (jsdom + undici under test, some SSR/polyfill setups).
+    const aborted = cause instanceof Error && cause.name === 'AbortError';
     return err(
       appError(
         'network',
