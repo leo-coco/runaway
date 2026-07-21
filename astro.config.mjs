@@ -2,7 +2,28 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import sentry from '@sentry/astro';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+const legalIdentity = JSON.parse(
+  readFileSync(new URL('./src/config/legal.json', import.meta.url), 'utf8'),
+);
+
+/** Mirrors `isLegalIdentityComplete` in src/config/legal.ts — keep the two in sync. */
+const legalPagesArePublishable = Object.entries(legalIdentity).every(([key, value]) =>
+  key === 'vatNumber'
+    ? true
+    : typeof value === 'string'
+      ? value.trim().length > 0
+      : Object.values(value).every((nested) => nested.trim().length > 0),
+);
+
+const legalPaths = {
+  '/confidentialite': '/en/privacy',
+  '/mentions-legales': '/en/legal-notice',
+  '/conditions-utilisation': '/en/terms',
+  '/conditions-vente': '/en/sales-terms',
+};
 
 export default defineConfig({
   // Localized app URLs (/en/app/*) are rewritten to /app by vercel.json in
@@ -29,8 +50,14 @@ export default defineConfig({
       unstable_sentryVitePluginOptions: { release: { inject: false } },
     }),
     sitemap({
-      filter: (page) =>
-        !page.includes('/app') && !page.endsWith('/sandbox') && !page.endsWith('/en/sandbox'),
+      filter: (page) => {
+        const path = new URL(page).pathname;
+        // Legal pages ship noindex until src/config/legal.json is filled; listing
+        // them meanwhile would only earn "submitted URL marked noindex" in GSC.
+        const isLegal = path in legalPaths || Object.values(legalPaths).includes(path);
+        if (isLegal && !legalPagesArePublishable) return false;
+        return !page.includes('/app') && !page.endsWith('/sandbox') && !page.endsWith('/en/sandbox');
+      },
       lastmod: new Date(),
       serialize(item) {
         const path = new URL(item.url).pathname;
@@ -40,6 +67,7 @@ export default defineConfig({
           '/contact': '/en/contact',
           '/methodologie': '/en/methodology',
           '/exemples': '/en/examples',
+          ...legalPaths,
         };
         const enToFr = Object.fromEntries(Object.entries(frToEn).map(([fr, en]) => [en, fr]));
         const frPath = frToEn[path] ? path : (enToFr[path] ?? null);

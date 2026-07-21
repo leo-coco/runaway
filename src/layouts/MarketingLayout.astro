@@ -13,6 +13,7 @@ interface Props {
   faq?: { question: string; answer: string }[];
   kind?: 'landing' | 'page';
   dateModified?: string;
+  noindex?: boolean;
 }
 
 const {
@@ -25,6 +26,7 @@ const {
   faq = [],
   kind = 'page',
   dateModified,
+  noindex = false,
 } = Astro.props;
 const canonical = new URL(canonicalPath, Astro.site);
 const ogImage = new URL('/og-image.png', Astro.site);
@@ -78,7 +80,10 @@ const schema = kind === 'landing'
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta
+      name="robots"
+      content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'}
+    />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="fr" href={new URL(alternateFrPath, Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL(alternateEnPath, Astro.site)} />

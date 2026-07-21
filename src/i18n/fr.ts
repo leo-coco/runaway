@@ -362,6 +362,10 @@ export const fr: Resources = {
     copyright: '© {{year}} {{title}}',
     methodologyLink: 'Méthodologie',
     contactLink: 'Contactez-nous',
+    privacyLink: 'Confidentialité',
+    legalNoticeLink: 'Mentions légales',
+    termsLink: 'CGU',
+    salesTermsLink: 'CGV',
   },
   contact: {
     title: 'Contactez-nous',

@@ -30,3 +30,37 @@ describe('Footer Sandbox controls', () => {
     expect(screen.getByRole('button', { name: 'Contact us' })).toBeInTheDocument();
   });
 });
+
+describe('Footer legal links', () => {
+  it('points at the English legal pages in English', () => {
+    renderFooter(true);
+    expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/en/privacy');
+    expect(screen.getByRole('link', { name: 'Legal notice' })).toHaveAttribute(
+      'href',
+      '/en/legal-notice',
+    );
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/en/terms');
+    expect(screen.getByRole('link', { name: 'Sales terms' })).toHaveAttribute(
+      'href',
+      '/en/sales-terms',
+    );
+  });
+
+  it('points at the unprefixed French legal pages in French', async () => {
+    await i18n.changeLanguage('fr');
+    renderFooter(true);
+    expect(screen.getByRole('link', { name: 'Confidentialité' })).toHaveAttribute(
+      'href',
+      '/confidentialite',
+    );
+    expect(screen.getByRole('link', { name: 'Mentions légales' })).toHaveAttribute(
+      'href',
+      '/mentions-legales',
+    );
+    expect(screen.getByRole('link', { name: 'CGU' })).toHaveAttribute(
+      'href',
+      '/conditions-utilisation',
+    );
+    expect(screen.getByRole('link', { name: 'CGV' })).toHaveAttribute('href', '/conditions-vente');
+  });
+});
