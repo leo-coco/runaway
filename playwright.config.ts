@@ -25,6 +25,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
     ...(bypassSecret && {
       extraHTTPHeaders: { 'x-vercel-protection-bypass': bypassSecret },
     }),
