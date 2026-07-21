@@ -59,6 +59,15 @@ const latestWorker = () => FakeWorker.instances.at(-1)!;
 
 const fakeResult = { successRate: 0.87 } as unknown as MonteCarloResult;
 
+/**
+ * The synchronous fallback builds the input and runs the whole simulation inside
+ * one microtask, so 'running' is never observable and a slow run just sits at
+ * 'idle' until it lands. The first such run in a worker process also pays the
+ * simulation module's warm-up: ~370ms locally under coverage, and CI runs the
+ * suite roughly 3x slower, which puts it past waitFor's 1s default.
+ */
+const SYNC_RUN = { timeout: 5_000 };
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('useMonteCarlo gating', () => {
@@ -86,7 +95,7 @@ describe('useMonteCarlo gating', () => {
     let enabled = true;
     const p = plan();
     const { result, rerender } = renderHook(() => useMonteCarlo(p, undefined, enabled, options));
-    await waitFor(() => expect(result.current.status).toBe('done'));
+    await waitFor(() => expect(result.current.status).toBe('done'), SYNC_RUN);
 
     enabled = false;
     rerender();
@@ -103,7 +112,7 @@ describe('useMonteCarlo without Worker support', () => {
 
     const { result } = renderHook(() => useMonteCarlo(p, undefined, true, options));
 
-    await waitFor(() => expect(result.current.status).toBe('done'));
+    await waitFor(() => expect(result.current.status).toBe('done'), SYNC_RUN);
     expect(result.current.result?.successRate).toBeGreaterThanOrEqual(0);
     expect(result.current.result?.successRate).toBeLessThanOrEqual(1);
     expect(result.current.error).toBeNull();
@@ -112,14 +121,14 @@ describe('useMonteCarlo without Worker support', () => {
   it('exposes the seed and swaps it on rerun', async () => {
     const p = plan();
     const { result } = renderHook(() => useMonteCarlo(p, undefined, true, options));
-    await waitFor(() => expect(result.current.status).toBe('done'));
+    await waitFor(() => expect(result.current.status).toBe('done'), SYNC_RUN);
     const firstSeed = result.current.seed;
     expect(firstSeed).toBe(options.seed);
 
     act(() => result.current.rerun());
 
-    await waitFor(() => expect(result.current.seed).not.toBe(firstSeed));
-    await waitFor(() => expect(result.current.status).toBe('done'));
+    await waitFor(() => expect(result.current.seed).not.toBe(firstSeed), SYNC_RUN);
+    await waitFor(() => expect(result.current.status).toBe('done'), SYNC_RUN);
   });
 });
 
