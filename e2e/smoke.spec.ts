@@ -2,8 +2,14 @@ import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Post-deploy smoke: the critical end-to-end journey through the real site.
- * Sign in → ensure a plan exists → open dashboard → run a simulation
- * (Monte Carlo) → verify persistence across a reload → visit the main sections.
+ * Sign in → ensure a plan exists → open dashboard → read the projection and
+ * portfolio output → check the Monte Carlo verdict → verify persistence across
+ * a reload.
+ *
+ * Each section asserts its own characteristic content, not merely the absence of
+ * an error boundary: a section that renders blank, or a chart that renders with
+ * no values, is a release-blocking regression that "no error was thrown" misses
+ * entirely.
  *
  * Selectors are structural (stable class names), not translated text, so the
  * test is language-independent. Sign-up needs email verification, so this signs
@@ -39,21 +45,25 @@ const openAPlan = async (page: Page): Promise<string> => {
   return match![1]!;
 };
 
-/** A section renders successfully when its content is shown and no error boundary tripped. */
-const expectSectionOk = async (page: Page, planId: string, section: string) => {
+/** Open a section and assert the shell rendered it without tripping a boundary. */
+const gotoSection = async (page: Page, planId: string, section: string) => {
   await page.goto(appPath(`/plan/${planId}/${section}`));
   await expect(page.locator('.app-content')).toBeVisible();
   await expect(page.locator('.feature-error')).toHaveCount(0);
 };
 
 test.beforeAll(() => {
-  test.skip(
-    !EMAIL || !PASSWORD,
-    'Set SMOKE_TEST_EMAIL and SMOKE_TEST_PASSWORD to run the deployed smoke.',
-  );
+  if (EMAIL && PASSWORD) return;
+  const message =
+    'SMOKE_TEST_EMAIL and SMOKE_TEST_PASSWORD are required to run the deployed smoke.';
+  // Locally these are optional. In CI they are the release gate: skipping on a
+  // missing or expired secret would report a silent green for a deploy nobody
+  // actually verified.
+  if (process.env.CI) throw new Error(message);
+  test.skip(true, message);
 });
 
-test('critical journey: sign in, plan, dashboard, simulation, reload, sections', async ({
+test('critical journey: sign in, plan, dashboard, projection, portfolio, simulation, reload', async ({
   page,
 }) => {
   await signIn(page);
@@ -61,11 +71,38 @@ test('critical journey: sign in, plan, dashboard, simulation, reload, sections',
   const planId = await openAPlan(page);
   await expect(page.locator('.app-content')).toBeVisible();
   await expect(page.locator('.feature-error')).toHaveCount(0);
+  // The dashboard hero renders its Monte Carlo card in one of two states — the
+  // verdict, or the locked upsell on a free plan. Neither may be missing.
+  await expect(page.locator('.mc-card')).toBeVisible();
 
-  // Run a simulation (Monte Carlo) and the projection engine.
-  await expectSectionOk(page, planId, 'monte-carlo');
-  await expectSectionOk(page, planId, 'projection');
-  await expectSectionOk(page, planId, 'portfolio');
+  // Projection: the deterministic engine ran and produced three stat values
+  // (portfolio today, at retirement, depletion year). Empty or skeleton cards
+  // fail here, where the old "no error boundary" check passed them.
+  await gotoSection(page, planId, 'projection');
+  const projectionStats = page.locator('.projection-summary .hero__big');
+  await expect(projectionStats).toHaveCount(3);
+  await expect(projectionStats.first()).toHaveText(/\d/);
+  await expect(projectionStats.nth(1)).toHaveText(/\d/);
+
+  // Portfolio: the holdings breakdown renders. When the plan carries assets, the
+  // total row must show a real figure rather than an empty cell.
+  await gotoSection(page, planId, 'portfolio');
+  await expect(page.locator('.breakdown')).toBeVisible();
+  if ((await page.locator('.asset-sym').count()) > 0) {
+    await expect(page.locator('.total-row')).toHaveText(/\d/);
+  }
+
+  // Monte Carlo: a premium plan renders a success percentage, a free plan the
+  // upsell. One of them must appear — a blank analysis pane is a regression.
+  // Wait on `.or()` rather than branching on a count: the simulation runs in a
+  // worker, so an immediate count would race it and see neither state.
+  await gotoSection(page, planId, 'monte-carlo');
+  const verdict = page.locator('.prob-success-card__value .hero__big');
+  const upsell = page.locator('.upgrade-card');
+  await expect(verdict.or(upsell).first()).toBeVisible();
+  if (await verdict.isVisible()) {
+    await expect(verdict).toHaveText(/^\d{1,3}\s*%$/);
+  }
 
   // Persistence: reload the dashboard and confirm the plan is still there
   // (the API served it back, sidebar rehydrated).

@@ -48,9 +48,14 @@ test.describe('marketing landing CTAs reach the app cleanly (no CSP violations)'
     expect(await readCspViolations(page)).toEqual([]);
   });
 
-  test('"Essayer sans email" reaches the sandbox app', async ({ page }) => {
+  test('"Ouvrir le mode sandbox" reaches the sandbox app via the examples page', async ({
+    page,
+  }) => {
     await collectCspViolations(page);
     await page.goto('/');
+    // The landing CTA points at the examples page, which is where the profile
+    // links into /app/sandbox live. Two hops, both of which must stay CSP-clean.
+    await page.locator('a[href="/exemples"]').first().click();
     await page.locator('a[href*="/app/sandbox"]').first().click();
     await expect(page.locator('.app-shell')).toBeVisible();
     expect(await readCspViolations(page)).toEqual([]);

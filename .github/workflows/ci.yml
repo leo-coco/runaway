@@ -17,7 +17,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm run test
+      # Runs the same suite as `npm test`, and additionally fails if coverage
+      # drops below the thresholds in vite.config.ts.
+      - run: npm run coverage
 
   build:
     runs-on: ubuntu-latest

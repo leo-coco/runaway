@@ -34,7 +34,29 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, '**/.claude/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
-      include: ['src/services/**', 'src/hooks/**', 'src/domain/**'],
+      include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.test.{ts,tsx}',
+        'src/test/**',
+        'server/test/**',
+        'server/scripts/**',
+        'src/i18n/**',
+        // Bootstrap entrypoints and declarative table definitions: no branches
+        // worth asserting, and including them only dilutes the ratchet below.
+        'src/main.tsx',
+        'server/dev.ts',
+        'server/db/schema.ts',
+      ],
+      // A ratchet, not a target. Set just under the measured baseline
+      // (2026-07-21: 60.13/47.44/45.73/60.84), so coverage can only go up.
+      // Raise these as gaps close; never lower them to make CI green.
+      thresholds: {
+        statements: 60,
+        branches: 47,
+        functions: 45,
+        lines: 60,
+      },
     },
   },
 });
