@@ -107,7 +107,7 @@ const copy = isFr
     <aside class="editorial-note"><p>{copy.note}</p></aside>
     <div class="editorial-actions">
       <a class="button" href={isFr ? '/methodologie' : '/en/methodology'}>{copy.method}<span>→</span></a>
-      <a class="button button--ghost" href={`/${lang}/app/sandbox`}>{copy.sandbox}<span>↗</span></a>
+      <a class="button button--ghost" href={isFr ? '/exemples' : '/en/examples'}>{copy.sandbox}<span>↗</span></a>
     </div>
   </article>
 </EditorialLayout>

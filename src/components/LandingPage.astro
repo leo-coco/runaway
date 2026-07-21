@@ -25,6 +25,7 @@ interface Copy {
 const { copy } = Astro.props as { copy: Copy };
 const isFr = copy.lang === 'fr';
 const appBase = `/${copy.lang}/app`;
+const sandboxHref = isFr ? '/exemples' : '/en/examples';
 ---
 
 <MarketingLayout
@@ -35,11 +36,7 @@ const appBase = `/${copy.lang}/app`;
   faq={copy.faq}
   kind="landing"
 >
-  <MarketingHeader
-    lang={copy.lang}
-    alternatePath={isFr ? '/en' : '/'}
-    signupLabel={isFr ? 'Créer mon plan' : 'Build my plan'}
-  />
+  <MarketingHeader lang={copy.lang} alternatePath={isFr ? '/en' : '/'} />
 
   <main>
     <section class="hero section-shell" aria-labelledby="hero-title">
@@ -49,7 +46,7 @@ const appBase = `/${copy.lang}/app`;
         <p class="hero-lead">{copy.hero.lead}</p>
         <div class="cta-row">
           <a class="button" href={`${appBase}/signup`}>{copy.hero.primary}<span aria-hidden="true">↗</span></a>
-          <a class="button button--ghost" href={`${appBase}/sandbox`}>{copy.hero.secondary}<span aria-hidden="true">→</span></a>
+          <a class="button button--ghost" href={sandboxHref}>{copy.hero.secondary}<span aria-hidden="true">→</span></a>
         </div>
         <p class="cta-cue"><span aria-hidden="true">✓</span>{copy.hero.cue}</p>
       </div>
@@ -128,7 +125,7 @@ const appBase = `/${copy.lang}/app`;
           <p class="eyebrow eyebrow--light"><span></span>{copy.proof.eyebrow}</p>
           <h2>{copy.proof.title}</h2>
           <p>{copy.proof.body}</p>
-          <a href={`${appBase}/sandbox`} class="inline-arrow">{copy.hero.secondary} <span>→</span></a>
+          <a href={sandboxHref} class="inline-arrow">{copy.hero.secondary} <span>→</span></a>
         </div>
         <div class="proof-stats">
           {copy.proof.stats.map((stat) => <div><strong>{stat.value}</strong><span>{stat.label}</span></div>)}
@@ -159,7 +156,7 @@ const appBase = `/${copy.lang}/app`;
       </div>
       <div class="final-actions">
         <a class="button" href={`${appBase}/signup`}>{copy.final.primary}<span>↗</span></a>
-        <a class="inline-arrow" href={`${appBase}/sandbox`}>{copy.final.secondary} <span>→</span></a>
+        <a class="inline-arrow" href={sandboxHref}>{copy.final.secondary} <span>→</span></a>
       </div>
     </section>
   </main>

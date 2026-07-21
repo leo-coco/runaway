@@ -19,7 +19,12 @@ vi.hoisted(() => {
   Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true });
 });
 
-import { PLANS_SCHEMA_VERSION, seedSandboxIfEmpty } from './index';
+import {
+  PLANS_SCHEMA_VERSION,
+  seedEmptySandbox,
+  seedSandboxIfEmpty,
+  seedSandboxProfile,
+} from './index';
 import { planStorageKeyForPathname } from './planStorage';
 
 const SANDBOX_PATH = '/app/sandbox';
@@ -66,5 +71,29 @@ describe('seedSandboxIfEmpty', () => {
 
     expect(localStorage.getItem(sandboxKey)).toBeNull();
     expect(localStorage.getItem(planStorageKeyForPathname('/app'))).toBeNull();
+  });
+
+  it('replaces the current sandbox with an explicitly selected profile', () => {
+    seedSandboxIfEmpty(SANDBOX_PATH);
+    seedSandboxProfile(SANDBOX_PATH, 'midlife_balanced');
+
+    const plan = readStored(sandboxKey)?.state.plans[0] as {
+      currency: string;
+      settings: { currentAge: number };
+    };
+    expect(plan.currency).toBe('CAD');
+    expect(plan.settings.currentAge).toBe(48);
+  });
+
+  it('replaces the current sandbox with an explicitly selected blank plan', () => {
+    seedSandboxIfEmpty(SANDBOX_PATH);
+    seedEmptySandbox(SANDBOX_PATH);
+
+    const plan = readStored(sandboxKey)?.state.plans[0] as {
+      currency: string;
+      holdings: unknown[];
+    };
+    expect(plan.currency).toBe('USD');
+    expect(plan.holdings).toEqual([]);
   });
 });

@@ -7,7 +7,7 @@ import type { Plan } from '@/domain/plan';
 import { sanitizeAccountTaxFields } from '@/domain/account';
 import { DEFAULT_PROVINCE } from '@/domain/country';
 import { isSandboxPathname, planStorageKeyForPathname } from './planStorage';
-import { createSandboxPlan } from './seed';
+import { createEmptySandboxPlan, createSandboxPlan, type SandboxProfileId } from './seed';
 
 export type AppStore = PlansSlice & UiSlice;
 
@@ -174,5 +174,32 @@ export const seedSandboxIfEmpty = (pathname: string): void => {
     useAppStore.setState({ plans: [createSandboxPlan(langForPathname(pathname))] });
   } catch {
     // The Sandbox still works in-memory if browser storage is unavailable.
+  }
+};
+
+export const seedSandboxProfile = (pathname: string, profileId: SandboxProfileId): void => {
+  if (typeof window === 'undefined' || !isSandboxPathname(pathname)) return;
+  const key = planStorageKeyForPathname(pathname);
+  try {
+    useAppStore.persist.setOptions({ name: key });
+    useAppStore.setState({
+      plans: [createSandboxPlan(langForPathname(pathname), profileId)],
+    });
+  } catch {
+    useAppStore.setState({
+      plans: [createSandboxPlan(langForPathname(pathname), profileId)],
+    });
+  }
+};
+
+export const seedEmptySandbox = (pathname: string): void => {
+  if (typeof window === 'undefined' || !isSandboxPathname(pathname)) return;
+  const key = planStorageKeyForPathname(pathname);
+  const plan = createEmptySandboxPlan(langForPathname(pathname));
+  try {
+    useAppStore.persist.setOptions({ name: key });
+    useAppStore.setState({ plans: [plan] });
+  } catch {
+    useAppStore.setState({ plans: [plan] });
   }
 };
