@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Request, type TestInfo } from '@playwright/test';
 
 /**
  * Post-deploy smoke: the critical end-to-end journey through the real site.
@@ -21,6 +21,92 @@ const EMAIL = process.env.SMOKE_TEST_EMAIL;
 const PASSWORD = process.env.SMOKE_TEST_PASSWORD;
 
 const appPath = (path: string) => `/${LANG}/app${path}`;
+
+const isApiUrl = (url: string): boolean => {
+  try {
+    return new URL(url).pathname.startsWith('/api/');
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Keep the post-deploy failure actionable without recording request bodies,
+ * cookies, or headers. In particular, a request that never returns remains in
+ * `pendingApi` and is listed with its elapsed time in the report attachment.
+ */
+const installDiagnostics = (page: Page) => {
+  const events: string[] = [];
+  const pendingApi = new Map<Request, number>();
+
+  const record = (message: string) => {
+    const entry = `${new Date().toISOString()} ${message}`;
+    events.push(entry);
+    console.log(`[smoke] ${entry}`);
+  };
+
+  page.on('console', (message) => {
+    if (message.type() === 'warning' || message.type() === 'error') {
+      record(`[browser:${message.type()}] ${message.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => record(`[pageerror] ${error.stack ?? error.message}`));
+  page.on('request', (request) => {
+    if (isApiUrl(request.url())) pendingApi.set(request, Date.now());
+  });
+  page.on('response', (response) => {
+    if (!isApiUrl(response.url())) return;
+    const startedAt = pendingApi.get(response.request());
+    const elapsed = startedAt === undefined ? '' : ` (${Date.now() - startedAt} ms)`;
+    record(`[response] ${response.status()} ${response.url()}${elapsed}`);
+  });
+  page.on('requestfinished', (request) => pendingApi.delete(request));
+  page.on('requestfailed', (request) => {
+    pendingApi.delete(request);
+    record(`[requestfailed] ${request.url()} - ${request.failure()?.errorText ?? 'unknown error'}`);
+  });
+
+  return {
+    snapshot: async (): Promise<string> => {
+      let uiState = 'unavailable';
+      try {
+        uiState = JSON.stringify({
+          authScreen: await page.locator('.auth-screen').count(),
+          appSplash: await page.locator('.app-splash').count(),
+          appShell: await page.locator('.app-shell').count(),
+        });
+      } catch {
+        // The page may already be closed after a browser-level failure.
+      }
+
+      const now = Date.now();
+      const pending = [...pendingApi].map(
+        ([request, startedAt]) =>
+          `${request.method()} ${request.url()} (pending ${now - startedAt} ms)`,
+      );
+      return [
+        `URL: ${page.url()}`,
+        `UI: ${uiState}`,
+        'Pending API requests:',
+        ...(pending.length > 0 ? pending : ['(none)']),
+        'Browser/API events:',
+        ...(events.length > 0 ? events : ['(none)']),
+      ].join('\n');
+    },
+  };
+};
+
+const attachFailureDiagnostics = async (
+  diagnostics: ReturnType<typeof installDiagnostics>,
+  testInfo: TestInfo,
+) => {
+  const report = await diagnostics.snapshot();
+  console.log(`[smoke] Failure diagnostics\n${report}`);
+  await testInfo.attach('runtime-diagnostics', {
+    body: report,
+    contentType: 'text/plain',
+  });
+};
 
 const signIn = async (page: Page) => {
   await page.goto(appPath('/signin'));
@@ -65,51 +151,58 @@ test.beforeAll(() => {
 
 test('critical journey: sign in, plan, dashboard, projection, portfolio, simulation, reload', async ({
   page,
-}) => {
-  await signIn(page);
+}, testInfo) => {
+  const diagnostics = installDiagnostics(page);
 
-  const planId = await openAPlan(page);
-  await expect(page.locator('.app-content')).toBeVisible();
-  await expect(page.locator('.feature-error')).toHaveCount(0);
-  // The dashboard hero renders its Monte Carlo card in one of two states — the
-  // verdict, or the locked upsell on a free plan. Neither may be missing.
-  await expect(page.locator('.mc-card')).toBeVisible();
+  try {
+    await signIn(page);
 
-  // Projection: the deterministic engine ran and produced three stat values
-  // (portfolio today, at retirement, depletion year). Empty or skeleton cards
-  // fail here, where the old "no error boundary" check passed them.
-  await gotoSection(page, planId, 'projection');
-  const projectionStats = page.locator('.projection-summary .hero__big');
-  await expect(projectionStats).toHaveCount(3);
-  await expect(projectionStats.first()).toHaveText(/\d/);
-  await expect(projectionStats.nth(1)).toHaveText(/\d/);
+    const planId = await openAPlan(page);
+    await expect(page.locator('.app-content')).toBeVisible();
+    await expect(page.locator('.feature-error')).toHaveCount(0);
+    // The dashboard hero renders its Monte Carlo card in one of two states — the
+    // verdict, or the locked upsell on a free plan. Neither may be missing.
+    await expect(page.locator('.mc-card')).toBeVisible();
 
-  // Portfolio: the holdings breakdown renders. When the plan carries assets, the
-  // total row must show a real figure rather than an empty cell.
-  await gotoSection(page, planId, 'portfolio');
-  await expect(page.locator('.breakdown')).toBeVisible();
-  if ((await page.locator('.asset-sym').count()) > 0) {
-    await expect(page.locator('.total-row')).toHaveText(/\d/);
+    // Projection: the deterministic engine ran and produced three stat values
+    // (portfolio today, at retirement, depletion year). Empty or skeleton cards
+    // fail here, where the old "no error boundary" check passed them.
+    await gotoSection(page, planId, 'projection');
+    const projectionStats = page.locator('.projection-summary .hero__big');
+    await expect(projectionStats).toHaveCount(3);
+    await expect(projectionStats.first()).toHaveText(/\d/);
+    await expect(projectionStats.nth(1)).toHaveText(/\d/);
+
+    // Portfolio: the holdings breakdown renders. When the plan carries assets, the
+    // total row must show a real figure rather than an empty cell.
+    await gotoSection(page, planId, 'portfolio');
+    await expect(page.locator('.breakdown')).toBeVisible();
+    if ((await page.locator('.asset-sym').count()) > 0) {
+      await expect(page.locator('.total-row')).toHaveText(/\d/);
+    }
+
+    // Monte Carlo: a premium plan renders a success percentage, a free plan the
+    // upsell. One of them must appear — a blank analysis pane is a regression.
+    // Wait on `.or()` rather than branching on a count: the simulation runs in a
+    // worker, so an immediate count would race it and see neither state.
+    await gotoSection(page, planId, 'monte-carlo');
+    const verdict = page.locator('.prob-success-card__value .hero__big');
+    const upsell = page.locator('.upgrade-card');
+    await expect(verdict.or(upsell).first()).toBeVisible();
+    if (await verdict.isVisible()) {
+      await expect(verdict).toHaveText(/^\d{1,3}\s*%$/);
+    }
+
+    // Persistence: reload the dashboard and confirm the plan is still there
+    // (the API served it back, sidebar rehydrated).
+    await page.goto(appPath(`/plan/${planId}/dashboard`));
+    await page.reload();
+    await expect(page.locator('.app-shell')).toBeVisible();
+    await expect(page.locator('.sb-plan')).not.toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/plan/${planId}/dashboard`));
+    await expect(page.locator('.feature-error')).toHaveCount(0);
+  } catch (error) {
+    await attachFailureDiagnostics(diagnostics, testInfo);
+    throw error;
   }
-
-  // Monte Carlo: a premium plan renders a success percentage, a free plan the
-  // upsell. One of them must appear — a blank analysis pane is a regression.
-  // Wait on `.or()` rather than branching on a count: the simulation runs in a
-  // worker, so an immediate count would race it and see neither state.
-  await gotoSection(page, planId, 'monte-carlo');
-  const verdict = page.locator('.prob-success-card__value .hero__big');
-  const upsell = page.locator('.upgrade-card');
-  await expect(verdict.or(upsell).first()).toBeVisible();
-  if (await verdict.isVisible()) {
-    await expect(verdict).toHaveText(/^\d{1,3}\s*%$/);
-  }
-
-  // Persistence: reload the dashboard and confirm the plan is still there
-  // (the API served it back, sidebar rehydrated).
-  await page.goto(appPath(`/plan/${planId}/dashboard`));
-  await page.reload();
-  await expect(page.locator('.app-shell')).toBeVisible();
-  await expect(page.locator('.sb-plan')).not.toHaveCount(0);
-  await expect(page).toHaveURL(new RegExp(`/plan/${planId}/dashboard`));
-  await expect(page.locator('.feature-error')).toHaveCount(0);
 });

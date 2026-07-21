@@ -22,7 +22,8 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
     screenshot: 'only-on-failure',
     ...(bypassSecret && {
       extraHTTPHeaders: { 'x-vercel-protection-bypass': bypassSecret },
