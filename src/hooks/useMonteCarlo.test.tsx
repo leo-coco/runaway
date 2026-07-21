@@ -8,14 +8,23 @@ import { useMonteCarlo } from './useMonteCarlo';
 
 // Small run count: this covers the hook's orchestration, not the simulation's
 // numbers (src/services/monteCarlo.test.ts owns those).
-const options = { ...DEFAULT_MC_OPTIONS, seed: 11, runs: 20, iterations: 20 };
+const ITERATIONS = 20;
+const options = { ...DEFAULT_MC_OPTIONS, seed: 11, iterations: ITERATIONS };
 
 /**
  * Hoisted per test, never called inline in a render callback: seed plans carry
  * random ids, so a fresh one each render changes `inputKey` and restarts the
  * effect forever.
+ *
+ * `monteCarloIterations` must be clamped here, not left to `options`: the hook
+ * prefers the plan's setting, and the seed plan asks for 5000. On the
+ * synchronous fallback that is a multi-second main-thread run, which outlives
+ * waitFor's default timeout on a loaded CI runner.
  */
-const plan = (): Plan => createSeedPlan();
+const plan = (): Plan => {
+  const seeded = createSeedPlan();
+  return { ...seeded, settings: { ...seeded.settings, monteCarloIterations: ITERATIONS } };
+};
 
 /** Stand-in for a module Worker; jsdom has none, hence the hook's fallback path. */
 class FakeWorker {
