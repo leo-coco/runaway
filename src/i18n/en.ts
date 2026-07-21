@@ -347,6 +347,10 @@ export const en = {
     copyright: '© {{year}} {{title}}',
     methodologyLink: 'Methodology',
     contactLink: 'Contact us',
+    privacyLink: 'Privacy',
+    legalNoticeLink: 'Legal notice',
+    termsLink: 'Terms',
+    salesTermsLink: 'Sales terms',
   },
   contact: {
     title: 'Contact us',

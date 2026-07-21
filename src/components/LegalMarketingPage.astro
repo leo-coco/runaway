@@ -1,0 +1,70 @@
+---
+import MarketingFooter from '../components/MarketingFooter.astro';
+import MarketingHeader from '../components/MarketingHeader.astro';
+import { LEGAL_IDENTITY, isLegalIdentityComplete } from '../config/legal';
+import { LEGAL_PATHS, legalDocument, type LegalPage } from '../config/legalContent';
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+
+const { lang, page } = Astro.props as { lang: 'fr' | 'en'; page: LegalPage };
+const isFr = lang === 'fr';
+
+const copy = legalDocument(lang, page);
+const currentPath = LEGAL_PATHS[page][isFr ? 'fr' : 'en'];
+const alternatePath = LEGAL_PATHS[page][isFr ? 'en' : 'fr'];
+
+// An unfinished document must never be indexed: it would rank on the operator's
+// own name while still showing `[à compléter]` markers.
+const publishable = isLegalIdentityComplete();
+
+const effectiveDate = new Date(`${LEGAL_IDENTITY.effectiveDate}T00:00:00Z`).toLocaleDateString(
+  isFr ? 'fr-FR' : 'en-GB',
+  { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' },
+);
+---
+
+<MarketingLayout
+  {lang}
+  title={copy.title}
+  description={copy.intro}
+  canonicalPath={currentPath}
+  alternateFrPath={LEGAL_PATHS[page].fr}
+  alternateEnPath={LEGAL_PATHS[page].en}
+  dateModified={LEGAL_IDENTITY.effectiveDate}
+  noindex={!publishable}
+>
+  <MarketingHeader {lang} alternatePath={alternatePath} />
+  <main class="legal-document">
+    <article>
+      <header class="legal-document__header">
+        <p>{copy.eyebrow}</p>
+        <h1>{copy.heading}</h1>
+        <p>{copy.intro}</p>
+        <p class="legal-document__date">
+          {isFr ? `En vigueur depuis le ${effectiveDate}` : `In force since ${effectiveDate}`}
+        </p>
+      </header>
+      {!publishable && (
+        <aside class="legal-document__draft">
+          {isFr
+            ? 'Brouillon : les informations entre crochets doivent être renseignées dans src/config/legal.json avant publication. Cette page reste en noindex et hors sitemap tant qu’elles manquent.'
+            : 'Draft: the bracketed details must be filled in src/config/legal.json before publishing. This page stays noindex and out of the sitemap until they are.'}
+        </aside>
+      )}
+      <div class="legal-document__content">
+        {copy.sections.map((section) => (
+          <section>
+            <h2>{section.title}</h2>
+            {section.blocks.map((block) =>
+              'ul' in block ? (
+                <ul>{block.ul.map((item) => <li>{item}</li>)}</ul>
+              ) : (
+                <p>{block.p}</p>
+              ),
+            )}
+          </section>
+        ))}
+      </div>
+    </article>
+  </main>
+  <MarketingFooter {lang} />
+</MarketingLayout>

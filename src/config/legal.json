@@ -1,0 +1,13 @@
+{
+  "legalName": "",
+  "address": "",
+  "siren": "",
+  "publicationDirector": "",
+  "contactEmail": "",
+  "privacyEmail": "",
+  "supportEmail": "",
+  "vatNumber": "",
+  "mediator": { "name": "", "address": "", "url": "" },
+  "hosting": { "name": "Vercel Inc.", "address": "", "phone": "" },
+  "effectiveDate": "2026-07-21"
+}
