@@ -9,3 +9,12 @@ import { server } from './msw/server';
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
+
+// jsdom has no ResizeObserver; RunwayTimeline (and anything else that measures
+// its container) needs a stub or it throws in every test that renders it.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??= ResizeObserverStub;
