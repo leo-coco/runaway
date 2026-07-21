@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from './db/client.js';
-import { tierConfig } from './db/schema.js';
+import { tierConfig, user as userTable } from './db/schema.js';
 import {
   DEFAULT_TIER_CONFIG,
   resolveEntitlements,
@@ -76,10 +76,26 @@ export const saveTierConfig = async (data: TierConfig): Promise<TierConfig> => {
   return row!.data;
 };
 
-/** Resolve a user's effective entitlements from their tier + the live config. */
+/**
+ * Resolve a user's effective entitlements from the live user row + live config.
+ *
+ * Better Auth sessions can outlive an admin/subscription tier change. Never trust
+ * the tier copied into the session for quota enforcement: a stale `premium` value
+ * would otherwise turn every limit into `null` until that session is refreshed.
+ */
 export const getEntitlements = async (user: AuthUser): Promise<Entitlements> => {
-  const config = await loadTierConfig();
-  return resolveEntitlements(user.tier, user.premiumUntil, config);
+  const [config, rows] = await Promise.all([
+    loadTierConfig(),
+    db
+      .select({ tier: userTable.tier, premiumUntil: userTable.premiumUntil })
+      .from(userTable)
+      .where(eq(userTable.id, user.id)),
+  ]);
+  const currentUser = rows[0];
+
+  // A valid authenticated user should always have a row. If it disappeared,
+  // fail closed as Free instead of granting privileges from a stale session.
+  return resolveEntitlements(currentUser?.tier ?? null, currentUser?.premiumUntil ?? null, config);
 };
 
 /** True when the user may access admin surfaces: an explicit `admin` role. */

@@ -11,7 +11,7 @@ import {
 import { fetchEntitlements } from '@/features/billing/entitlementsApi';
 import { useAppMode } from '@/providers/AppModeContext';
 
-/** Free defaults, used while loading and for guests. */
+/** Free defaults, used only while the live tier config is loading or unavailable. */
 const GUEST_FALLBACK: Entitlements = resolveEntitlements(null, null, DEFAULT_TIER_CONFIG);
 
 /**
@@ -25,11 +25,10 @@ export const useEntitlements = (): Entitlements => {
   const userId = sandbox ? 'sandbox' : (session?.user?.id ?? 'guest');
   const { data } = useQuery({
     queryKey: queryKeys.entitlements(userId),
-    queryFn: fetchEntitlements,
-    enabled: !sandbox,
+    queryFn: () => fetchEntitlements(sandbox),
     staleTime: 5 * 60_000,
   });
-  return sandbox ? GUEST_FALLBACK : (data ?? GUEST_FALLBACK);
+  return data ?? GUEST_FALLBACK;
 };
 
 /** Convenience: is a given premium feature available to the current user? */
@@ -50,9 +49,8 @@ export const useEntitlementsReady = (): boolean => {
   const userId = sandbox ? 'sandbox' : (session?.user?.id ?? 'guest');
   const { isSuccess } = useQuery({
     queryKey: queryKeys.entitlements(userId),
-    queryFn: fetchEntitlements,
-    enabled: !sandbox,
+    queryFn: () => fetchEntitlements(sandbox),
     staleTime: 5 * 60_000,
   });
-  return sandbox || isSuccess;
+  return isSuccess;
 };

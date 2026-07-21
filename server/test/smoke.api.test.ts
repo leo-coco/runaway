@@ -109,10 +109,18 @@ describe('API smoke journey', () => {
 
   it('serves free entitlements to a guest before sign-in', async () => {
     getSession.mockResolvedValue(null);
+    loadTierConfig.mockResolvedValue({
+      ...DEFAULT_TIER_CONFIG,
+      free: {
+        ...DEFAULT_TIER_CONFIG.free,
+        limits: { ...DEFAULT_TIER_CONFIG.free.limits, maxAccounts: 5 },
+      },
+    });
     const res = await app.request('/api/entitlements');
     expect(res.status).toBe(200);
     const body = (await res.json()) as Entitlements;
     expect(body.tier).toBe('free');
+    expect(body.limits.maxAccounts).toBe(5);
     expect(body.pricing).toBeDefined();
   });
 

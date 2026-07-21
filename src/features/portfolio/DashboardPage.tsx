@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OverviewCards } from './OverviewCards';
@@ -6,15 +7,32 @@ import { DashboardAssetsCard } from './DashboardAssetsCard';
 import { RunwayTimeline } from './RunwayTimeline';
 import { MonteCarloSummaryCard } from './MonteCarloSummaryCard';
 import { usePlanContext } from './PlanLayout';
+import { useAppMode } from '@/providers/AppModeContext';
+import { QuickStart } from '@/features/onboarding/QuickStart';
+import { SavePlanBanner } from '@/features/onboarding/SavePlanBanner';
 
 export const DashboardPage = () => {
   const { plan, rates, totalValue, projection } = usePlanContext();
   const { t } = useTranslation();
+  const { sandbox } = useAppMode();
 
   const hasAssets = plan.holdings.length > 0;
 
+  // Guest onboarding: a blank sandbox plan (e.g. entered via ?start=empty) runs the
+  // quick-start instead of an empty dashboard. It stays mounted through its own result
+  // step (which writes holdings, flipping `hasAssets`) until the guest chooses to
+  // explore the full dashboard — so gate on this flag, not on `hasAssets` directly.
+  const [onboarding, setOnboarding] = useState(() => sandbox && !hasAssets);
+  if (onboarding) return <QuickStart onExit={() => setOnboarding(false)} />;
+
   return (
     <>
+      {sandbox && hasAssets ? (
+        <ErrorBoundary feature="save plan banner">
+          <SavePlanBanner />
+        </ErrorBoundary>
+      ) : null}
+
       <div className="hero hero--compact">
         <ErrorBoundary feature="monte carlo summary">
           <MonteCarloSummaryCard />

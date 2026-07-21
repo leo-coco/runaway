@@ -5,6 +5,7 @@ import type { Plan } from '@/domain/plan';
 import { fetchPlans, putPlan, deletePlan, PlanLimitError } from './plansApi';
 import type { PaywallReason } from '@/store/uiSlice';
 import { ImportLocalPlansDialog } from './ImportLocalPlansDialog';
+import { ACCOUNT_PLANS_KEY } from '@/store/planStorage';
 
 /** planId -> updatedAt of the last state we know the server has. */
 type Snapshot = Map<string, string>;
@@ -139,12 +140,18 @@ export const PlanSyncManager = (): React.ReactElement | null => {
       beginSyncing(local);
     } else {
       useAppStore.getState().hydratePlans([]);
+      try {
+        localStorage.removeItem(ACCOUNT_PLANS_KEY);
+      } catch {
+        // Storage can be unavailable (privacy mode); the in-memory state is
+        // already clean either way.
+      }
       beginSyncing([]);
     }
   };
 
   if (importPrompt) {
-    return <ImportLocalPlansDialog count={importPrompt.length} onDecide={onDecide} />;
+    return <ImportLocalPlansDialog plans={importPrompt} onDecide={onDecide} />;
   }
   return null;
 };
