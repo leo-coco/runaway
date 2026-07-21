@@ -24,7 +24,14 @@ export const useTour = (): TourContextValue => {
   return ctx;
 };
 
-export const TourProvider = ({ children }: { children: ReactNode }) => {
+export const TourProvider = ({
+  children,
+  ready = true,
+}: {
+  children: ReactNode;
+  /** Do not auto-start while a higher-priority startup dialog is unresolved. */
+  ready?: boolean;
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -107,7 +114,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
     // Wait for the real tier before filtering steps, so a premium user's first
     // session doesn't get the free-tier-trimmed guide just because entitlements
     // hadn't loaded yet.
-    if (autoStarted.current || !activeId || !entitlementsReady || sandbox) return;
+    if (autoStarted.current || !ready || !activeId || !entitlementsReady || sandbox) return;
     let seen: boolean;
     try {
       seen = Boolean(localStorage.getItem(SEEN_KEY));
@@ -125,7 +132,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
       tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features, sandbox));
     }, 700);
     return () => clearTimeout(id);
-  }, [activeId, entitlementsReady, sandbox]);
+  }, [activeId, entitlementsReady, ready, sandbox]);
 
   // Re-propose the welcome guide when a user upgrades mid-session, now showing
   // every step (including the ones the free tier had trimmed). `prevTier` only

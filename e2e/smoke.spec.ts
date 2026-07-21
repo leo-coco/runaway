@@ -111,10 +111,23 @@ const attachFailureDiagnostics = async (
 };
 
 const signIn = async (page: Page) => {
+  // The welcome guide has its own coverage. Keep this critical-journey smoke
+  // focused on the product flow and free from an intentional pointer overlay.
+  await page.addInitScript(() => localStorage.setItem('runaway/tour-seen', '1'));
   await page.goto(appPath('/signin'));
   await page.locator('#auth-email').fill(EMAIL as string);
   await page.locator('#auth-password').fill(PASSWORD as string);
   await page.locator('.auth-form button[type="submit"]').click();
+
+  // A new account can have browser-local plans but no server plans yet. That
+  // choice is deliberately resolved before the app shell becomes available.
+  const startupDestination = page.locator('.app-shell, .import-local-plans-dialog').first();
+  await expect(startupDestination).toBeVisible();
+  const importDialog = page.locator('.import-local-plans-dialog');
+  if (await importDialog.isVisible()) {
+    await importDialog.locator('.modal__footer .btn--primary').click();
+  }
+
   // Land inside the authenticated shell (present on every signed-in page).
   await expect(page.locator('.app-shell')).toBeVisible();
   await expect(page.locator('.auth-screen')).toHaveCount(0);
