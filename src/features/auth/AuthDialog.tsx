@@ -115,7 +115,13 @@ export const AuthForm = ({
 
   if (verificationEmail)
     return (
-      <VerificationSentPanel email={verificationEmail} onComplete={() => switchTo('signin')} />
+      <VerificationSentPanel
+        email={verificationEmail}
+        onComplete={() => {
+          setVerificationEmail(null);
+          switchTo('signin');
+        }}
+      />
     );
 
   return (
@@ -187,9 +193,11 @@ export const AuthForm = ({
 export const AuthDialog = ({
   onClose,
   onSignedIn = onClose,
+  initialMode = 'signin',
 }: {
   onClose: () => void;
   onSignedIn?: () => void;
+  initialMode?: AuthMode;
 }) => {
   const { t } = useTranslation();
   return (
@@ -198,7 +206,7 @@ export const AuthDialog = ({
         <div className="auth-dialog__visual" aria-hidden="true">
           <img src={authBrand.src} width={authBrand.width} height={authBrand.height} alt="" />
         </div>
-        <AuthForm onSignedIn={onSignedIn} showTitle />
+        <AuthForm onSignedIn={onSignedIn} showTitle initialMode={initialMode} />
       </div>
     </Modal>
   );

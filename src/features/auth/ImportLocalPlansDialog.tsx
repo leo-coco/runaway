@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import type { Plan } from '@/domain/plan';
 
 /**
  * Shown once, right after a first sign-in on an account that has no server plans
  * yet, when local (guest) plans exist. Non-destructive: the user chooses.
  */
 export const ImportLocalPlansDialog = ({
-  count,
+  plans,
   onDecide,
 }: {
-  count: number;
+  plans: Plan[];
   onDecide: (doImport: boolean) => void | Promise<void>;
 }) => {
   const { t } = useTranslation();
@@ -25,7 +26,6 @@ export const ImportLocalPlansDialog = ({
   return (
     <Modal
       title={t('auth.importTitle')}
-      description={t('auth.importDesc', { count })}
       onClose={() => decide(false)}
       footer={
         <>
@@ -38,7 +38,25 @@ export const ImportLocalPlansDialog = ({
         </>
       }
     >
-      <p style={{ margin: 0 }}>{t('auth.importNote')}</p>
+      {plans.map((plan) => {
+        const retireAge =
+          plan.settings.currentAge > 0
+            ? plan.settings.currentAge + (plan.settings.retirementYear - new Date().getFullYear())
+            : null;
+        return (
+          <div key={plan.id} className="import-plan-card">
+            <p className="import-plan-card__name">{plan.name}</p>
+            {retireAge !== null && (
+              <p className="import-plan-card__sub">
+                {t('auth.importPlanRetirement', {
+                  age: retireAge,
+                  year: plan.settings.retirementYear,
+                })}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </Modal>
   );
 };

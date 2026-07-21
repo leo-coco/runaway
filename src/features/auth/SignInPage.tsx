@@ -67,7 +67,11 @@ export const SignInPage = () => {
           {verificationEmail ? (
             <VerificationSentPanel
               email={verificationEmail}
-              onComplete={() => navigate('/signin', { replace: true })}
+              onComplete={() => {
+                setVerificationEmail(null);
+                setMode('signin');
+                navigate('/signin', { replace: true });
+              }}
             />
           ) : (
             <>

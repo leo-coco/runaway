@@ -38,6 +38,7 @@ import { valueHoldings } from '@/services/portfolioService';
 import { bracketFxFactor, type RatesTable } from '@/services/currencyService';
 import type { Plan } from '@/domain/plan';
 import { cn } from '@/lib/cn';
+import { ProBadge } from '@/features/billing/ProBadge';
 
 interface Props {
   plan: Plan;
@@ -62,22 +63,36 @@ const DEDICATED_BUTTON_PRESETS = ['Crypto Wallet'];
 const cryptoPreset = ACCOUNT_PRESETS.find((p) => p.name === 'Crypto Wallet');
 
 /**
- * Searchable account-preset picker: type to filter by name, then click a row
- * or press Enter (on the highlighted row) to add that account immediately —
- * no separate "Add" button needed. "Custom account" and "Crypto Wallet" are
+ * Searchable account-preset picker: type to filter by name, click (or press Enter
+ * on the highlighted) row to check/uncheck it, then confirm with "Add" to create
+ * every checked account at once. "Custom account" and "Crypto Wallet" are
  * dedicated buttons next to the search bar, not rows in this list.
  */
-const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => void }) => {
+const AccountPresetCombobox = ({
+  residence,
+  currentAccountCount,
+  maxAccounts,
+  onAdd,
+  onLimitReached,
+}: {
+  residence: Country;
+  currentAccountCount: number;
+  maxAccounts: number | null;
+  onAdd: (presets: AccountPreset[]) => void;
+  onLimitReached: () => void;
+}) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [checked, setChecked] = useState<readonly string[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const sections: PresetSection[] = useMemo(() => {
     const q = query.trim();
     const out: PresetSection[] = [];
-    for (const c of COUNTRIES) {
+    const orderedCountries = [residence, ...COUNTRIES.filter((country) => country !== residence)];
+    for (const c of orderedCountries) {
       const presets = ACCOUNT_PRESETS.filter(
         (p) => p.sourceCountry === c && (q === '' || matchesQuery(p.name, q)),
       );
@@ -93,9 +108,12 @@ const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => vo
     if (otherPresets.length > 0)
       out.push({ label: t('accounts.cryptoOther'), presets: otherPresets });
     return out;
-  }, [query, t]);
+  }, [query, residence, t]);
 
   const flat = useMemo(() => sections.flatMap((s) => s.presets), [sections]);
+  const availableSlots =
+    maxAccounts === null ? null : Math.max(0, maxAccounts - currentAccountCount);
+  const selectionLimitReached = availableSlots !== null && checked.length >= availableSlots;
 
   // Reset the highlighted option whenever the query changes, adjusted during
   // render (React's supported pattern for resetting state on a prop change)
@@ -120,8 +138,21 @@ const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => vo
     return () => document.removeEventListener('mousedown', onDoc, true);
   }, [open]);
 
-  const commit = (preset: AccountPreset) => {
-    onAdd(preset);
+  const toggle = (preset: AccountPreset) => {
+    if (!checked.includes(preset.name) && selectionLimitReached) {
+      onLimitReached();
+      return;
+    }
+    setChecked((cur) =>
+      cur.includes(preset.name) ? cur.filter((n) => n !== preset.name) : [...cur, preset.name],
+    );
+  };
+
+  const confirm = () => {
+    const presets = ACCOUNT_PRESETS.filter((p) => checked.includes(p.name));
+    if (presets.length === 0) return;
+    onAdd(presets);
+    setChecked([]);
     setQuery('');
     setHighlight(0);
     setOpen(false);
@@ -138,7 +169,7 @@ const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => vo
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const preset = flat[highlight];
-      if (preset) commit(preset);
+      if (preset) toggle(preset);
     } else if (e.key === 'Escape') {
       setOpen(false);
     }
@@ -174,29 +205,55 @@ const AccountPresetCombobox = ({ onAdd }: { onAdd: (preset: AccountPreset) => vo
                 <div className="search-group">{section.label}</div>
                 {section.presets.map((preset) => {
                   const idx = flat.indexOf(preset);
+                  const isChecked = checked.includes(preset.name);
+                  const isLocked = !isChecked && selectionLimitReached;
                   const sub = preset.sourceCountry
                     ? t(`accountKind.${preset.kind}`)
                     : `${t(`accountKind.${preset.kind}`)} · ${t('accounts.taxedAtResidence')}`;
                   return (
                     <div
                       key={preset.name}
-                      className={cn('search-row', idx === highlight && 'active')}
-                      role="button"
+                      className={cn(
+                        'search-row',
+                        idx === highlight && 'active',
+                        isChecked && 'is-selected',
+                        isLocked && 'is-locked',
+                      )}
+                      role="checkbox"
+                      aria-label={`${preset.name} ${sub}${isLocked ? ` ${t('billing.pro')}` : ''}`}
+                      aria-checked={isChecked}
+                      aria-disabled={isLocked}
                       tabIndex={-1}
                       onMouseEnter={() => setHighlight(idx)}
-                      onClick={() => commit(preset)}
+                      onClick={() => toggle(preset)}
                     >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={isLocked}
+                        readOnly
+                        tabIndex={-1}
+                        className="acct-preset-combo__checkbox"
+                      />
                       <div className="search-row__id">
                         <div className="search-row__main">
                           <span className="search-row__sym">{preset.name}</span>
                           <span className="search-row__name">{sub}</span>
                         </div>
                       </div>
+                      {isLocked && <ProBadge />}
                     </div>
                   );
                 })}
               </div>
             ))
+          )}
+          {checked.length > 0 && (
+            <div className="acct-preset-combo__footer">
+              <Button variant="primary" size="sm" onClick={confirm}>
+                {t('accounts.addSelectedAccounts', { count: checked.length })}
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -229,6 +286,20 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
       return;
     }
     setDraftAccounts((accounts) => [...accounts, accountFromPreset(preset, draftResidence)]);
+  };
+
+  // Multiselect commit from the preset combobox: adds as many of the checked
+  // presets as the tier allows (in order), then opens the paywall once for the
+  // rest instead of adding them past the cap.
+  const onAddAccounts = (presets: AccountPreset[]) => {
+    const room =
+      maxAccounts === null ? presets.length : Math.max(0, maxAccounts - draftAccounts.length);
+    if (room < presets.length) openPaywall('accounts');
+    if (room === 0) return;
+    const additions = presets
+      .slice(0, room)
+      .map((preset) => accountFromPreset(preset, draftResidence));
+    setDraftAccounts((accounts) => [...accounts, ...additions]);
   };
 
   const updateDraftAccount = (
@@ -411,7 +482,13 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
 
   const accountAddControls = (
     <div className="acct-add" data-tour="account-preset-add">
-      <AccountPresetCombobox onAdd={(preset) => onAddAccount(preset)} />
+      <AccountPresetCombobox
+        residence={draftResidence}
+        currentAccountCount={draftAccounts.length}
+        maxAccounts={maxAccounts}
+        onAdd={onAddAccounts}
+        onLimitReached={() => openPaywall('accounts')}
+      />
       <Button variant="accent" className="acct-add__button" onClick={() => onAddAccount(undefined)}>
         <PlusIcon size={16} /> {t('accounts.customAccount')}
       </Button>

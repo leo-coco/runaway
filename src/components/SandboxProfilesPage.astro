@@ -26,19 +26,19 @@ const copy = isFr
       title: 'Exemples de plans de retraite | Runaway',
       description:
         'Choisissez un exemple de plan de retraite ou démarrez une sandbox vide dans Runaway.',
-      eyebrow: 'EXEMPLES RUNAWAY',
-      heading: 'Choisissez votre point de départ.',
+      eyebrow: 'COMMENCER RAPIDEMENT',
+      heading: 'Votre avenir financier en 2 minutes.',
       intro:
-        'Chaque profil charge un plan complet avec son âge, son portefeuille, son épargne, ses dépenses et ses revenus de retraite. Modifiez ensuite chaque hypothèse pour voir ce qui change.',
+        'Renseignez quelques essentiels et obtenez une première projection. Aucune inscription requise.',
+      startAction: 'Commencer rapidement',
       resumeEyebrow: 'VOTRE SANDBOX',
       resumeTitle: 'Vous avez déjà commencé.',
       resumeBody: 'Retrouvez le plan conservé dans ce navigateur sans modifier vos données.',
       resumeAction: 'Reprendre ma sandbox',
-      blankEyebrow: 'PARTIR DE ZÉRO',
-      blankTitle: 'Vous préférez construire votre propre scénario ?',
-      blankBody:
-        'Ouvrez un plan vide avec les réglages essentiels, puis ajoutez vos actifs, dépenses et revenus.',
-      blankAction: 'Démarrer avec un plan vide',
+      profilesEyebrow: 'OU PARTEZ D’UN EXEMPLE',
+      profilesTitle: 'Pas envie de saisir vos chiffres ?',
+      profilesBody:
+        'Chaque profil charge un plan complet — âge, portefeuille, épargne, dépenses et revenus — à explorer et modifier.',
       notice:
         'Les profils sont fictifs et servent uniquement à découvrir le produit. Choisir un exemple ou un plan vide remplace le plan actuellement conservé dans votre sandbox.',
       profiles: [
@@ -104,19 +104,19 @@ const copy = isFr
       title: 'Retirement plan examples | Runaway',
       description:
         'Choose a retirement plan example or start with a blank Runaway sandbox.',
-      eyebrow: 'RUNAWAY EXAMPLES',
-      heading: 'Choose your starting point.',
+      eyebrow: 'QUICK START',
+      heading: 'Your financial future in 2 minutes.',
       intro:
-        'Each profile loads a complete plan with age, portfolio, savings, spending, and retirement income. Then change any assumption and see what moves.',
+        'Enter a few essentials and get a first projection. No account required.',
+      startAction: 'Start quickly',
       resumeEyebrow: 'YOUR SANDBOX',
       resumeTitle: 'You already have a plan in progress.',
       resumeBody: 'Continue with the plan stored in this browser without changing your data.',
       resumeAction: 'Resume my sandbox',
-      blankEyebrow: 'START FROM SCRATCH',
-      blankTitle: 'Would you rather build your own scenario?',
-      blankBody:
-        'Open a blank plan with the essential settings, then add your assets, spending, and income.',
-      blankAction: 'Start with a blank plan',
+      profilesEyebrow: 'OR START FROM AN EXAMPLE',
+      profilesTitle: 'Rather not enter your own numbers?',
+      profilesBody:
+        'Each profile loads a complete plan — age, portfolio, savings, spending, and income — to explore and change.',
       notice:
         'These fictional profiles are for product discovery only. Choosing an example or a blank plan replaces the plan currently stored in your sandbox.',
       profiles: [
@@ -199,6 +199,9 @@ const sandboxStorageKey = planStorageKeyForPathname(appBase);
       <p class="eyebrow"><span></span>{copy.eyebrow}</p>
       <h1>{copy.heading}</h1>
       <p>{copy.intro}</p>
+      <a class="button sandbox-picker__hero-cta" href={`${appBase}?start=empty`}>
+        {copy.startAction}<span aria-hidden="true">→</span>
+      </a>
     </header>
 
     <aside
@@ -214,6 +217,12 @@ const sandboxStorageKey = planStorageKeyForPathname(appBase);
       </div>
       <a class="button" href={appBase}>{copy.resumeAction}<span aria-hidden="true">→</span></a>
     </aside>
+
+    <header class="sandbox-picker__profiles-head section-shell">
+      <p class="eyebrow"><span></span>{copy.profilesEyebrow}</p>
+      <h2>{copy.profilesTitle}</h2>
+      <p>{copy.profilesBody}</p>
+    </header>
 
     <section
       class="sandbox-profile-grid section-shell"
@@ -277,17 +286,6 @@ const sandboxStorageKey = planStorageKeyForPathname(appBase);
         </article>
       ))}
     </section>
-
-    <aside class="sandbox-picker__blank section-shell">
-      <div>
-        <span>{copy.blankEyebrow}</span>
-        <h2>{copy.blankTitle}</h2>
-        <p>{copy.blankBody}</p>
-      </div>
-      <a class="button button--ghost" href={`${appBase}?start=empty`}>
-        {copy.blankAction}<span aria-hidden="true">→</span>
-      </a>
-    </aside>
 
     <p class="sandbox-picker__notice section-shell">{copy.notice}</p>
   </main>

@@ -3,6 +3,7 @@ import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/store';
 import { useEntitlements, useEntitlementsReady } from '@/hooks/useEntitlements';
+import { useAppMode } from '@/providers/AppModeContext';
 import type { TierId } from '@/domain/entitlements';
 import { createTour, type TourInstance } from './TourController';
 import { TOUR_GUIDES, accessibleSteps, type TourGuideId } from './tourSteps';
@@ -32,6 +33,10 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
   const plans = useAppStore((s) => s.plans);
   const match = useMatch('/plan/:id/*');
   const activeId = match?.params.id ?? plans[0]?.id;
+  // The sandbox is self-directed discovery (quick-start onboarding + the "save your
+  // plan" prompt), so the welcome tour must not auto-start over it. It stays
+  // available on demand via the sidebar button. Auto-start is unchanged for accounts.
+  const { sandbox } = useAppMode();
   const { features, tier } = useEntitlements();
   const entitlementsReady = useEntitlementsReady();
 
@@ -98,7 +103,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
     // Wait for the real tier before filtering steps, so a premium user's first
     // session doesn't get the free-tier-trimmed guide just because entitlements
     // hadn't loaded yet.
-    if (autoStarted.current || !activeId || !entitlementsReady) return;
+    if (autoStarted.current || !activeId || !entitlementsReady || sandbox) return;
     let seen: boolean;
     try {
       seen = Boolean(localStorage.getItem(SEEN_KEY));
@@ -116,7 +121,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
       tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features));
     }, 700);
     return () => clearTimeout(id);
-  }, [activeId, entitlementsReady]);
+  }, [activeId, entitlementsReady, sandbox]);
 
   // Re-propose the welcome guide when a user upgrades mid-session, now showing
   // every step (including the ones the free tier had trimmed). `prevTier` only

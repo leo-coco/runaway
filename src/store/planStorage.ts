@@ -1,4 +1,4 @@
-const ACCOUNT_PLANS_KEY = 'runaway/plans';
+export const ACCOUNT_PLANS_KEY = 'runaway/plans';
 // Bump this key whenever the standard Sandbox seed changes so stale local-only
 // plans are replaced on the next visit without touching signed-in account data.
 const SANDBOX_PLANS_KEY = 'runaway/sandbox-plans-v5';
