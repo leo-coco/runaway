@@ -1109,12 +1109,14 @@ footer > div {
 .editorial-columns h2 {
   font-size: 2rem;
 }
-.editorial-columns ul {
+.editorial-columns ul,
+.method-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.editorial-columns li {
+.editorial-columns li,
+.method-list li {
   padding: 16px 0 16px 20px;
   border-bottom: 1px solid rgba(178, 166, 150, 0.34);
   color: #625c54;
@@ -1122,11 +1124,28 @@ footer > div {
   line-height: 1.6;
   position: relative;
 }
-.editorial-columns li::before {
+.editorial-columns li::before,
+.method-list li::before {
   content: '·';
   position: absolute;
   left: 0;
   color: var(--gold-deep);
+}
+.method-list {
+  margin-bottom: 26px;
+}
+.method-list strong {
+  color: var(--ink);
+  font-weight: 550;
+}
+.editorial-section > p.method-aside {
+  margin: 0;
+  color: #6b655d;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+.method-list + .coverage-grid {
+  margin-bottom: 26px;
 }
 .method-update {
   margin: 0;

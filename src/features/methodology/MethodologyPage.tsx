@@ -7,7 +7,12 @@ import { CalculationDetailsContent } from '@/features/projections/CalculationDet
 import { SimulationMethodology } from '@/features/projections/SimulationDataSourcesModal';
 import { usePlanContext } from '@/features/portfolio/PlanLayout';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
-import { buildMonteCarloInput, isBitcoinSymbol, MODEL_PARAMS } from '@/services/monteCarlo';
+import {
+  buildMonteCarloInput,
+  DEFAULT_MC_OPTIONS,
+  isBitcoinSymbol,
+  MODEL_PARAMS,
+} from '@/services/monteCarlo';
 import { DEFAULT_SCENARIO_CONFIG } from '@/domain/scenario';
 import {
   CLASS_VOLATILITY,
@@ -50,6 +55,7 @@ export const MethodologyPage = () => {
   const hasBtc = plan.holdings.some((h) => isBitcoinSymbol(h.instrument.symbol));
   const btcCycle = (plan.settings.btcHalvingCycle ?? false) && hasBtc;
   const residence = plan.residenceCountry ?? 'US';
+  const iterations = plan.settings.monteCarloIterations ?? DEFAULT_MC_OPTIONS.iterations;
 
   // The per-holding drift / sigma the engine will actually use for THIS plan —
   // built from the same function the Monte Carlo lens uses, so the numbers match.
@@ -315,7 +321,9 @@ export const MethodologyPage = () => {
             />
 
             <p className="field__hint">{t('methodology.mcSuccess')}</p>
-            <Formula tex={'p = \\frac{\\#\\{\\text{funded paths}\\}}{N}, \\qquad N = 10\\,000'} />
+            <Formula
+              tex={`p = \\frac{\\#\\{\\text{funded paths}\\}}{N}, \\qquad N = ${iterations.toLocaleString('en-US').replace(/,/g, '\\,')}`}
+            />
 
             <InfoPanel title={t('mc.aboutSimulation')}>
               {mcAssets.length > 0 ? (

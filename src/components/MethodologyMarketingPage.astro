@@ -1,43 +1,128 @@
 ---
 import EditorialLayout from '../layouts/EditorialLayout.astro';
+import { MODEL_PARAMS, DEFAULT_MC_OPTIONS } from '../services/monteCarlo';
+import { MC_ITERATIONS_MIN, MC_ITERATIONS_MAX } from '../domain/retirementSettings';
+import { DEFAULT_SCENARIO_CONFIG } from '../domain/scenario';
+import { TAX_TABLES_YEAR, TAX_TABLE_SOURCES, US_NIIT } from '../domain/taxTables';
+import { HIST_REAL_START_YEAR, HIST_REAL_END_YEAR } from '../domain/historicalReturns';
 
 const { lang } = Astro.props as { lang: 'fr' | 'en' };
 const isFr = lang === 'fr';
 // Bump both values whenever the tax schedules, sources, or assumptions on this page change.
-const lastReviewed = '2026-07-16';
-const lastReviewedDisplay = isFr ? '16 juillet 2026' : 'July 16, 2026';
+const lastReviewed = '2026-07-21';
+const lastReviewedDisplay = isFr ? '21 juillet 2026' : 'July 21, 2026';
+
+// Every model number on this page is read from the engine at build time, so the
+// public copy cannot drift from the code that actually runs.
+const locale = isFr ? 'fr-FR' : 'en-US';
+const nf = (n: number): string => n.toLocaleString(locale);
+const pct = (n: number): string => (isFr ? `${nf(n)} %` : `${nf(n)}%`);
+// Typographic minus/plus so a bound like "−95 % / +200 %" reads unambiguously.
+const signedPct = (n: number): string => `${n < 0 ? '−' : '+'}${pct(Math.abs(n))}`;
+const kappa = nf(DEFAULT_MC_OPTIONS.meanReversion);
+const crashProbPct = pct(Math.round(MODEL_PARAMS.crashProb * 100));
+const crashDriftPct = signedPct(Math.round(MODEL_PARAMS.crashDrift * 100));
+const crashVol = nf(MODEL_PARAMS.crashVolMult);
+const crashFloor = nf(MODEL_PARAMS.crashCorrFloor);
+const capMin = signedPct(MODEL_PARAMS.returnCapMinPct);
+const capMax = signedPct(MODEL_PARAMS.returnCapMaxPct);
+const niitRate = pct(Math.round(US_NIIT.rate * 1000) / 10);
+const niitThreshold = isFr
+  ? `${nf(US_NIIT.threshold)} $`
+  : `$${nf(US_NIIT.threshold)}`;
+
 const copy = isFr
   ? {
       title: 'Méthodologie des projections financières | Runaway',
-      description: 'Découvrez comment Runaway calcule les projections de retraite, traite l’inflation et la fiscalité, et mesure l’incertitude avec Monte-Carlo.',
+      description: 'Formules, fiscalité pays par pays, paramètres du modèle Monte-Carlo et limites assumées : comment Runaway calcule les projections de retraite.',
       canonical: '/methodologie', alternateFr: '/methodologie', alternateEn: '/en/methodology',
       eyebrow: 'MÉTHODOLOGIE', heading: 'Comment Runaway calcule vos trajectoires.',
       intro: 'Runaway transforme vos informations et vos hypothèses en trajectoires financières. Cette page présente les principes du calcul, ses sources et ses limites — sans prétendre prédire les marchés.',
       principleTitle: 'Le principe de départ',
       principle: 'Votre rendement attendu est une hypothèse, pas une prévision. Runaway applique les paramètres que vous choisissez et montre leurs conséquences possibles dans le temps.',
+      principleScenario: `Chaque actif capitalise à son CAGR effectif : son CAGR de base, plus l’ajustement du scénario actif. Le scénario pessimiste retire ${DEFAULT_SCENARIO_CONFIG.conservativeAdjustmentPts} points à chaque CAGR, l’optimiste en ajoute ${DEFAULT_SCENARIO_CONFIG.optimisticAdjustmentPts}, le scénario attendu ne change rien.`,
       steps: [
-        ['01', 'Construire le point de départ', 'Le plan rassemble les actifs, comptes, devises, prix de revient, contributions, revenus, dépenses, projets et paramètres de retraite saisis par l’utilisateur.'],
-        ['02', 'Projeter année après année', 'La projection déterministe fait évoluer chaque actif, ajoute les contributions, applique les flux programmés, indexe les dépenses sur l’inflation et finance les retraits jusqu’à l’horizon choisi.'],
-        ['03', 'Puiser les comptes dans l’ordre', 'À la retraite, les retraits vident les comptes selon l’ordre que vous définissez. Cet ordre change l’impôt payé chaque année et la durée de vie du portefeuille.'],
-        ['04', 'Appliquer une fiscalité simplifiée', 'Les retraits sont estimés selon la résidence, le type de compte et des barèmes représentatifs pour la France, le Canada et les États-Unis.'],
-        ['05', 'Mesurer l’incertitude', 'Monte-Carlo teste jusqu’à 5 000 futurs de marché en faisant varier les rendements selon des hypothèses de volatilité, de corrélation et de comportements extrêmes (chocs rares mais violents).'],
+        ['01', 'Construire le point de départ', 'Le plan rassemble les actifs, comptes, devises, prix de revient, contributions, revenus, dépenses, projets et paramètres de retraite. Rien n’est deviné : chaque ligne du calcul remonte à une valeur que vous avez saisie.'],
+        ['02', 'Projeter année après année', 'La projection déterministe produit une trajectoire unique et lisse. Chaque année suit toujours le même enchaînement : solde d’ouverture, croissance, contributions, flux forcés, retrait, solde de clôture.'],
+        ['03', 'Puiser les comptes dans l’ordre', 'À la retraite, les retraits vident les comptes selon l’ordre que vous définissez. Cet ordre change l’impôt payé chaque année, donc la durée de vie du portefeuille — c’est souvent le levier le plus sous-estimé d’un plan.'],
+        ['04', 'Appliquer une fiscalité simplifiée', `Chaque retrait est majoré du montant d’impôt qu’il déclenche, selon la résidence fiscale, le type de compte et les barèmes ${TAX_TABLES_YEAR} de la France, du Canada et des États-Unis.`],
+        ['05', 'Mesurer l’incertitude', `Monte-Carlo rejoue le même plan sur jusqu’à ${nf(MC_ITERATIONS_MAX)} futurs de marché, en faisant varier les rendements selon des hypothèses de volatilité, de corrélation et de chocs rares mais violents.`],
       ],
+      yearTitle: 'Une année de projection, pas à pas',
+      yearIntro: 'La projection déterministe n’a rien d’une boîte noire : c’est la même séquence de six opérations, répétée chaque année jusqu’à l’horizon choisi.',
+      yearSteps: [
+        ['Solde d’ouverture', 'La valeur de chaque position au début de l’année, dans sa devise native.'],
+        ['Croissance', 'Chaque actif capitalise à son CAGR effectif. Aucun rendement n’est tiré au hasard à cette étape.'],
+        ['Contributions', 'Les versements mensuels sont capitalisés dans l’année au taux mensuel équivalent du CAGR : ils gagnent donc de la croissance l’année même où ils sont versés.'],
+        ['Flux forcés', 'Retraits minimaux obligatoires, conversions programmées et projets de vie datés s’appliquent avant tout autre arbitrage.'],
+        ['Retrait', 'Le besoin de dépense de l’année, exprimé net, est converti en retrait brut couvrant l’impôt, puis prélevé sur les comptes dans votre ordre de priorité.'],
+        ['Solde de clôture', 'Ce qui reste devient le solde d’ouverture de l’année suivante. Le prix de revient de chaque compte est mis à jour au passage.'],
+      ],
+      yearNote: 'Les dépenses sont saisies en monnaie d’aujourd’hui puis indexées sur l’inflation. Les seuils des tranches d’impôt le sont aussi, pour rester constants en termes réels — sans cette indexation, l’inflation ferait dériver artificiellement chaque plan vers des tranches supérieures.',
       assetsTitle: 'Consolidation multidevise',
       assets: 'Chaque position est valorisée dans sa devise native (USD, CAD, EUR ou GBP), puis convertie dans la devise de référence du plan via une table de change. Les barèmes fiscaux, légiférés en devise locale, sont eux aussi ramenés dans la devise du plan pour rester comparables.',
+      taxTitle: 'Ce que la fiscalité recouvre, pays par pays',
+      taxIntro: `Runaway modélise trois résidences fiscales — France, Canada, États-Unis — avec les barèmes ${TAX_TABLES_YEAR}, pour un contribuable célibataire (une part). Trois mécanismes sont communs aux trois pays.`,
+      taxCommon: [
+        ['Majoration du retrait', 'Un besoin net est converti en montant brut couvrant l’impôt dû : sous forme fermée pour les comptes à taux forfaitaire, par bissection pour les barèmes progressifs.'],
+        ['Ratio de prix de revient', 'Sur un compte imposable, la part imposable d’un retrait vaut le montant × (1 − prix de revient ÷ valeur). Les contributions augmentent la base, un retrait la réduit au prorata de la part vendue, et la croissance de marché ne l’augmente jamais.'],
+        ['Conversion de devise', 'Les barèmes, légiférés en monnaie locale, sont convertis dans la devise du plan quand elle diffère de celle du pays de résidence.'],
+      ],
+      taxCountries: [
+        ['France', 'Barème progressif de l’impôt sur le revenu à une part, abattement de 10 % sur les pensions traité comme une tranche à 0 %, et prélèvement forfaitaire sur les plus-values.'],
+        ['Canada', 'Barèmes fédéral et provincial combinés pour la province choisie, montants personnels de base inclus, abattement fédéral de 16,5 % au Québec, et taux d’inclusion des gains en capital. Les surtaxes provinciales hors barème ne sont pas modélisées.'],
+        ['États-Unis', `Standard deduction incluse, échelle des plus-values long terme 0 / 15 / 20 % empilée au-dessus du revenu ordinaire, et NIIT de ${niitRate} au-delà de ${niitThreshold} de MAGI (seuil non indexé sur l’inflation). Les impôts d’État et locaux sont exclus.`],
+      ],
+      taxTreaty: 'Les enveloppes défiscalisées ne restent exonérées à l’étranger que si une convention les reconnaît : un Roth américain l’est pour un résident canadien ou français, un TFSA et un PEA ne le sont pas.',
       modelsTitle: 'Deux lectures complémentaires',
       deterministic: ['Projection déterministe', 'Une trajectoire centrale, lisible et reproductible à partir des hypothèses retenues. Elle permet de comprendre directement l’effet d’un changement.'],
-      monteCarlo: ['Simulation Monte-Carlo', 'Une distribution de trajectoires possibles destinée à montrer la dispersion et le risque de séquence. Le taux de succès correspond à la part des trajectoires qui financent l’horizon complet. Par convention de planification financière, un taux d’au moins 85 % est jugé solide, 70 à 85 % limite, et inférieur à 70 % fragile.'],
+      monteCarlo: ['Simulation Monte-Carlo', 'Une distribution de trajectoires possibles, destinée à montrer la dispersion et le risque de séquence : deux plans de même rendement moyen ne survivent pas également à un krach placé au mauvais moment.'],
+      mcTitle: 'Comment Monte-Carlo fait varier les marchés',
+      mcIntro: 'Le moteur rejoue le plan des milliers de fois. Votre CAGR reste l’entrée : seule la dispersion autour de lui est aléatoire.',
+      mcPoints: [
+        ['Centrage géométrique', 'Votre CAGR est traité comme le rendement composé médian, pas comme la moyenne arithmétique. La dispersion s’étale donc symétriquement autour de lui.'],
+        ['Retour à la moyenne', `Chaque année, la déviation cumulée par rapport à la tendance est ramenée par un coefficient κ = ${kappa}. Une décennie faste ne s’extrapole pas indéfiniment.`],
+        ['Quatre modèles de chocs', `Chocs gaussiens ; queues lourdes via une loi de Student-t à ν = ${MODEL_PARAMS.studentTDf} degrés de liberté ; mode alerte krach ; ou cohorte historique, qui rejoue l’histoire réelle par blocs de ${MODEL_PARAMS.bootstrapBlock} ans afin de préserver l’enchaînement des bonnes et des mauvaises années.`],
+        ['Corrélations', 'Les chocs des différents actifs sont corrélés entre eux par factorisation de Cholesky de la matrice de corrélation : les classes d’actifs ne baissent pas chacune dans leur coin.'],
+        ['Régime de krach', `${crashProbPct} des années basculent en régime de krach : volatilité multipliée par ${crashVol}, dérive additionnelle de ${crashDriftPct}, et corrélations des actifs risqués relevées vers un plancher de ${crashFloor}. C’est précisément le moment où la diversification cesse de protéger.`],
+        ['Bornes annuelles', `Le rendement d’un actif sur une année est borné à l’intervalle ${capMin} / ${capMax}, pour éviter qu’une queue de distribution ne produise des années absurdes.`],
+        ['Taux de succès', 'La part des trajectoires qui financent l’horizon complet. Par convention de planification financière, un taux d’au moins 85 % est jugé solide, 70 à 85 % limite, et inférieur à 70 % fragile.'],
+      ],
+      mcHonesty: 'Conséquence assumée du centrage géométrique : la moyenne des facteurs de rendement dépasse leur médiane de σ² / 2. C’est un choix de modélisation, et il relève mécaniquement les taux de succès par rapport à un tirage centré sur la moyenne arithmétique.',
+      paramsTitle: 'Les paramètres du modèle',
+      paramsIntro: 'Ces valeurs sont lues directement dans le moteur au moment de la génération de cette page : elles ne peuvent pas diverger du code qui tourne dans l’application.',
+      paramsColName: 'Paramètre', paramsColValue: 'Valeur',
+      params: [
+        ['Trajectoires simulées', `${nf(MC_ITERATIONS_MIN)} à ${nf(MC_ITERATIONS_MAX)} (${nf(DEFAULT_MC_OPTIONS.iterations)} par défaut)`],
+        ['Coefficient de retour à la moyenne (κ)', kappa],
+        ['Degrés de liberté de la loi de Student-t (ν)', nf(MODEL_PARAMS.studentTDf)],
+        ['Bloc de rééchantillonnage historique', `${MODEL_PARAMS.bootstrapBlock} ans`],
+        ['Probabilité d’une année de krach', crashProbPct],
+        ['Volatilité en régime de krach', `× ${crashVol}`],
+        ['Dérive additionnelle en régime de krach', crashDriftPct],
+        ['Plancher de corrélation en régime de krach', crashFloor],
+        ['Bornes du rendement annuel', `${capMin} / ${capMax}`],
+        ['Ajustement de scénario', `± ${DEFAULT_SCENARIO_CONFIG.optimisticAdjustmentPts} points de CAGR`],
+        ['Millésime des barèmes fiscaux', String(TAX_TABLES_YEAR)],
+        ['Fenêtre historique rejouée', `${HIST_REAL_START_YEAR} – ${HIST_REAL_END_YEAR}`],
+      ],
       sourcesTitle: 'Hypothèses et sources',
       sources: [
         'Les rendements attendus sont choisis par l’utilisateur ; ils ne constituent pas des prévisions de Runaway.',
-        'Les volatilités, corrélations et sensibilités aux krachs sont des valeurs par défaut documentées et modifiables par position.',
-        'Le mode historique utilise notamment les rendements totaux du S&P 500 et des obligations du Trésor américain publiés par Aswath Damodaran, ainsi que l’inflation CPI-U américaine.',
-        'Les barèmes fiscaux intégrés sont datés de 2026 et reposent sur les publications officielles de l’administration fiscale française (DGFiP, impots.gouv.fr), de l’Agence du revenu du Canada (ARC) et de l’Internal Revenue Service (IRS) américain.',
+        'Les volatilités, corrélations et sensibilités aux krachs sont des valeurs par défaut rondes et défendables, codées en dur, non calibrées sur des données en direct, et modifiables position par position.',
+        `Le mode cohorte historique rejoue la période ${HIST_REAL_START_YEAR}–${HIST_REAL_END_YEAR} : rendements totaux du S&P 500 et des obligations du Trésor américain à 10 ans publiés par Aswath Damodaran (NYU Stern), et inflation CPI-U américaine.`,
+        'Le cash et les cryptomonnaies n’ont pas d’historique sourcé sur toute la fenêtre : ils sont approchés par des proxies explicites, indiqués comme tels dans l’application.',
+        `Barèmes France — ${TAX_TABLE_SOURCES.FR}`,
+        `Barèmes Canada — ${TAX_TABLE_SOURCES.CA}`,
+        `Barèmes États-Unis — ${TAX_TABLE_SOURCES.US}`,
       ],
       limitsTitle: 'Ce que le modèle ne peut pas savoir',
       limits: [
         'Les rendements, l’inflation, les taux de change et la fiscalité réels différeront des hypothèses.',
         'Les règles fiscales sont simplifiées et ne couvrent pas toutes les situations personnelles, conventions ou taxes locales.',
+        'Les hypothèses de volatilité, de corrélation et de bêta de krach sont des valeurs par défaut, pas des estimations calibrées sur des données en direct.',
+        'Le centrage géométrique traite votre CAGR comme la médiane : les taux de succès sont plus élevés qu’avec une dérive centrée sur la moyenne arithmétique.',
+        'Les bornes de rendement annuel et le régime de krach façonnent délibérément les queues de la distribution.',
         'Les historiques ne garantissent aucun résultat futur et certaines classes récentes, notamment les cryptomonnaies, disposent d’un historique limité.',
         'Un taux de succès est une propriété du modèle et de ses entrées, pas une probabilité certaine concernant la vie réelle.',
       ],
@@ -47,35 +132,95 @@ const copy = isFr
     }
   : {
       title: 'Financial projection methodology | Runaway',
-      description: 'Learn how Runaway calculates retirement projections, handles inflation and taxes, and measures uncertainty with Monte Carlo simulation.',
+      description: 'Formulas, country-by-country taxation, Monte Carlo model parameters, and stated limitations: how Runaway calculates retirement projections.',
       canonical: '/en/methodology', alternateFr: '/methodologie', alternateEn: '/en/methodology',
       eyebrow: 'METHODOLOGY', heading: 'How Runaway calculates your trajectories.',
       intro: 'Runaway turns your information and assumptions into financial paths. This page explains the calculation principles, sources, and limitations — without pretending to predict markets.',
       principleTitle: 'The starting principle',
       principle: 'Your expected return is an assumption, not a forecast. Runaway applies the parameters you choose and shows their possible consequences over time.',
+      principleScenario: `Every asset compounds at its effective CAGR: its base CAGR plus the active scenario adjustment. The conservative scenario removes ${DEFAULT_SCENARIO_CONFIG.conservativeAdjustmentPts} points from each CAGR, the optimistic one adds ${DEFAULT_SCENARIO_CONFIG.optimisticAdjustmentPts}, and the expected scenario changes nothing.`,
       steps: [
-        ['01', 'Build the starting point', 'The plan brings together the assets, accounts, currencies, cost basis, contributions, income, spending, life events, and retirement settings entered by the user.'],
-        ['02', 'Project year by year', 'The deterministic projection grows each asset, adds contributions, applies scheduled flows, indexes spending to inflation, and funds withdrawals through the selected horizon.'],
-        ['03', 'Draw accounts in order', 'In retirement, withdrawals drain your accounts in the order you define. That order changes how much tax you pay each year and how long the portfolio lasts.'],
-        ['04', 'Apply simplified taxation', 'Withdrawals are estimated from tax residence, account type, and representative schedules for France, Canada, and the United States.'],
-        ['05', 'Measure uncertainty', 'Monte Carlo tests up to 5,000 market futures by varying returns through assumptions for volatility, correlation, and extreme moves (rare but violent shocks).'],
+        ['01', 'Build the starting point', 'The plan brings together the assets, accounts, currencies, cost basis, contributions, income, spending, life events, and retirement settings. Nothing is guessed: every line of the calculation traces back to a value you entered.'],
+        ['02', 'Project year by year', 'The deterministic projection produces one smooth path. Every year follows the same sequence: opening balance, growth, contributions, forced flows, withdrawal, closing balance.'],
+        ['03', 'Draw accounts in order', 'In retirement, withdrawals drain your accounts in the order you define. That order changes how much tax you pay each year, and therefore how long the portfolio lasts — often the most underrated lever in a plan.'],
+        ['04', 'Apply simplified taxation', `Each withdrawal is grossed up by the tax it triggers, based on tax residence, account type, and the ${TAX_TABLES_YEAR} schedules for France, Canada, and the United States.`],
+        ['05', 'Measure uncertainty', `Monte Carlo replays the same plan across up to ${nf(MC_ITERATIONS_MAX)} market futures, varying returns through assumptions for volatility, correlation, and rare but violent shocks.`],
       ],
+      yearTitle: 'One projected year, step by step',
+      yearIntro: 'The deterministic projection is no black box: it is the same sequence of six operations, repeated every year through the selected horizon.',
+      yearSteps: [
+        ['Opening balance', 'The value of each holding at the start of the year, in its native currency.'],
+        ['Growth', 'Each asset compounds at its effective CAGR. No return is drawn at random at this step.'],
+        ['Contributions', 'Monthly contributions compound within the year at the CAGR’s monthly-equivalent rate, so they earn growth the same year they are made.'],
+        ['Forced flows', 'Required minimum distributions, scheduled conversions, and dated life events apply before any other decision.'],
+        ['Withdrawal', 'The year’s spending need, expressed net, is grossed up to cover tax, then drawn from your accounts in your priority order.'],
+        ['Closing balance', 'Whatever remains becomes next year’s opening balance. Each account’s cost basis is updated along the way.'],
+      ],
+      yearNote: 'Spending is entered in today’s money and then indexed to inflation. Tax-bracket thresholds are indexed the same way so they stay constant in real terms — without that indexing, inflation would artificially push every plan into higher brackets.',
       assetsTitle: 'Multi-currency consolidation',
       assets: 'Each holding is valued in its native currency (USD, CAD, EUR, or GBP), then converted into the plan’s reference currency through an FX table. Tax schedules, legislated in local currency, are likewise scaled into the plan currency so everything stays comparable.',
+      taxTitle: 'What taxation covers, country by country',
+      taxIntro: `Runaway models three tax residences — France, Canada, and the United States — using ${TAX_TABLES_YEAR} schedules for a single filer. Three mechanisms are common to all three.`,
+      taxCommon: [
+        ['Grossing up withdrawals', 'A net need is converted into a gross amount that covers the tax due: in closed form for flat-rate accounts, by bisection for progressive schedules.'],
+        ['Cost-basis ratio', 'In a taxable account, the taxable share of a withdrawal is the amount × (1 − cost basis ÷ value). Contributions raise the basis, a withdrawal scales it by the fraction sold, and market growth never raises it.'],
+        ['Currency conversion', 'Schedules, legislated in local currency, are converted into the plan currency when it differs from the residence currency.'],
+      ],
+      taxCountries: [
+        ['France', 'Progressive income-tax schedule for a single share, the 10% pension allowance treated as a 0% band, and the flat tax on capital gains.'],
+        ['Canada', 'Federal and provincial schedules combined for the selected province, basic personal amounts included, the 16.5% federal abatement in Québec, and the capital-gains inclusion rate. Provincial surtaxes beyond the bracket table are not modelled.'],
+        ['United States', `Standard deduction included, the 0 / 15 / 20% long-term capital-gains ladder stacked on top of ordinary income, and NIIT of ${niitRate} above ${niitThreshold} of MAGI (a threshold that is not inflation-indexed). State and local taxes are excluded.`],
+      ],
+      taxTreaty: 'Tax-free wrappers stay exempt abroad only when a treaty recognises them: a US Roth does for a Canadian or French resident, a TFSA and a PEA do not.',
       modelsTitle: 'Two complementary views',
       deterministic: ['Deterministic projection', 'One central, readable, and reproducible path based on the selected assumptions. It makes the effect of a change easy to understand.'],
-      monteCarlo: ['Monte Carlo simulation', 'A distribution of possible paths designed to show dispersion and sequence risk. The success rate is the share of paths that fund the full horizon. By common financial-planning convention, at least 85% is considered strong, 70–85% borderline, and below 70% fragile.'],
+      monteCarlo: ['Monte Carlo simulation', 'A distribution of possible paths, designed to show dispersion and sequence risk: two plans with the same average return do not survive a crash placed at the wrong moment equally well.'],
+      mcTitle: 'How Monte Carlo varies the markets',
+      mcIntro: 'The engine replays the plan thousands of times. Your CAGR stays the input: only the dispersion around it is random.',
+      mcPoints: [
+        ['Geometric centering', 'Your CAGR is treated as the median compound return, not the arithmetic mean. Dispersion therefore spreads symmetrically around it.'],
+        ['Mean reversion', `Each year, the accumulated deviation from trend is pulled back by a coefficient κ = ${kappa}. A great decade does not extrapolate forever.`],
+        ['Four shock models', `Gaussian shocks; fat tails through a Student-t distribution with ν = ${MODEL_PARAMS.studentTDf} degrees of freedom; a crash-aware mode; or a historical cohort that replays real history in ${MODEL_PARAMS.bootstrapBlock}-year blocks to preserve the sequence of good and bad years.`],
+        ['Correlations', 'Shocks across assets are correlated through a Cholesky factorisation of the correlation matrix: asset classes do not fall independently of one another.'],
+        ['Crash regime', `${crashProbPct} of years switch into a crash regime: volatility multiplied by ${crashVol}, an additional drift of ${crashDriftPct}, and correlations among risky assets lifted toward a floor of ${crashFloor}. That is precisely when diversification stops protecting you.`],
+        ['Annual bounds', `A single asset’s yearly return is capped to the ${capMin} / ${capMax} range, so a distribution tail cannot produce absurd years.`],
+        ['Success rate', 'The share of paths that fund the full horizon. By common financial-planning convention, at least 85% is considered strong, 70–85% borderline, and below 70% fragile.'],
+      ],
+      mcHonesty: 'A stated consequence of geometric centering: the mean of the return factors exceeds their median by σ² / 2. This is a modeling choice, and it mechanically raises success rates compared with a draw centered on the arithmetic mean.',
+      paramsTitle: 'Model parameters',
+      paramsIntro: 'These values are read straight from the engine when this page is built, so they cannot drift from the code that runs in the application.',
+      paramsColName: 'Parameter', paramsColValue: 'Value',
+      params: [
+        ['Simulated paths', `${nf(MC_ITERATIONS_MIN)} to ${nf(MC_ITERATIONS_MAX)} (${nf(DEFAULT_MC_OPTIONS.iterations)} by default)`],
+        ['Mean-reversion coefficient (κ)', kappa],
+        ['Student-t degrees of freedom (ν)', nf(MODEL_PARAMS.studentTDf)],
+        ['Historical resampling block', `${MODEL_PARAMS.bootstrapBlock} years`],
+        ['Probability of a crash year', crashProbPct],
+        ['Volatility in a crash regime', `× ${crashVol}`],
+        ['Additional drift in a crash regime', crashDriftPct],
+        ['Correlation floor in a crash regime', crashFloor],
+        ['Annual return bounds', `${capMin} / ${capMax}`],
+        ['Scenario adjustment', `± ${DEFAULT_SCENARIO_CONFIG.optimisticAdjustmentPts} CAGR points`],
+        ['Tax schedule vintage', String(TAX_TABLES_YEAR)],
+        ['Historical window replayed', `${HIST_REAL_START_YEAR} – ${HIST_REAL_END_YEAR}`],
+      ],
       sourcesTitle: 'Assumptions and sources',
       sources: [
         'Expected returns are selected by the user; they are not Runaway forecasts.',
-        'Volatility, correlation, and crash-sensitivity assumptions are documented defaults that can be overridden per holding.',
-        'Historical mode uses, among other inputs, S&P 500 and US Treasury total returns published by Aswath Damodaran and US CPI-U inflation.',
-        'Embedded tax schedules are dated 2026 and rely on official publications from the French tax authority (DGFiP, impots.gouv.fr), the Canada Revenue Agency (CRA), and the US Internal Revenue Service (IRS).',
+        'Volatility, correlation, and crash-sensitivity assumptions are round, defensible, hard-coded defaults — not calibrated on live data — and can be overridden holding by holding.',
+        `Historical cohort mode replays ${HIST_REAL_START_YEAR}–${HIST_REAL_END_YEAR}: S&P 500 and 10-year US Treasury total returns published by Aswath Damodaran (NYU Stern), and US CPI-U inflation.`,
+        'Cash and cryptocurrencies have no sourced history across the full window: they are approximated by explicit proxies, labelled as such in the application.',
+        `France schedules — ${TAX_TABLE_SOURCES.FR}`,
+        `Canada schedules — ${TAX_TABLE_SOURCES.CA}`,
+        `United States schedules — ${TAX_TABLE_SOURCES.US}`,
       ],
       limitsTitle: 'What the model cannot know',
       limits: [
         'Actual returns, inflation, exchange rates, and taxation will differ from the assumptions.',
         'Tax rules are simplified and do not cover every personal situation, treaty, or local tax.',
+        'Volatility, correlation, and crash-beta assumptions are defaults, not estimates calibrated on live data.',
+        'Geometric centering treats your CAGR as the median: success rates are higher than with a drift centered on the arithmetic mean.',
+        'Annual return bounds and the crash regime deliberately shape the tails of the distribution.',
         'History does not guarantee future results, and newer asset classes such as cryptocurrencies have limited histories.',
         'A success rate is a property of the model and its inputs, not a certain probability about real life.',
       ],
@@ -99,7 +244,12 @@ const copy = isFr
 >
   <article class="editorial-article methodology-public">
     <section class="method-principle">
-      <span>01</span><div><h2>{copy.principleTitle}</h2><p>{copy.principle}</p></div>
+      <span>01</span>
+      <div>
+        <h2>{copy.principleTitle}</h2>
+        <p>{copy.principle}</p>
+        <p>{copy.principleScenario}</p>
+      </div>
     </section>
     <section class="editorial-section">
       <div class="method-steps">
@@ -108,13 +258,46 @@ const copy = isFr
         ))}
       </div>
     </section>
+    <section class="editorial-section">
+      <h2>{copy.yearTitle}</h2><p>{copy.yearIntro}</p>
+      <ul class="method-list">
+        {copy.yearSteps.map(([term, body]) => <li><strong>{term}</strong> — {body}</li>)}
+      </ul>
+      <p class="method-aside">{copy.yearNote}</p>
+    </section>
     <section class="editorial-section editorial-section--dark">
       <h2>{copy.assetsTitle}</h2><p>{copy.assets}</p>
+    </section>
+    <section class="editorial-section">
+      <h2>{copy.taxTitle}</h2><p>{copy.taxIntro}</p>
+      <ul class="method-list">
+        {copy.taxCommon.map(([term, body]) => <li><strong>{term}</strong> — {body}</li>)}
+      </ul>
+      <div class="coverage-grid">
+        {copy.taxCountries.map(([title, body]) => <article class="editorial-card"><h3>{title}</h3><p>{body}</p></article>)}
+      </div>
+      <p class="method-aside">{copy.taxTreaty}</p>
     </section>
     <section class="editorial-section">
       <h2>{copy.modelsTitle}</h2>
       <div class="editorial-card-grid editorial-card-grid--two">
         {[copy.deterministic, copy.monteCarlo].map(([title, body]) => <article class="editorial-card"><h3>{title}</h3><p>{body}</p></article>)}
+      </div>
+    </section>
+    <section class="editorial-section">
+      <h2>{copy.mcTitle}</h2><p>{copy.mcIntro}</p>
+      <ul class="method-list">
+        {copy.mcPoints.map(([term, body]) => <li><strong>{term}</strong> — {body}</li>)}
+      </ul>
+      <aside class="editorial-note"><p>{copy.mcHonesty}</p></aside>
+    </section>
+    <section class="editorial-section">
+      <h2>{copy.paramsTitle}</h2><p>{copy.paramsIntro}</p>
+      <div class="comparison-wrap">
+        <table>
+          <thead><tr><th>{copy.paramsColName}</th><th>{copy.paramsColValue}</th></tr></thead>
+          <tbody>{copy.params.map(([name, value]) => <tr><td>{name}</td><td>{value}</td></tr>)}</tbody>
+        </table>
       </div>
     </section>
     <section class="editorial-section editorial-columns">
