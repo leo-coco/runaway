@@ -1,9 +1,27 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore, useStoreHydrated } from './index';
 
 describe('useStoreHydrated', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+    await act(async () => {
+      await useAppStore.persist.rehydrate();
+    });
+  });
+
+  it('finishes hydration when the storage key does not exist', async () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useStoreHydrated());
+
+    await act(async () => {
+      await useAppStore.persist.rehydrate();
+    });
+
+    expect(useAppStore.persist.hasHydrated()).toBe(true);
+    expect(result.current).toBe(true);
+  });
 
   it('observes hydration that finishes before the effect subscribes', async () => {
     let hydrated = false;
@@ -26,5 +44,25 @@ describe('useStoreHydrated', () => {
     expect(onHydrate).toHaveBeenCalledOnce();
     expect(onFinishHydration).toHaveBeenCalledOnce();
     expect(hasHydrated).toHaveBeenCalled();
+  });
+
+  it('settles after a storage error instead of blocking the app forever', async () => {
+    const storageError = new Error('stored plan is invalid');
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw storageError;
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { result } = renderHook(() => useStoreHydrated());
+
+    await act(async () => {
+      await useAppStore.persist.rehydrate();
+    });
+
+    expect(useAppStore.persist.hasHydrated()).toBe(false);
+    expect(result.current).toBe(true);
+    expect(consoleError).toHaveBeenCalledWith(
+      '[store] localStorage hydration failed; continuing with in-memory state.',
+      storageError,
+    );
   });
 });

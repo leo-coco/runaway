@@ -74,6 +74,7 @@ const installDiagnostics = (page: Page) => {
         uiState = JSON.stringify({
           authScreen: await page.locator('.auth-screen').count(),
           appSplash: await page.locator('.app-splash').count(),
+          loadingReason: await page.locator('.app-splash').getAttribute('data-loading-reason'),
           appShell: await page.locator('.app-shell').count(),
         });
       } catch {
