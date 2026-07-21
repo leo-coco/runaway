@@ -24,6 +24,7 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
     ...(bypassSecret && {
       extraHTTPHeaders: { 'x-vercel-protection-bypass': bypassSecret },
     }),

@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * Post-deploy smoke: the marketing landing page's CTAs must lead into a
