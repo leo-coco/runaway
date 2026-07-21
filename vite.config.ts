@@ -3,6 +3,31 @@ import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
+// Other agent worktrees live under .claude/worktrees/** as separate git
+// checkouts; without this they get scanned too and their stale test files fail
+// the run (and thus the pre-push hook).
+// Playwright specs under e2e/** match Vitest's default *.spec.ts glob; they run
+// via `npm run test:e2e`, not Vitest, so keep them out of this run.
+const sharedExclude = [...configDefaults.exclude, '**/.claude/**', 'e2e/**'];
+
+// `.test.ts` files that still need a DOM. Everything else with that extension
+// runs in the far cheaper `node` environment — booting jsdom costs ~0.9s per
+// file. A new test that needs the DOM fails loudly with "document is not
+// defined"; add it here.
+const DOM_TEST_TS = [
+  // renderHook needs a React DOM container.
+  'src/hooks/useDebouncedValue.test.ts',
+  'src/hooks/useMediaQuery.test.ts',
+  // These fetch relative URLs, which need a document origin to resolve.
+  'src/infrastructure/exchangeRateClient.test.ts',
+  'src/infrastructure/httpClient.test.ts',
+  'src/infrastructure/marketClient.contract.test.ts',
+  // localStorage-backed store hydration.
+  'src/store/seedSandbox.test.ts',
+  // Drives the worker through the DOM postMessage protocol.
+  'src/workers/monteCarlo.worker.test.ts',
+];
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -23,15 +48,31 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
     css: false,
-    // Other agent worktrees live under .claude/worktrees/** as separate git
-    // checkouts; without this they get scanned too and their stale test
-    // files fail the run (and thus the pre-push hook).
-    // Playwright specs under e2e/** match Vitest's default *.spec.ts glob; they
-    // run via `npm run test:e2e`, not Vitest, so keep them out of this run.
-    exclude: [...configDefaults.exclude, '**/.claude/**', 'e2e/**'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          globals: true,
+          environment: 'node',
+          setupFiles: ['./src/test/setup.node.ts'],
+          include: ['**/*.test.ts'],
+          exclude: [...sharedExclude, ...DOM_TEST_TS],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: ['./src/test/setup.ts'],
+          include: ['**/*.test.tsx', ...DOM_TEST_TS],
+          exclude: sharedExclude,
+        },
+      },
+    ],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],
@@ -49,7 +90,7 @@ export default defineConfig({
         'server/db/schema.ts',
       ],
       // A ratchet, not a target. Set just under the measured baseline
-      // (2026-07-21: 59.99/47.38/45.63/60.69), so coverage can only go up.
+      // (2026-07-21: 61.10/47.85/46.91/61.85), so coverage can only go up.
       // Raise these as gaps close; never lower them to make CI green.
       thresholds: {
         statements: 59,
