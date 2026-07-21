@@ -78,13 +78,18 @@ const ProductShell = ({
   syncPlans?: boolean;
   sandbox?: boolean;
 }) => {
+  // A signed-in shell must not route from the local cache before the server has
+  // reconciled it. Starting false also covers a direct authenticated page load,
+  // before PlanSyncManager's effect has had a chance to run.
+  const [initialPlansReady, setInitialPlansReady] = useState(!syncPlans);
+
   return (
     <AppModeProvider sandbox={sandbox}>
       <TourProvider>
-        {syncPlans && <PlanSyncManager />}
+        {syncPlans && <PlanSyncManager onInitialSyncChange={setInitialPlansReady} />}
         <PaywallDialog />
         {!sandbox && <CheckoutSuccessDialog />}
-        <AppShell sandbox={sandbox} />
+        {initialPlansReady ? <AppShell sandbox={sandbox} /> : <AppSplash reason="plans" />}
       </TourProvider>
     </AppModeProvider>
   );

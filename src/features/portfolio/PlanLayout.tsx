@@ -15,7 +15,6 @@ import { useFeature } from '@/hooks/useEntitlements';
 import { convert, missingRates, type RatesTable } from '@/services/currencyService';
 import { PlanModals } from '@/features/settings/PlanModals';
 import { planCurrencies, type Plan } from '@/domain/plan';
-import { useAppMode } from '@/providers/AppModeContext';
 
 export interface PlanContext {
   plan: Plan;
@@ -31,7 +30,6 @@ export const usePlanContext = () => useOutletContext<PlanContext>();
 export const PlanLayout = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
-  const { sandbox } = useAppMode();
   const plansSynced = useAppStore((s) => s.plansSynced);
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
@@ -83,12 +81,10 @@ export const PlanLayout = () => {
   }
 
   if (!plan) {
-    if (sandbox) return <Navigate to="/" replace />;
-    return (
-      <div className="container">
-        <div className="state-box">{t('plan.notFound')}</div>
-      </div>
-    );
+    // The URL may reference a plan from a stale local cache, another account,
+    // or a plan deleted in a different tab. Return through RootRedirect, which
+    // selects the first current plan or shows the empty-plan experience.
+    return <Navigate to="/" replace />;
   }
 
   if (missing.length > 0) {
