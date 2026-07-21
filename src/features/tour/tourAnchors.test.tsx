@@ -14,6 +14,13 @@ import { ok } from '@/domain/result';
 import type { Services } from '@/services/container';
 import { DASHBOARD_GUIDE_STEPS } from './tourSteps';
 
+// This is a layout/anchor test, not an authentication test. Mounting Better
+// Auth's real session store registers browser listeners whose Nanostores cleanup
+// is delayed; Vitest may tear jsdom down first, leaving `window` unavailable.
+vi.mock('@/lib/authClient', () => ({
+  useSession: () => ({ data: null, isPending: false }),
+}));
+
 // ResponsiveContainer needs a non-zero size in jsdom.
 vi.mock('recharts', async (importOriginal) => {
   const actual = await importOriginal<typeof Recharts>();
