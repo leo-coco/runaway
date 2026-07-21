@@ -26,6 +26,7 @@ export const ImportLocalPlansDialog = ({
   return (
     <Modal
       title={t('auth.importTitle')}
+      className="import-local-plans-dialog"
       onClose={() => decide(false)}
       footer={
         <>

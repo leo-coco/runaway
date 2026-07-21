@@ -59,11 +59,19 @@ export const PlanSyncManager = ({
         beginSyncing(plans);
       } else {
         const local = useAppStore.getState().plans;
-        if (local.length > 0) setImportPrompt(local);
-        else beginSyncing([]);
+        if (local.length > 0) {
+          // The import choice is part of initial reconciliation. In particular,
+          // don't let startup UI (such as the welcome guide) open over this
+          // modal; the shell becomes ready after the user makes a choice.
+          setImportPrompt(local);
+        } else {
+          beginSyncing([]);
+        }
       }
       useAppStore.getState().setPlansSynced(true);
-      onInitialSyncChange?.(true);
+      if (server.length > 0 || useAppStore.getState().plans.length === 0) {
+        onInitialSyncChange?.(true);
+      }
     })().catch((e: unknown) => {
       console.error('Plan sync: hydration failed', e);
       if (!cancelled) {
@@ -158,6 +166,7 @@ export const PlanSyncManager = ({
       }
       beginSyncing([]);
     }
+    onInitialSyncChange?.(true);
   };
 
   if (importPrompt) {

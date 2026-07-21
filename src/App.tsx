@@ -85,7 +85,7 @@ const ProductShell = ({
 
   return (
     <AppModeProvider sandbox={sandbox}>
-      <TourProvider>
+      <TourProvider ready={initialPlansReady}>
         {syncPlans && <PlanSyncManager onInitialSyncChange={setInitialPlansReady} />}
         <PaywallDialog />
         {!sandbox && <CheckoutSuccessDialog />}

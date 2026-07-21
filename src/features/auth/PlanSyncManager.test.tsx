@@ -1,4 +1,4 @@
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '@/store';
 import { createSeedPlan } from '@/store/seed';
@@ -65,5 +65,22 @@ describe('PlanSyncManager initial reconciliation', () => {
     await waitFor(() => expect(onInitialSyncChange).toHaveBeenLastCalledWith(true));
     expect(useAppStore.getState().plansSynced).toBe(true);
     expect(useAppStore.getState().plans).toEqual([serverPlan]);
+  });
+
+  it('keeps the shell waiting for a decision about local plans', async () => {
+    const localPlan = createSeedPlan();
+    useAppStore.getState().hydratePlans([localPlan]);
+    plansApi.fetchPlans.mockResolvedValue([]);
+    const onInitialSyncChange = vi.fn();
+
+    render(<PlanSyncManager onInitialSyncChange={onInitialSyncChange} />);
+
+    await screen.findByText('Import your local plans?');
+    expect(onInitialSyncChange).toHaveBeenLastCalledWith(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import plans' }));
+
+    await waitFor(() => expect(onInitialSyncChange).toHaveBeenLastCalledWith(true));
+    expect(plansApi.putPlan).toHaveBeenCalledWith(localPlan);
   });
 });
