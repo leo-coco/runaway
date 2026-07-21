@@ -20,10 +20,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test": "vitest run",
+    "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "coverage": "vitest run --coverage",
+    "coverage": "NODE_OPTIONS=--no-experimental-webstorage vitest run --coverage",
     "prepare": "husky"
   },
   "dependencies": {

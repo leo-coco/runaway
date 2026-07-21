@@ -65,6 +65,13 @@ describe('dashboard guide is filtered to the viewer tier', () => {
     expect(ids(PREMIUM)).toEqual(DASHBOARD_GUIDE_STEPS.map((s) => s.id));
   });
 
+  it('omits account-editing steps that the sandbox replaces with a sign-up prompt', () => {
+    const sandbox = accessibleSteps(DASHBOARD_GUIDE_STEPS, PREMIUM, true).map((s) => s.id);
+    expect(sandbox).not.toContain('addAssetButton');
+    expect(sandbox).not.toContain('addAsset');
+    expect(sandbox).not.toContain('fetchPrices');
+  });
+
   it('every premium-gated step names a feature that is off for free', () => {
     for (const step of DASHBOARD_GUIDE_STEPS) {
       if (step.requires) {

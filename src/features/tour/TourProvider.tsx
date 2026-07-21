@@ -50,6 +50,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
     closeModal,
     t,
     features,
+    sandbox,
   });
   // Keep the controller's live deps fresh after every render (post-commit, so we
   // never touch the ref during render).
@@ -62,6 +63,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
       closeModal,
       t,
       features,
+      sandbox,
     };
   });
 
@@ -89,7 +91,9 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
         } catch {
           /* ignore blocked storage */
         }
-        tour.current?.start(accessibleSteps(TOUR_GUIDES[guide], latest.current.features));
+        tour.current?.start(
+          accessibleSteps(TOUR_GUIDES[guide], latest.current.features, latest.current.sandbox),
+        );
       },
     }),
     [],
@@ -118,7 +122,7 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         /* ignore */
       }
-      tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features));
+      tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features, sandbox));
     }, 700);
     return () => clearTimeout(id);
   }, [activeId, entitlementsReady, sandbox]);
@@ -144,10 +148,10 @@ export const TourProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         /* ignore */
       }
-      tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features));
+      tour.current?.start(accessibleSteps(TOUR_GUIDES.dashboard, latest.current.features, sandbox));
     }, 700);
     return () => clearTimeout(id);
-  }, [tier, entitlementsReady]);
+  }, [tier, entitlementsReady, sandbox]);
 
   return <TourContext.Provider value={value}>{children}</TourContext.Provider>;
 };
