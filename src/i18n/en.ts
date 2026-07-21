@@ -1565,10 +1565,6 @@ export const en = {
         title: 'Home & rentals',
         body: 'Add your primary residence and rental properties: value, mortgage, appreciation, and for rentals the rent and running costs. Equity is tracked year by year and feeds both your net worth and the projection.',
       },
-      allocation: {
-        title: 'Net-worth composition',
-        body: 'A live donut of everything you own, investments plus real-estate equity, split by asset type, account or region. It is read-only here; edit the underlying assets on the Portfolio page.',
-      },
       portfolioGraph: {
         title: 'Portfolio chart',
         body: 'Your total projected portfolio value, year by year.',

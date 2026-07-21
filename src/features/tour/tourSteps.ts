@@ -143,14 +143,6 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     align: 'start',
     requires: 'realEstate',
   }),
-  step('allocation', {
-    // Net-worth donut; only mounts once the plan has holdings, so it's skipped for
-    // an empty plan (like the asset-row steps above). Not tier-gated.
-    page: 'dashboard',
-    tourKey: 'allocation-card',
-    side: 'top',
-    align: 'center',
-  }),
   step('savings', { page: 'dashboard', tourKey: 'savings-card', side: 'bottom', align: 'start' }),
   step('spendingButton', {
     page: 'dashboard',

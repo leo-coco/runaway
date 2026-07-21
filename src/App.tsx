@@ -33,6 +33,7 @@ import { asCountry } from '@/domain/country';
 const RootRedirect = () => {
   const { t } = useTranslation();
   const firstId = useAppStore((s) => s.plans[0]?.id);
+  const plansSynced = useAppStore((s) => s.plansSynced);
   const createPlan = useAppStore((s) => s.createPlan);
   const canAccountsTax = useFeature('accountsTax');
   const { data: sessionData } = useSession();
@@ -40,6 +41,9 @@ const RootRedirect = () => {
   const taxResidence = sandbox ? undefined : asCountry(sessionData?.user?.taxResidence);
 
   if (firstId) return <Navigate to={`/plan/${firstId}/dashboard`} replace />;
+  // Plans are still reconciling with the server: show the splash rather than
+  // the "no plan" empty state, which would flash before the real list lands.
+  if (!plansSynced) return <AppSplash />;
 
   return (
     <section className="empty-plans" aria-labelledby="empty-plans-title">
