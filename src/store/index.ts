@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { createPlansSlice, type PlansSlice } from './plansSlice';
 import { createUiSlice, type UiSlice } from './uiSlice';
 import type { Plan } from '@/domain/plan';
@@ -156,14 +156,19 @@ export const useAppStore = create<AppStore>()(
  * avoid rendering against the empty in-memory default (e.g. `RootRedirect`
  * routing to the "no plans" screen) before the real persisted plans load.
  */
-export const useStoreHydrated = (): boolean => {
-  const [hydrated, setHydrated] = useState(() => useAppStore.persist.hasHydrated());
-  useEffect(() => {
-    if (hydrated) return;
-    return useAppStore.persist.onFinishHydration(() => setHydrated(true));
-  }, [hydrated]);
-  return hydrated;
+const subscribeToStoreHydration = (onStoreChange: () => void): (() => void) => {
+  const unsubscribeHydrate = useAppStore.persist.onHydrate(onStoreChange);
+  const unsubscribeFinish = useAppStore.persist.onFinishHydration(onStoreChange);
+  return () => {
+    unsubscribeHydrate();
+    unsubscribeFinish();
+  };
 };
+
+const getStoreHydrationSnapshot = (): boolean => useAppStore.persist.hasHydrated();
+
+export const useStoreHydrated = (): boolean =>
+  useSyncExternalStore(subscribeToStoreHydration, getStoreHydrationSnapshot, () => false);
 
 export const seedSandboxIfEmpty = (pathname: string): void => {
   if (typeof window === 'undefined' || !isSandboxPathname(pathname)) return;
