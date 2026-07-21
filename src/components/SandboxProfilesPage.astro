@@ -1,0 +1,312 @@
+---
+import MarketingFooter from './MarketingFooter.astro';
+import MarketingHeader from './MarketingHeader.astro';
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import type { SandboxProfileId } from '../store/seed';
+import { planStorageKeyForPathname } from '../store/planStorage';
+
+interface ProfileCopy {
+  id: SandboxProfileId;
+  number: string;
+  name: string;
+  label: string;
+  country: 'fr' | 'ca' | 'us';
+  countryLabel: string;
+  facts: readonly string[];
+  allocation: string;
+  lesson: string;
+  action: string;
+  tone: 'risk' | 'growth' | 'balanced' | 'protective';
+}
+
+const { lang } = Astro.props as { lang: 'fr' | 'en' };
+const isFr = lang === 'fr';
+const copy = isFr
+  ? {
+      title: 'Exemples de plans de retraite | Runaway',
+      description:
+        'Choisissez un exemple de plan de retraite ou démarrez une sandbox vide dans Runaway.',
+      eyebrow: 'EXEMPLES RUNAWAY',
+      heading: 'Choisissez votre point de départ.',
+      intro:
+        'Chaque profil charge un plan complet avec son âge, son portefeuille, son épargne, ses dépenses et ses revenus de retraite. Modifiez ensuite chaque hypothèse pour voir ce qui change.',
+      resumeEyebrow: 'VOTRE SANDBOX',
+      resumeTitle: 'Vous avez déjà commencé.',
+      resumeBody: 'Retrouvez le plan conservé dans ce navigateur sans modifier vos données.',
+      resumeAction: 'Reprendre ma sandbox',
+      blankEyebrow: 'PARTIR DE ZÉRO',
+      blankTitle: 'Vous préférez construire votre propre scénario ?',
+      blankBody:
+        'Ouvrez un plan vide avec les réglages essentiels, puis ajoutez vos actifs, dépenses et revenus.',
+      blankAction: 'Démarrer avec un plan vide',
+      notice:
+        'Les profils sont fictifs et servent uniquement à découvrir le produit. Choisir un exemple ou un plan vide remplace le plan actuellement conservé dans votre sandbox.',
+      profiles: [
+        {
+          id: 'young_crypto',
+          number: '01',
+          name: 'Léa, 30 ans',
+          label: 'Jeune, offensive, avec crypto',
+          country: 'fr',
+          countryLabel: 'France',
+          facts: ['50 000 € investis', '1 200 €/mois', 'Retraite à 55 ans'],
+          allocation: '70 % actions · 30 % Bitcoin',
+          lesson:
+            'Observez le potentiel de hausse, mais aussi la dispersion créée par une forte exposition au Bitcoin.',
+          action: 'Explorer ce profil',
+          tone: 'risk',
+        },
+        {
+          id: 'young_no_crypto',
+          number: '02',
+          name: 'Léa, 30 ans',
+          label: 'Jeune, équilibrée, sans crypto',
+          country: 'fr',
+          countryLabel: 'France',
+          facts: ['50 000 € investis', '1 200 €/mois', 'Retraite à 55 ans'],
+          allocation: '70 % actions · 30 % obligations',
+          lesson:
+            'Comparez directement avec le profil crypto : mêmes données, seule l’allocation défensive change.',
+          action: 'Explorer ce profil',
+          tone: 'growth',
+        },
+        {
+          id: 'midlife_balanced',
+          number: '03',
+          name: 'Sophie, 48 ans',
+          label: 'Mi-carrière, modérée',
+          country: 'ca',
+          countryLabel: 'Canada',
+          facts: ['350 000 CAD investis', '1 500 CAD/mois', 'Retraite à 65 ans'],
+          allocation: '60 % actions · 40 % obligations',
+          lesson:
+            'Voyez comment une pension canadienne, une dépense de voyage et un portefeuille 60/40 se combinent.',
+          action: 'Explorer ce profil',
+          tone: 'balanced',
+        },
+        {
+          id: 'retired_protective',
+          number: '04',
+          name: 'Robert, 68 ans',
+          label: 'Retraité, protecteur',
+          country: 'us',
+          countryLabel: 'États-Unis',
+          facts: ['500 000 USD investis', 'Déjà retraité', 'Horizon à 95 ans'],
+          allocation: '30 % actions · 70 % obligations',
+          lesson:
+            'Explorez les retraits immédiats, la Social Security et une dépense de santé future.',
+          action: 'Explorer ce profil',
+          tone: 'protective',
+        },
+      ] satisfies readonly ProfileCopy[],
+    }
+  : {
+      title: 'Retirement plan examples | Runaway',
+      description:
+        'Choose a retirement plan example or start with a blank Runaway sandbox.',
+      eyebrow: 'RUNAWAY EXAMPLES',
+      heading: 'Choose your starting point.',
+      intro:
+        'Each profile loads a complete plan with age, portfolio, savings, spending, and retirement income. Then change any assumption and see what moves.',
+      resumeEyebrow: 'YOUR SANDBOX',
+      resumeTitle: 'You already have a plan in progress.',
+      resumeBody: 'Continue with the plan stored in this browser without changing your data.',
+      resumeAction: 'Resume my sandbox',
+      blankEyebrow: 'START FROM SCRATCH',
+      blankTitle: 'Would you rather build your own scenario?',
+      blankBody:
+        'Open a blank plan with the essential settings, then add your assets, spending, and income.',
+      blankAction: 'Start with a blank plan',
+      notice:
+        'These fictional profiles are for product discovery only. Choosing an example or a blank plan replaces the plan currently stored in your sandbox.',
+      profiles: [
+        {
+          id: 'young_crypto',
+          number: '01',
+          name: 'Lea, age 30',
+          label: 'Young, aggressive, with crypto',
+          country: 'fr',
+          countryLabel: 'France',
+          facts: ['€50,000 invested', '€1,200/month', 'Retires at 55'],
+          allocation: '70% equities · 30% Bitcoin',
+          lesson:
+            'See the upside potential and the wider range of outcomes created by a large Bitcoin allocation.',
+          action: 'Explore this profile',
+          tone: 'risk',
+        },
+        {
+          id: 'young_no_crypto',
+          number: '02',
+          name: 'Lea, age 30',
+          label: 'Young, balanced, no crypto',
+          country: 'fr',
+          countryLabel: 'France',
+          facts: ['€50,000 invested', '€1,200/month', 'Retires at 55'],
+          allocation: '70% equities · 30% bonds',
+          lesson:
+            'Compare it directly with the crypto profile: the data is identical and only the defensive allocation changes.',
+          action: 'Explore this profile',
+          tone: 'growth',
+        },
+        {
+          id: 'midlife_balanced',
+          number: '03',
+          name: 'Sophie, age 48',
+          label: 'Mid-career, moderate',
+          country: 'ca',
+          countryLabel: 'Canada',
+          facts: ['CAD 350,000 invested', 'CAD 1,500/month', 'Retires at 65'],
+          allocation: '60% equities · 40% bonds',
+          lesson:
+            'See how Canadian benefits, a retirement trip, and a balanced 60/40 portfolio work together.',
+          action: 'Explore this profile',
+          tone: 'balanced',
+        },
+        {
+          id: 'retired_protective',
+          number: '04',
+          name: 'Robert, age 68',
+          label: 'Retired, protective',
+          country: 'us',
+          countryLabel: 'United States',
+          facts: ['USD 500,000 invested', 'Already retired', 'Plans through age 95'],
+          allocation: '30% equities · 70% bonds',
+          lesson:
+            'Explore immediate withdrawals, Social Security income, and a future healthcare expense.',
+          action: 'Explore this profile',
+          tone: 'protective',
+        },
+      ] satisfies readonly ProfileCopy[],
+    };
+const alternatePath = isFr ? '/en/examples' : '/exemples';
+const canonicalPath = isFr ? '/exemples' : '/en/examples';
+const appBase = `/${lang}/app/sandbox`;
+const sandboxStorageKey = planStorageKeyForPathname(appBase);
+---
+
+<MarketingLayout
+  {lang}
+  title={copy.title}
+  description={copy.description}
+  {canonicalPath}
+  alternateFrPath="/exemples"
+  alternateEnPath="/en/examples"
+>
+  <MarketingHeader {lang} {alternatePath} />
+
+  <main class="sandbox-picker">
+    <header class="sandbox-picker__hero section-shell">
+      <p class="eyebrow"><span></span>{copy.eyebrow}</p>
+      <h1>{copy.heading}</h1>
+      <p>{copy.intro}</p>
+    </header>
+
+    <aside
+      class="sandbox-picker__resume section-shell"
+      data-sandbox-resume
+      data-storage-key={sandboxStorageKey}
+      hidden
+    >
+      <div>
+        <span>{copy.resumeEyebrow}</span>
+        <h2>{copy.resumeTitle}</h2>
+        <p>{copy.resumeBody}</p>
+      </div>
+      <a class="button" href={appBase}>{copy.resumeAction}<span aria-hidden="true">→</span></a>
+    </aside>
+
+    <section
+      class="sandbox-profile-grid section-shell"
+      aria-label={isFr ? 'Profils disponibles' : 'Available profiles'}
+    >
+      {copy.profiles.map((profile) => (
+        <article class:list={['sandbox-profile-card', `sandbox-profile-card--${profile.tone}`]}>
+          <div class="sandbox-profile-card__top">
+            <span class="sandbox-profile-card__number">{profile.number}</span>
+            <div class="sandbox-profile-card__identity">
+              <span class="sandbox-profile-card__country">
+                {
+                  profile.country === 'fr' ? (
+                    <svg viewBox="0 0 30 20" aria-hidden="true">
+                      <rect width="10" height="20" fill="#1b3f8b" />
+                      <rect x="10" width="10" height="20" fill="#fff" />
+                      <rect x="20" width="10" height="20" fill="#e33b44" />
+                    </svg>
+                  ) : profile.country === 'ca' ? (
+                    <svg viewBox="0 0 30 20" aria-hidden="true">
+                      <rect width="30" height="20" fill="#fff" />
+                      <rect width="7.5" height="20" fill="#d52b1e" />
+                      <rect x="22.5" width="7.5" height="20" fill="#d52b1e" />
+                      <path
+                        fill="#d52b1e"
+                        d="m15 3 1.2 3.2 2.8-1.4-1 3 2.2.5-2.8 3.1.8.5-2.6 2 .5 3.1h-2.2l.4-3.1-2.5-2 .8-.5-2.8-3.1 2.2-.5-1-3 2.8 1.4L15 3Z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 30 20" aria-hidden="true">
+                      <rect width="30" height="20" fill="#b22234" />
+                      <path
+                        fill="#fff"
+                        d="M0 1.54h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0z"
+                      />
+                      <rect width="12.5" height="10.78" fill="#3c3b6e" />
+                      <path
+                        fill="#fff"
+                        d="M1.3 1.2h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zM2.8 3.3h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zM1.3 5.4h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zM2.8 7.5h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1z"
+                      />
+                    </svg>
+                  )
+                }
+                <span>{profile.countryLabel}</span>
+              </span>
+              <span class="sandbox-profile-card__label">{profile.label}</span>
+            </div>
+          </div>
+          <h2>{profile.name}</h2>
+          <ul>
+            {profile.facts.map((fact) => <li>{fact}</li>)}
+          </ul>
+          <div class="sandbox-profile-card__allocation">
+            <span></span>
+            <b>{profile.allocation}</b>
+          </div>
+          <p>{profile.lesson}</p>
+          <a class="button button--ghost" href={`${appBase}?profile=${profile.id}`}>
+            {profile.action}<span aria-hidden="true">→</span>
+          </a>
+        </article>
+      ))}
+    </section>
+
+    <aside class="sandbox-picker__blank section-shell">
+      <div>
+        <span>{copy.blankEyebrow}</span>
+        <h2>{copy.blankTitle}</h2>
+        <p>{copy.blankBody}</p>
+      </div>
+      <a class="button button--ghost" href={`${appBase}?start=empty`}>
+        {copy.blankAction}<span aria-hidden="true">→</span>
+      </a>
+    </aside>
+
+    <p class="sandbox-picker__notice section-shell">{copy.notice}</p>
+  </main>
+
+  <MarketingFooter {lang} />
+</MarketingLayout>
+
+<script>
+  const resume = document.querySelector<HTMLElement>('[data-sandbox-resume]');
+  if (resume) {
+    try {
+      const key = resume.dataset.storageKey;
+      const raw = key ? localStorage.getItem(key) : null;
+      const stored = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(stored?.state?.plans) && stored.state.plans.length > 0) {
+        resume.hidden = false;
+      }
+    } catch {
+      // Storage can be unavailable in privacy modes; the examples still work.
+    }
+  }
+</script>

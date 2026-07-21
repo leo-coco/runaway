@@ -29,11 +29,18 @@ export default defineConfig({
       unstable_sentryVitePluginOptions: { release: { inject: false } },
     }),
     sitemap({
-      filter: (page) => !page.includes('/app'),
+      filter: (page) =>
+        !page.includes('/app') && !page.endsWith('/sandbox') && !page.endsWith('/en/sandbox'),
       lastmod: new Date(),
       serialize(item) {
         const path = new URL(item.url).pathname;
-        const frToEn = { '/': '/en', '/a-propos': '/en/about', '/contact': '/en/contact', '/methodologie': '/en/methodology' };
+        const frToEn = {
+          '/': '/en',
+          '/a-propos': '/en/about',
+          '/contact': '/en/contact',
+          '/methodologie': '/en/methodology',
+          '/exemples': '/en/examples',
+        };
         const enToFr = Object.fromEntries(Object.entries(frToEn).map(([fr, en]) => [en, fr]));
         const frPath = frToEn[path] ? path : (enToFr[path] ?? null);
         const enPath = frToEn[path] ?? (enToFr[path] ? path : null);
@@ -50,6 +57,13 @@ export default defineConfig({
     }),
   ],
   vite: {
+    // The React app is mounted from a script in AppPage.astro rather than from
+    // an HTML entry Vite can discover during its initial crawl. Scan it eagerly
+    // so opening /:lang/app/* does not trigger a second dependency bundle and
+    // leave Firefox requesting an obsolete, empty 504 response.
+    optimizeDeps: {
+      entries: ['src/main.tsx'],
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
