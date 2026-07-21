@@ -3136,8 +3136,16 @@ h4 {
   flex: 1;
 }
 .acct-preset-combo {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.acct-preset-combo__search {
   position: relative;
   flex: 1;
+  min-width: 0;
 }
 .acct-preset-combo__input-wrap {
   position: relative;
@@ -3194,11 +3202,10 @@ h4 {
 .acct-preset-combo__results .search-row > .pro-badge {
   flex: 0 0 auto;
 }
-.acct-preset-combo__footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
+.acct-preset-combo__add-button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  white-space: nowrap;
 }
 .acct-cards {
   display: flex;

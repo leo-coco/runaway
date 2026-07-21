@@ -70,6 +70,26 @@ describe('AccountsModal transactional editing', () => {
     expect(groups.slice(0, 3)).toEqual(['🇨🇦 Canada', '🇫🇷 France', '🇺🇸 United States']);
   });
 
+  it('keeps the selected-account add button beside the search input', () => {
+    renderModal();
+
+    const search = screen.getByLabelText('Account preset');
+    const addButton = screen.getByRole('button', { name: 'Add (0)' });
+    expect(addButton).toBeDisabled();
+    expect(addButton).toHaveClass('acct-preset-combo__add-button');
+    expect(addButton.parentElement).toBe(search.closest('.acct-preset-combo'));
+
+    fireEvent.focus(search);
+    fireEvent.click(screen.getByRole('checkbox', { name: '401(k) / IRA Tax-deferred' }));
+
+    expect(screen.getByRole('button', { name: 'Add (1)' })).toBeEnabled();
+    expect(document.querySelector('.acct-preset-combo__results button')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add (1)' }));
+    expect(screen.getByRole('button', { name: 'Add (0)' })).toBeDisabled();
+    expect(screen.getByRole('columnheader', { name: 'Account (2)' })).toBeInTheDocument();
+  });
+
   it('locks remaining presets with a PRO badge when the account limit is reached', () => {
     entitlementState.maxAccounts = 2;
     renderModal();

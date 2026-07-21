@@ -177,86 +177,89 @@ const AccountPresetCombobox = ({
 
   return (
     <div className="acct-preset-combo" ref={rootRef}>
-      <div className="acct-preset-combo__input-wrap">
-        <span className="acct-preset-combo__icon">
-          <SearchIcon size={16} />
-        </span>
-        <input
-          className="search-input"
-          style={{ paddingLeft: 36 }}
-          placeholder={t('accounts.accountPresetSearchPlaceholder')}
-          aria-label={t('accounts.accountPreset')}
-          value={query}
-          onFocus={() => setOpen(true)}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onKeyDown={onKeyDown}
-        />
-      </div>
-      {open && (
-        <div className="search-results acct-preset-combo__results">
-          {flat.length === 0 ? (
-            <div className="state-box">{t('accounts.accountPresetNoMatches', { query })}</div>
-          ) : (
-            sections.map((section) => (
-              <div key={section.label}>
-                <div className="search-group">{section.label}</div>
-                {section.presets.map((preset) => {
-                  const idx = flat.indexOf(preset);
-                  const isChecked = checked.includes(preset.name);
-                  const isLocked = !isChecked && selectionLimitReached;
-                  const sub = preset.sourceCountry
-                    ? t(`accountKind.${preset.kind}`)
-                    : `${t(`accountKind.${preset.kind}`)} · ${t('accounts.taxedAtResidence')}`;
-                  return (
-                    <div
-                      key={preset.name}
-                      className={cn(
-                        'search-row',
-                        idx === highlight && 'active',
-                        isChecked && 'is-selected',
-                        isLocked && 'is-locked',
-                      )}
-                      role="checkbox"
-                      aria-label={`${preset.name} ${sub}${isLocked ? ` ${t('billing.pro')}` : ''}`}
-                      aria-checked={isChecked}
-                      aria-disabled={isLocked}
-                      tabIndex={-1}
-                      onMouseEnter={() => setHighlight(idx)}
-                      onClick={() => toggle(preset)}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        disabled={isLocked}
-                        readOnly
-                        tabIndex={-1}
-                        className="acct-preset-combo__checkbox"
-                      />
-                      <div className="search-row__id">
-                        <div className="search-row__main">
-                          <span className="search-row__sym">{preset.name}</span>
-                          <span className="search-row__name">{sub}</span>
-                        </div>
-                      </div>
-                      {isLocked && <ProBadge />}
-                    </div>
-                  );
-                })}
-              </div>
-            ))
-          )}
-          {checked.length > 0 && (
-            <div className="acct-preset-combo__footer">
-              <Button variant="primary" size="sm" onClick={confirm}>
-                {t('accounts.addSelectedAccounts', { count: checked.length })}
-              </Button>
-            </div>
-          )}
+      <div className="acct-preset-combo__search">
+        <div className="acct-preset-combo__input-wrap">
+          <span className="acct-preset-combo__icon">
+            <SearchIcon size={16} />
+          </span>
+          <input
+            className="search-input"
+            style={{ paddingLeft: 36 }}
+            placeholder={t('accounts.accountPresetSearchPlaceholder')}
+            aria-label={t('accounts.accountPreset')}
+            value={query}
+            onFocus={() => setOpen(true)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onKeyDown={onKeyDown}
+          />
         </div>
-      )}
+        {open && (
+          <div className="search-results acct-preset-combo__results">
+            {flat.length === 0 ? (
+              <div className="state-box">{t('accounts.accountPresetNoMatches', { query })}</div>
+            ) : (
+              sections.map((section) => (
+                <div key={section.label}>
+                  <div className="search-group">{section.label}</div>
+                  {section.presets.map((preset) => {
+                    const idx = flat.indexOf(preset);
+                    const isChecked = checked.includes(preset.name);
+                    const isLocked = !isChecked && selectionLimitReached;
+                    const sub = preset.sourceCountry
+                      ? t(`accountKind.${preset.kind}`)
+                      : `${t(`accountKind.${preset.kind}`)} · ${t('accounts.taxedAtResidence')}`;
+                    return (
+                      <div
+                        key={preset.name}
+                        className={cn(
+                          'search-row',
+                          idx === highlight && 'active',
+                          isChecked && 'is-selected',
+                          isLocked && 'is-locked',
+                        )}
+                        role="checkbox"
+                        aria-label={`${preset.name} ${sub}${isLocked ? ` ${t('billing.pro')}` : ''}`}
+                        aria-checked={isChecked}
+                        aria-disabled={isLocked}
+                        tabIndex={-1}
+                        onMouseEnter={() => setHighlight(idx)}
+                        onClick={() => toggle(preset)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={isLocked}
+                          readOnly
+                          tabIndex={-1}
+                          className="acct-preset-combo__checkbox"
+                        />
+                        <div className="search-row__id">
+                          <div className="search-row__main">
+                            <span className="search-row__sym">{preset.name}</span>
+                            <span className="search-row__name">{sub}</span>
+                          </div>
+                        </div>
+                        {isLocked && <ProBadge />}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+      <Button
+        variant="primary"
+        className="acct-preset-combo__add-button"
+        disabled={checked.length === 0}
+        onClick={confirm}
+      >
+        {t('accounts.addSelectedAccounts', { count: checked.length })}
+      </Button>
     </div>
   );
 };
