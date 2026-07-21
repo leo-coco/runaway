@@ -1605,10 +1605,6 @@ export const fr: Resources = {
         title: 'Résidence & locatifs',
         body: 'Ajoutez votre résidence principale et vos biens locatifs : valeur, crédit, appréciation, et pour les locatifs le loyer et les charges. La valeur nette est suivie année après année et alimente votre patrimoine comme la projection.',
       },
-      allocation: {
-        title: 'Composition du patrimoine',
-        body: 'Un anneau en direct de tout ce que vous possédez, placements et valeur nette immobilière, réparti par type d’actif, compte ou région. Il est en lecture seule ici ; modifiez les actifs sous-jacents dans la page Portefeuille.',
-      },
       currency: {
         title: 'Devise du plan',
         body: 'Changez ici la devise du plan. Chaque prix et total est converti à la volée, tandis que chaque actif conserve son prix de marché d’origine.',
