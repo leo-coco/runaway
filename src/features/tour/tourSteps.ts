@@ -27,6 +27,8 @@ export interface TourStep {
   timeoutMs?: number;
   /** Premium feature this step demonstrates; skipped entirely when the viewer lacks it. */
   requires?: keyof TierFeatures;
+  /** The sandbox replaces these account-editing actions with a sign-up prompt. */
+  unavailableInSandbox?: boolean;
 }
 
 const step = (id: string, extra: Omit<TourStep, 'id' | 'titleKey' | 'bodyKey'>): TourStep => ({
@@ -100,6 +102,7 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'addasset-btn',
     side: 'bottom',
     align: 'end',
+    unavailableInSandbox: true,
   }),
   step('addAsset', {
     page: 'portfolio',
@@ -107,12 +110,14 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     tourKey: 'addasset-tabs',
     side: 'bottom',
     align: 'start',
+    unavailableInSandbox: true,
   }),
   step('fetchPrices', {
     page: 'portfolio',
     tourKey: 'fetch-prices-btn',
     side: 'bottom',
     align: 'end',
+    unavailableInSandbox: true,
   }),
   step('editAssetButton', {
     page: 'portfolio',
@@ -339,5 +344,11 @@ export const TOUR_GUIDES: Record<TourGuideId, readonly TourStep[]> = {
  * tier_config), so a step reappears the moment that feature is toggled on — no
  * hardcoded free/premium split.
  */
-export const accessibleSteps = (steps: readonly TourStep[], features: TierFeatures): TourStep[] =>
-  steps.filter((s) => !s.requires || features[s.requires]);
+export const accessibleSteps = (
+  steps: readonly TourStep[],
+  features: TierFeatures,
+  sandbox = false,
+): TourStep[] =>
+  steps.filter(
+    (s) => (!s.requires || features[s.requires]) && !(sandbox && s.unavailableInSandbox),
+  );

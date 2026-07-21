@@ -30,6 +30,19 @@ const routeName = (path: string): TourPage | null => {
 const selectorFor = (s: TourStep): string | null =>
   s.selector ?? (s.tourKey ? `[data-tour="${s.tourKey}"]` : null);
 
+const waitForRoute = (getPathname: () => string, page: TourPage, timeoutMs = 1000): Promise<void> =>
+  new Promise((resolve) => {
+    const deadline = Date.now() + timeoutMs;
+    const check = () => {
+      if (routeName(getPathname()) === page || Date.now() >= deadline) {
+        resolve();
+        return;
+      }
+      window.setTimeout(check, 16);
+    };
+    check();
+  });
+
 export interface TourInstance {
   start: (steps: readonly TourStep[]) => void;
   stop: () => void;
@@ -94,6 +107,8 @@ export function createTour(deps: TourDeps): TourInstance {
       const planId = deps.getPlanId();
       if (planId && routeName(deps.getPathname()) !== s.page) {
         deps.navigate(`/plan/${planId}/${PAGE_PATH[s.page]}`);
+        await waitForRoute(deps.getPathname, s.page);
+        if (closed || !d) return;
       }
     }
 

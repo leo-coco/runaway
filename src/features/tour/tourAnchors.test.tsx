@@ -135,6 +135,7 @@ describe('dashboard guide anchors resolve on their declared page', () => {
       'spending-card',
       'expenses-card',
       'realestate-card',
+      'allocation-card',
     ]) {
       expect(has(dash, key), `${key} should be on the dashboard`).toBe(true);
     }
