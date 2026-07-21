@@ -16,7 +16,11 @@ type Snapshot = Map<string, string>;
  * signed in it debounces local edits and pushes upserts/deletes. Signed out, it
  * does nothing and the existing localStorage persistence is the source of truth.
  */
-export const PlanSyncManager = (): React.ReactElement | null => {
+export const PlanSyncManager = ({
+  onInitialSyncChange,
+}: {
+  onInitialSyncChange?: (ready: boolean) => void;
+}): React.ReactElement | null => {
   const { data: sessionData, isPending } = useSession();
   const userId = sessionData?.user?.id ?? null;
 
@@ -37,12 +41,14 @@ export const PlanSyncManager = (): React.ReactElement | null => {
       syncing.current = false;
       snapshot.current = new Map();
       useAppStore.getState().setPlansSynced(true);
+      onInitialSyncChange?.(true);
       return;
     }
     // Held false for the round-trip below so plan pages show a skeleton instead
     // of rendering whatever the store already has (empty, or a prior session's
     // localStorage leftovers) before the server's plans are known.
     useAppStore.getState().setPlansSynced(false);
+    onInitialSyncChange?.(false);
     let cancelled = false;
     void (async () => {
       const server = await fetchPlans();
@@ -57,14 +63,18 @@ export const PlanSyncManager = (): React.ReactElement | null => {
         else beginSyncing([]);
       }
       useAppStore.getState().setPlansSynced(true);
+      onInitialSyncChange?.(true);
     })().catch((e: unknown) => {
       console.error('Plan sync: hydration failed', e);
-      if (!cancelled) useAppStore.getState().setPlansSynced(true);
+      if (!cancelled) {
+        useAppStore.getState().setPlansSynced(true);
+        onInitialSyncChange?.(true);
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [userId, isPending]);
+  }, [userId, isPending, onInitialSyncChange]);
 
   // Push debounced diffs to the server while syncing is active.
   useEffect(() => {

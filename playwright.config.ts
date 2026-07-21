@@ -22,8 +22,10 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL,
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    // Authenticated traces retain form values, cookies, and request headers.
+    // Keep them disabled for this real-account smoke; the report still contains
+    // sanitized runtime diagnostics, screenshots, video, and browser errors.
+    trace: 'off',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     ...(bypassSecret && {

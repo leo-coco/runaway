@@ -28,6 +28,33 @@ const initialPlans = sandboxMode
   ? [createSandboxPlan(langForPathname(currentPathname))]
   : undefined;
 
+// Zustand deliberately leaves `hasHydrated()` false when reading, parsing, or
+// migrating persisted state throws. Track that failure separately so a broken
+// local cache cannot keep the authenticated app on its splash forever. The
+// server remains the source of truth for signed-in accounts.
+let storeHydrationFailed = false;
+const storeHydrationListeners = new Set<() => void>();
+
+const notifyStoreHydrationListeners = (): void => {
+  for (const listener of storeHydrationListeners) listener();
+};
+
+const trackStoreHydration = () => {
+  storeHydrationFailed = false;
+  notifyStoreHydrationListeners();
+
+  return (_state: AppStore | undefined, error: unknown): void => {
+    if (error) {
+      storeHydrationFailed = true;
+      console.error(
+        '[store] localStorage hydration failed; continuing with in-memory state.',
+        error,
+      );
+    }
+    notifyStoreHydrationListeners();
+  };
+};
+
 /**
  * Backfill fields added after a plan was first persisted, so older saved plans
  * (e.g. from before per-asset monthly contributions existed) never produce NaN.
@@ -128,8 +155,11 @@ export const useAppStore = create<AppStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ plans: state.plans }),
       migrate: (persisted) => migratePersisted(persisted),
+      onRehydrateStorage: trackStoreHydration,
       merge: (persisted, current) => {
-        const stored = persisted as Partial<AppStore>;
+        // Zustand passes `undefined` when the storage key does not exist. This
+        // is the normal first-visit path, not an invalid persisted payload.
+        const stored = (persisted ?? {}) as Partial<AppStore>;
         return {
           ...current,
           ...stored,
@@ -157,15 +187,18 @@ export const useAppStore = create<AppStore>()(
  * routing to the "no plans" screen) before the real persisted plans load.
  */
 const subscribeToStoreHydration = (onStoreChange: () => void): (() => void) => {
+  storeHydrationListeners.add(onStoreChange);
   const unsubscribeHydrate = useAppStore.persist.onHydrate(onStoreChange);
   const unsubscribeFinish = useAppStore.persist.onFinishHydration(onStoreChange);
   return () => {
+    storeHydrationListeners.delete(onStoreChange);
     unsubscribeHydrate();
     unsubscribeFinish();
   };
 };
 
-const getStoreHydrationSnapshot = (): boolean => useAppStore.persist.hasHydrated();
+const getStoreHydrationSnapshot = (): boolean =>
+  useAppStore.persist.hasHydrated() || storeHydrationFailed;
 
 export const useStoreHydrated = (): boolean =>
   useSyncExternalStore(subscribeToStoreHydration, getStoreHydrationSnapshot, () => false);

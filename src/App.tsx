@@ -43,7 +43,7 @@ const RootRedirect = () => {
   if (firstId) return <Navigate to={`/plan/${firstId}/dashboard`} replace />;
   // Plans are still reconciling with the server: show the splash rather than
   // the "no plan" empty state, which would flash before the real list lands.
-  if (!plansSynced) return <AppSplash />;
+  if (!plansSynced) return <AppSplash reason="plans" />;
 
   return (
     <section className="empty-plans" aria-labelledby="empty-plans-title">
@@ -78,13 +78,18 @@ const ProductShell = ({
   syncPlans?: boolean;
   sandbox?: boolean;
 }) => {
+  // A signed-in shell must not route from the local cache before the server has
+  // reconciled it. Starting false also covers a direct authenticated page load,
+  // before PlanSyncManager's effect has had a chance to run.
+  const [initialPlansReady, setInitialPlansReady] = useState(!syncPlans);
+
   return (
     <AppModeProvider sandbox={sandbox}>
       <TourProvider>
-        {syncPlans && <PlanSyncManager />}
+        {syncPlans && <PlanSyncManager onInitialSyncChange={setInitialPlansReady} />}
         <PaywallDialog />
         {!sandbox && <CheckoutSuccessDialog />}
-        <AppShell sandbox={sandbox} />
+        {initialPlansReady ? <AppShell sandbox={sandbox} /> : <AppSplash reason="plans" />}
       </TourProvider>
     </AppModeProvider>
   );
@@ -171,8 +176,8 @@ const AppShell = ({ sandbox }: { sandbox: boolean }) => {
   );
 };
 
-const AppSplash = () => (
-  <main className="app-splash" role="status" aria-live="polite">
+const AppSplash = ({ reason }: { reason: 'session' | 'store' | 'entitlements' | 'plans' }) => (
+  <main className="app-splash" role="status" aria-live="polite" data-loading-reason={reason}>
     <img
       className="app-splash__mark"
       src={runawayLogo.src}
@@ -180,6 +185,7 @@ const AppSplash = () => (
       height={runawayLogo.height}
       alt=""
     />
+    {import.meta.env.DEV && <span>Loading: {reason}</span>}
   </main>
 );
 
@@ -190,13 +196,14 @@ const ProtectedApp = () => {
 
   // Do not render a persisted plan while the session is being checked. This
   // prevents a brief data flash after sign-out or a direct plan URL visit.
-  if (isPending) return <AppSplash />;
+  if (isPending) return <AppSplash reason="session" />;
   if (!sessionData?.user) return <Navigate to="/signin" replace />;
   // Wait for the store to finish rehydrating from localStorage and for
   // entitlements to resolve before mounting the product shell — otherwise the
   // dashboard briefly renders with no plans / locked premium cards, then flashes
   // to the real state once both land.
-  if (!hydrated || !entitlementsReady) return <AppSplash />;
+  if (!hydrated) return <AppSplash reason="store" />;
+  if (!entitlementsReady) return <AppSplash reason="entitlements" />;
 
   return <ProductShell syncPlans />;
 };
