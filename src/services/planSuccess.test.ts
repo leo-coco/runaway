@@ -13,7 +13,13 @@ const RATES: RatesTable = {
   asOf: Date.now(),
 };
 
-const ITERS = 3000;
+/**
+ * Deliberately small. Nothing here measures a converged success rate — these
+ * tests assert determinism and a range, and `monteCarlo.test.ts` owns the
+ * statistical properties. At 3000 the two multi-run tests cost ~1.15s each
+ * under coverage locally and timed out against vitest's 5s default on CI.
+ */
+const ITERS = 200;
 const SEED = 0x5eed1234;
 
 describe('estimatePlanSuccess', () => {
