@@ -92,6 +92,29 @@ Pass a **stable** plan reference into `useMonteCarlo` from a test. Seed plans ca
 random ids, so building one inside the render callback changes `inputKey` on every
 render and restarts the effect forever.
 
+### Iteration counts in tests
+
+Simulation iteration counts are a test-runtime budget, not a fidelity setting.
+v8 coverage roughly triples a hot numeric loop and a CI runner is ~3x slower
+again, so a test that costs 300ms bare can pass vitest's **5s default
+`testTimeout`** locally and fail on CI. Pick the count from what the test
+asserts:
+
+- **Determinism or a range** (same seed → same number, result in `[0,1]`): the
+  count is irrelevant. Use a few hundred.
+- **A solver** (`balanceToTarget` runs a full simulation per candidate, so the
+  cost multiplies): only high enough to keep the search on the right side of the
+  target.
+- **A calibrated statistic** (`monteCarlo.test.ts` asserting a median within 1.5
+  points of the stated CAGR): the count is load-bearing. Keep it, and give the
+  test an explicit `}, 30_000)` rather than trimming the iterations.
+
+When lowering a count, re-run the mutation check — a cheaper test that no longer
+detects a broken engine has bought nothing. Also confirm the assertion isn't
+already vacuous: `balanceToTarget`'s tests targeted 60% success on a fixture that
+succeeds 94.5% at zero effort, so the solver "reached" the target with $30 of
+capital and the tests passed on rounding dust.
+
 Local E2E against the dev server:
 
 ```bash

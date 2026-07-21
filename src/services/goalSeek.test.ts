@@ -194,6 +194,20 @@ describe('evalSuccess monotonicity (common random numbers)', () => {
 });
 
 describe('balanceToTarget', () => {
+  /**
+   * The solver runs a Monte Carlo per candidate, so this multiplies: at 800 the
+   * two search tests cost ~2.7s and ~1.7s under coverage, which on a CI runner
+   * lands past vitest's 5s default. 200 resolves the same levers.
+   */
+  const ITERS = 200;
+  /**
+   * Must be a target the base plan does NOT already meet. It succeeds ~94.5% at
+   * neutral levers, so the original 0.6 was satisfied at zero effort: the
+   * bisection converged on λ≈1.5e-5 and "solved" the plan with $0.09 of savings
+   * and $30 of capital. Both assertions below then passed on rounding dust, and
+   * inverting the bisection comparison went undetected.
+   */
+  const TARGET = 0.97;
   const bounds = {
     baseSpending: 60_000,
     maxSavings: 6_000,
@@ -207,23 +221,28 @@ describe('balanceToTarget', () => {
     extraCapital: false,
   };
 
-  it('reaches a feasible target and reports success ≥ target', () => {
-    const r = balanceToTarget(baseInput(), baseOpts, 0.6, noLocks, neutral, bounds, 800);
+  it('reaches a feasible target by committing real effort, and lands on it', () => {
+    const r = balanceToTarget(baseInput(), baseOpts, TARGET, noLocks, neutral, bounds, ITERS);
     expect(r.reached).toBe(true);
-    expect(r.success).toBeGreaterThanOrEqual(0.6 - 0.02);
+    expect(r.success).toBeGreaterThanOrEqual(TARGET - 0.02);
+    // The bisection looks for the LEAST effort that clears the target, so it must
+    // settle near it rather than overshooting to full effort.
+    expect(r.success).toBeLessThan(TARGET + 0.02);
+    expect(r.levers.spending).toBeLessThan(neutral.spending);
+    expect(r.levers.extraCapital).toBeGreaterThan(1_000);
   });
 
-  it('keeps locked levers fixed and only moves the unlocked ones', () => {
+  it('keeps locked levers fixed and leans harder on the unlocked ones', () => {
     const locked: Record<ActiveLeverKey, boolean> = { ...noLocks, spending: true };
-    const r = balanceToTarget(baseInput(), baseOpts, 0.6, locked, neutral, bounds, 800);
-    // Spending is locked → unchanged from the current (neutral) value.
+    const free = balanceToTarget(baseInput(), baseOpts, TARGET, noLocks, neutral, bounds, ITERS);
+    const r = balanceToTarget(baseInput(), baseOpts, TARGET, locked, neutral, bounds, ITERS);
+
     expect(r.levers.spending).toBe(neutral.spending);
-    // At least one unlocked lever moved off neutral to do the work.
-    const movedSomething =
-      r.levers.extraMonthlySavings > 0 ||
-      r.levers.retireDelayYears > 0 ||
-      r.levers.extraCapital > 0;
-    expect(movedSomething).toBe(true);
+    expect(r.reached).toBe(true);
+    // Denied the spending lever, the same target has to be bought with more of
+    // the others — not merely with a non-zero amount of them.
+    expect(r.levers.extraCapital).toBeGreaterThan(free.levers.extraCapital);
+    expect(r.levers.extraMonthlySavings).toBeGreaterThan(free.levers.extraMonthlySavings);
   });
 
   it('reports reached=false when every lever is locked and the target is out of reach', () => {
@@ -234,7 +253,7 @@ describe('balanceToTarget', () => {
       extraCapital: true,
     };
     // Locked at neutral (current = high spending) → can't improve → can't hit 99%.
-    const r = balanceToTarget(baseInput(), baseOpts, 0.99, allLocked, neutral, bounds, 800);
+    const r = balanceToTarget(baseInput(), baseOpts, 0.99, allLocked, neutral, bounds, ITERS);
     expect(r.reached).toBe(false);
     expect(r.levers).toEqual(neutral);
   });
