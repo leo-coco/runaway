@@ -20,6 +20,7 @@ export type ModalKind =
  * contextual copy in the PaywallDialog. `null` = closed.
  */
 export type PaywallReason =
+  | 'upgrade'
   | 'monteCarlo'
   | 'withdrawalOrdering'
   | 'accountsTax'

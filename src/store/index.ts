@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { createPlansSlice, type PlansSlice } from './plansSlice';
 import { createUiSlice, type UiSlice } from './uiSlice';
 import type { Plan } from '@/domain/plan';
-import { sanitizeAccountTaxFields } from '@/domain/account';
+import { defaultTaxableAccount, sanitizeAccountTaxFields } from '@/domain/account';
 import { DEFAULT_PROVINCE } from '@/domain/country';
 import { isSandboxPathname, planStorageKeyForPathname } from './planStorage';
 import { createEmptySandboxPlan, createSandboxPlan, type SandboxProfileId } from './seed';
@@ -19,7 +19,7 @@ const sandboxMode = isSandboxPathname(currentPathname);
  * the server sync layer (sent as `schemaVersion` when a plan is pushed), so both
  * agree on which migration a stored plan needs.
  */
-export const PLANS_SCHEMA_VERSION = 11;
+export const PLANS_SCHEMA_VERSION = 12;
 
 const langForPathname = (pathname: string): 'en' | 'fr' =>
   pathname.startsWith('/fr/') ? 'fr' : 'en';
@@ -99,6 +99,16 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
           }))
         : [];
     const residenceCountry = plan.residenceCountry ?? 'US';
+    const existingAccounts = (plan.accounts ?? []).map((a) =>
+      sanitizeAccountTaxFields({ ...a, taxMode: a.taxMode ?? 'manual' }),
+    );
+    const accounts =
+      existingAccounts.length > 0 ? existingAccounts : [defaultTaxableAccount(residenceCountry)];
+    const accountIds = new Set(accounts.map((account) => account.id));
+    const fallbackAccountId = accounts[0]!.id;
+    const retainedOrder = (plan.withdrawalOrder ?? []).filter((id) => accountIds.has(id));
+    const orderedIds = new Set(retainedOrder);
+
     return {
       ...plan,
       // v7: tax residence added — default to US (only affects auto-mode accounts).
@@ -106,14 +116,12 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
       // v10: Canadian province drives the combined bracket schedule — backfill ON.
       residenceProvince:
         plan.residenceProvince ?? (residenceCountry === 'CA' ? DEFAULT_PROVINCE : undefined),
-      // v3: tax envelopes added — default to none and leave holdings unassigned.
-      // v7: existing accounts keep their flat rate via `manual` mode (no change).
-      // v10: clamp out-of-range tax percents (defence against corrupted saves).
-      accounts: (plan.accounts ?? []).map((a) =>
-        sanitizeAccountTaxFields({ ...a, taxMode: a.taxMode ?? 'manual' }),
-      ),
-      // v5: persisted draw-down order — default to the accounts' order.
-      withdrawalOrder: plan.withdrawalOrder ?? (plan.accounts ?? []).map((a) => a.id),
+      // Every plan has a default tax envelope and every holding is assigned to one.
+      accounts,
+      withdrawalOrder: [
+        ...retainedOrder,
+        ...accounts.map((account) => account.id).filter((id) => !orderedIds.has(id)),
+      ],
       // v4: current age added for age annotations on the projection.
       // v6: life-expectancy age added — drives the Monte Carlo horizon.
       // v11: ExpenseIncome.category added — optional, absent reads as 'general',
@@ -130,7 +138,7 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
       holdings: plan.holdings.map((h) => ({
         ...h,
         monthlyContribution: h.monthlyContribution ?? 0,
-        accountId: h.accountId ?? null,
+        accountId: h.accountId && accountIds.has(h.accountId) ? h.accountId : fallbackAccountId,
       })),
     };
   });

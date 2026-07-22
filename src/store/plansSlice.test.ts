@@ -158,24 +158,25 @@ describe('addHolding', () => {
     expect(after.holdings[0]!.accountId).toBe(plan.accounts[0]!.id);
   });
 
-  it('keeps an explicit account assignment', () => {
+  it('falls back to the default account when the requested account does not exist', () => {
     const store = makeStore();
     const id = store.getState().createPlan();
+    const plan = store.getState().plans.find((candidate) => candidate.id === id)!;
 
     store.getState().addHolding(id, mkHolding('explicit-account'));
 
     const after = store.getState().plans.find((p) => p.id === id)!;
-    expect(after.holdings[0]!.accountId).toBe('explicit-account');
+    expect(after.holdings[0]!.accountId).toBe(plan.accounts[0]!.id);
   });
 
-  it('does not auto-assign when the plan has several accounts', () => {
+  it('auto-assigns to the default account when the plan has several accounts', () => {
     const store = makeStore();
     const plan = store.getState().plans[0]!; // seed plan: 3 accounts
 
     store.getState().addHolding(plan.id, mkHolding(null));
 
     const after = store.getState().plans.find((p) => p.id === plan.id)!;
-    expect(after.holdings.at(-1)!.accountId).toBeNull();
+    expect(after.holdings.at(-1)!.accountId).toBe(plan.accounts[0]!.id);
   });
 });
 
@@ -202,7 +203,7 @@ describe('addAccount / removeAccount', () => {
     expect(after.accounts).toHaveLength(1);
   });
 
-  it('unassigns holdings and purges the withdrawal order on removal', () => {
+  it('reassigns holdings to the default remaining account and purges the withdrawal order', () => {
     const store = makeStore();
     const plan = store.getState().plans[0]!; // seed: 3 accounts, holdings assigned
     const removed = plan.accounts[0]!.id;
@@ -215,7 +216,7 @@ describe('addAccount / removeAccount', () => {
     expect(after.accounts.map((a) => a.id)).not.toContain(removed);
     expect(after.withdrawalOrder).not.toContain(removed);
     for (const h of affected) {
-      expect(after.holdings.find((x) => x.id === h.id)!.accountId).toBeNull();
+      expect(after.holdings.find((x) => x.id === h.id)!.accountId).toBe(after.accounts[0]!.id);
     }
   });
 });
@@ -244,7 +245,9 @@ describe('saveAccountsTaxConfig', () => {
     expect(after.residenceProvince).toBe('QC');
     expect(after.withdrawalOrder).toEqual([retained.id, added.id]);
     for (const holdingId of affectedHoldingIds) {
-      expect(after.holdings.find((holding) => holding.id === holdingId)!.accountId).toBeNull();
+      expect(after.holdings.find((holding) => holding.id === holdingId)!.accountId).toBe(
+        retained.id,
+      );
     }
   });
 });

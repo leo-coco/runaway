@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
@@ -108,6 +108,12 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [query, setQuery] = useState('');
   const debounced = useDebouncedValue(query, 500);
   const search = useAssetSearch(debounced);
+
+  const cagrInfo = (
+    <div className="addasset-cagr-info">
+      <Trans i18nKey="addAsset.cagrInfo" components={{ strong: <strong /> }} />
+    </div>
+  );
 
   const results = useMemo(() => search.data ?? [], [search.data]);
   const prices = useSearchPrices(results);
@@ -441,7 +447,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
               </p>
             )}
           </div>
-          <div className="addasset-fields">
+          <div className="addasset-fields addasset-fields--price-quantity">
             <div className="field">
               <span className="field__label">{t('addAsset.price')}</span>
               <div className="price-cell">
@@ -478,17 +484,18 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 onChange={setQuantity}
               />
             </div>
-            <div className="field">
-              <span className="field__label">{t('addAsset.expectedCagr')}</span>
-              <Stepper
-                ariaLabel={t('addAsset.ariaCagr')}
-                step={1}
-                suffix="%"
-                hideButtons
-                value={cagr}
-                onChange={setCagr}
-              />
-            </div>
+          </div>
+          <div className="field addasset-cagr">
+            <span className="field__label">{t('addAsset.expectedCagr')}</span>
+            <Stepper
+              ariaLabel={t('addAsset.ariaCagr')}
+              step={1}
+              suffix="%"
+              hideButtons
+              value={cagr}
+              onChange={setCagr}
+            />
+            {cagrInfo}
           </div>
           <div className="field">
             <span className="field__label">{t('addAsset.compositionOptional')}</span>
@@ -583,27 +590,51 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 </span>
               </div>
 
-              <div className="field">
-                <span className="field__label">
-                  {t('addAsset.latestPrice', { currency: selected.nativeCurrency })}
-                </span>
-                {priceLoading ? (
-                  <span className="fetch-link">
-                    <Spinner /> {t('addAsset.fetching')}
+              <div className="addasset-fields addasset-fields--price-quantity">
+                <div className="field">
+                  <span className="field__label">
+                    {t('addAsset.latestPrice', { currency: selected.nativeCurrency })}
                   </span>
-                ) : priceError ? (
-                  <InlineError error={priceError} />
-                ) : price !== null ? (
-                  <div className="stepper" aria-readonly>
-                    <input
-                      value={nativeFmt.price(price)}
-                      readOnly
-                      aria-label={t('addAsset.ariaLatestPrice')}
-                    />
-                  </div>
-                ) : (
-                  <p className="field__hint">{t('addAsset.priceUnavailable')}</p>
-                )}
+                  {priceLoading ? (
+                    <span className="fetch-link">
+                      <Spinner /> {t('addAsset.fetching')}
+                    </span>
+                  ) : priceError ? (
+                    <InlineError error={priceError} />
+                  ) : price !== null ? (
+                    <div className="stepper" aria-readonly>
+                      <input
+                        value={nativeFmt.price(price)}
+                        readOnly
+                        aria-label={t('addAsset.ariaLatestPrice')}
+                      />
+                    </div>
+                  ) : (
+                    <p className="field__hint">{t('addAsset.priceUnavailable')}</p>
+                  )}
+                </div>
+                <div className="field">
+                  <span className="field__label">{t('addAsset.quantityHeld')}</span>
+                  <Stepper
+                    ariaLabel={t('addAsset.quantity')}
+                    min={0}
+                    step={1}
+                    value={quantity}
+                    onChange={setQuantity}
+                  />
+                </div>
+              </div>
+
+              <div className="field addasset-cagr">
+                <span className="field__label">{t('addAsset.expectedCagr')}</span>
+                <Stepper
+                  ariaLabel={t('addAsset.ariaCagr')}
+                  step={1}
+                  suffix="%"
+                  value={cagr}
+                  onChange={setCagr}
+                />
+                {cagrInfo}
               </div>
 
               <div className="field">
@@ -624,29 +655,6 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 ) : (
                   <p className="field__hint">{t('addAsset.compUnavailable')}</p>
                 )}
-              </div>
-
-              <div className="addasset-fields addasset-fields--2">
-                <div className="field">
-                  <span className="field__label">{t('addAsset.quantityHeld')}</span>
-                  <Stepper
-                    ariaLabel={t('addAsset.quantity')}
-                    min={0}
-                    step={1}
-                    value={quantity}
-                    onChange={setQuantity}
-                  />
-                </div>
-                <div className="field">
-                  <span className="field__label">{t('addAsset.expectedCagr')}</span>
-                  <Stepper
-                    ariaLabel={t('addAsset.ariaCagr')}
-                    step={1}
-                    suffix="%"
-                    value={cagr}
-                    onChange={setCagr}
-                  />
-                </div>
               </div>
             </>
           )}

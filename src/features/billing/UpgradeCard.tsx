@@ -24,7 +24,7 @@ export const UpgradeCard = ({
       <StarIcon size={28} className="upgrade-card__icon" />
       <div className="upgrade-card__title">{title}</div>
       <p className="upgrade-card__body">{body}</p>
-      <Button variant="primary" onClick={() => openPaywall(reason)}>
+      <Button variant="primary" className="premium-cta" onClick={() => openPaywall(reason)}>
         {t('billing.seePlans')}
       </Button>
     </div>

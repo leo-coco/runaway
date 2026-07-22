@@ -30,7 +30,7 @@ interface InvestmentBreakdownProps {
 
 interface Group {
   key: string;
-  account: Account | null; // null = unassigned
+  account: Account;
   holdings: readonly Holding[];
   subtotal: number;
   gain: GainSummary;
@@ -71,7 +71,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const onZoneLeave = (e: DragEvent) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOverKey(null);
   };
-  const onZoneDrop = (accountId: string | null) => (e: DragEvent) => {
+  const onZoneDrop = (accountId: string) => (e: DragEvent) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('text/plain') || draggingId;
     if (id) updateHolding(plan.id, id, { accountId });
@@ -85,12 +85,10 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
     [plan.holdings, plan.currency, rates],
   );
 
-  // Group holdings into account sections (accounts in order, then Unassigned),
-  // each carrying its own value subtotal and unrealised gain/loss.
+  // Group holdings into account sections, each carrying its own value subtotal and gain/loss.
   const groups = useMemo<Group[]>(() => {
     const valueById = new Map(allValues.map((v) => [v.holdingId, v]));
-    const isKnown = (id: string | null): boolean => plan.accounts.some((a) => a.id === id);
-    const build = (key: string, account: Account | null, holdings: readonly Holding[]): Group => {
+    const build = (key: string, account: Account, holdings: readonly Holding[]): Group => {
       const vals = holdings
         .map((h) => valueById.get(h.id))
         .filter((v): v is HoldingValue => v !== undefined);
@@ -105,12 +103,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
         plan.holdings.filter((h) => h.accountId === account.id),
       ),
     );
-    const unassignedHoldings = plan.holdings.filter((h) => !isKnown(h.accountId));
-    const result = accountGroups.filter((g) => g.holdings.length > 0);
-    if (unassignedHoldings.length > 0) {
-      result.push(build('__unassigned__', null, unassignedHoldings));
-    }
-    return result;
+    return accountGroups.filter((g) => g.holdings.length > 0);
   }, [allValues, plan.holdings, plan.accounts]);
 
   const totalGain = useMemo(
@@ -169,8 +162,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           <div className="state-box">{t('portfolio.empty')}</div>
         ) : (
           groups.map((g) => {
-            const targetId = g.account ? g.account.id : null;
-            const name = g.account ? g.account.name : t('portfolio.unassigned');
+            const targetId = g.account.id;
+            const name = g.account.name;
             const isOver = dragOverKey === g.key;
             return (
               <div
@@ -186,13 +179,11 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                     <span className="acct-section__name">{name}</span>
                     <span className="acct-section__meta">
                       {t('portfolio.assets', { count: g.holdings.length })}
-                      {g.account
-                        ? t('portfolio.taxSuffix', {
-                            rate: (
-                              accountEffectiveRate(g.account, plan.residenceCountry ?? 'US') * 100
-                            ).toFixed(1),
-                          })
-                        : ''}
+                      {t('portfolio.taxSuffix', {
+                        rate: (
+                          accountEffectiveRate(g.account, plan.residenceCountry ?? 'US') * 100
+                        ).toFixed(1),
+                      })}
                     </span>
                   </div>
                   <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
@@ -223,17 +214,14 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           })
         )}
 
-        {/* While dragging, expose empty accounts (and Unassigned) as drop targets. */}
+        {/* While dragging, expose empty accounts as drop targets. */}
         {draggingId &&
           (() => {
             const shown = new Set(groups.map((g) => g.key));
-            const extras: { key: string; accountId: string | null; name: string }[] = [
+            const extras: { key: string; accountId: string; name: string }[] = [
               ...plan.accounts
                 .filter((a) => !shown.has(a.id))
                 .map((a) => ({ key: a.id, accountId: a.id, name: a.name })),
-              ...(shown.has('__unassigned__')
-                ? []
-                : [{ key: '__unassigned__', accountId: null, name: t('portfolio.unassigned') }]),
             ];
             return extras.map((zone) => (
               <div
@@ -256,6 +244,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           </div>
         )}
       </Card>
+
+      <p className="portfolio-cost-basis-info">{t('portfolio.costBasisInfo')}</p>
     </div>
   );
 };

@@ -141,6 +141,21 @@ export const AssetRow = ({
           <span className="asset-sym">{displaySymbol}</span>
           <span className="asset-nm">{truncate(holding.instrument.name, 8)}</span>
         </div>
+        <label className="asset-account-select">
+          <span>{t('portfolio.account')}</span>
+          <select
+            className="move-select"
+            value={holding.accountId ?? plan.accounts[0]?.id ?? ''}
+            aria-label={t('portfolio.accountSelectAria', { symbol: holding.instrument.symbol })}
+            onChange={(e) => onUpdate(holding.id, { accountId: e.target.value })}
+          >
+            {plan.accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Asset price in its native currency (currency is fixed by the market). */}

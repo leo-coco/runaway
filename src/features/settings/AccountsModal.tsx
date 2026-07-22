@@ -280,6 +280,7 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
+  const [activeKindTooltip, setActiveKindTooltip] = useState<AccountKind | null>(null);
 
   // Free tier caps accounts; adding past the cap opens the paywall instantly instead
   // of adding it to the local draft.
@@ -651,7 +652,10 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                           className="icon-action"
                           aria-label={t('common.edit')}
                           aria-expanded={editing}
-                          onClick={() => setEditingId(editing ? null : a.id)}
+                          onClick={() => {
+                            setEditingId(editing ? null : a.id);
+                            setActiveKindTooltip(null);
+                          }}
                         >
                           <PencilIcon size={14} />
                         </Button>
@@ -698,7 +702,12 @@ export const AccountsModal = ({ plan, rates, onClose }: Props) => {
                                     'scenario-pill tip-host',
                                     `accounts-type-pill--${k}`,
                                     auto && kind === k && 'is-active',
+                                    activeKindTooltip === k && 'is-tooltip-open',
                                   )}
+                                  onPointerEnter={() => setActiveKindTooltip(k)}
+                                  onPointerLeave={() => setActiveKindTooltip(null)}
+                                  onFocus={() => setActiveKindTooltip(k)}
+                                  onBlur={() => setActiveKindTooltip(null)}
                                   onClick={() =>
                                     updateDraftAccount(a.id, { kind: k, taxMode: 'auto' })
                                   }

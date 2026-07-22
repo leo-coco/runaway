@@ -715,6 +715,14 @@ h4 {
   text-align: left;
   cursor: pointer;
 }
+.sb-nav__label {
+  white-space: nowrap;
+}
+.sb-nav__link .pro-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-inline: 5px;
+}
 .sb-nav__link:hover {
   background: var(--overlay-hover-soft);
   color: var(--text);
@@ -1619,6 +1627,45 @@ h4 {
   display: flex;
   flex-direction: column;
 }
+.ov--premium {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--accent) 20%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 10%, var(--bg-card)),
+      var(--bg-card) 72%
+    );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+}
+.ov--premium::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.7;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    color-mix(in srgb, var(--accent) 9%, transparent)
+  );
+}
+.ov--premium > * {
+  position: relative;
+  z-index: 1;
+}
+.ov--premium .ov__body {
+  visibility: hidden;
+}
+.ov--premium:hover {
+  border-color: color-mix(in srgb, var(--accent) 68%, var(--border));
+}
 .ov__head {
   display: flex;
   align-items: flex-start;
@@ -1988,9 +2035,41 @@ h4 {
   flex-wrap: wrap;
 }
 .mc-card--locked {
+  position: relative;
+  overflow: hidden;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  cursor: pointer;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--accent) 20%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 10%, var(--bg-card)),
+      var(--bg-card) 72%
+    );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+}
+.mc-card--locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.7;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    color-mix(in srgb, var(--accent) 9%, transparent)
+  );
+}
+.mc-card--locked > * {
+  position: relative;
+  z-index: 1;
 }
 .mc-card__text {
   display: flex;
@@ -2041,7 +2120,10 @@ h4 {
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  background: conic-gradient(var(--mc-color) calc(var(--mc-pct) * 1%), var(--bg-input) 0);
+  background: conic-gradient(
+    var(--mc-color) calc(var(--mc-pct) * 1%),
+    color-mix(in srgb, var(--text-dim) 32%, var(--bg-card)) 0
+  );
   display: grid;
   place-items: center;
 }
@@ -2059,10 +2141,12 @@ h4 {
   color: var(--text);
 }
 .mc-card__donut-label {
-  color: var(--text-dim);
-  font-size: var(--fs-2xs);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
   text-align: center;
   max-width: 150px;
 }
@@ -2379,6 +2463,16 @@ h4 {
 .portfolio-actions {
   justify-content: flex-end;
 }
+.portfolio-cost-basis-info {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--card-border));
+  border-radius: 6px;
+}
 .mc-central + .action-banner {
   margin-top: 18px;
 }
@@ -2623,6 +2717,9 @@ h4 {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.asset-account-select {
+  display: none;
 }
 .asset-badge {
   width: 28px;
@@ -3700,6 +3797,10 @@ th[title] {
   gap: 2px;
 }
 .accounts-table__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
   width: 30px;
   height: 30px;
   min-height: 30px;
@@ -3734,16 +3835,15 @@ th[title] {
 .accounts-type-pills .tip-host {
   cursor: pointer;
 }
-/* A previously focused tax type and a newly hovered type must not display two
-   explanation bubbles at once. Pointer hover wins while the group is hovered;
-   outside the group, the shared focus-visible rule remains keyboard-friendly. */
-.accounts-type-pills:hover .tip-bubble {
-  opacity: 0;
-  visibility: hidden;
+/* Tooltip visibility is driven by a single React state value. This prevents a
+   focused type and a newly hovered type from displaying two explanations at once. */
+.accounts-type-pills .tip-host > .tip-bubble {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
-.accounts-type-pills .tip-host:hover > .tip-bubble {
-  opacity: 1;
-  visibility: visible;
+.accounts-type-pills .tip-host.is-tooltip-open > .tip-bubble {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 .accounts-table .tip-bubble,
 .accounts-type-pills .tip-bubble {
@@ -6069,6 +6169,25 @@ th[title] {
 }
 .addasset-fields--2 {
   grid-template-columns: 1fr 1fr;
+}
+.addasset-fields--price-quantity {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.85fr);
+}
+.addasset-cagr {
+  margin-top: 16px;
+}
+.addasset-cagr-info {
+  margin-top: 8px;
+  padding: 10px 12px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--card-border));
+  border-radius: 10px;
+}
+.addasset-cagr-info strong {
+  color: var(--text);
 }
 .adj {
   display: flex;
@@ -8756,12 +8875,13 @@ th[title] {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 1px 7px;
   line-height: 1.5;
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .upgrade-card {
   display: flex;
@@ -8786,6 +8906,68 @@ th[title] {
 .upgrade-card__body {
   color: var(--text-muted);
   font-size: var(--fs-sm);
+}
+.premium-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 24px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  border-radius: 0;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--accent) 20%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 10%, var(--bg-card)),
+      var(--bg-card) 72%
+    );
+}
+.premium-banner__copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.premium-banner__copy h2,
+.premium-banner__copy p {
+  margin: 0;
+}
+.premium-banner__copy h2 {
+  font-size: var(--fs-body);
+}
+.premium-banner__copy h2 .pro-badge {
+  margin-left: 4px;
+  padding: 0 5px;
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.premium-banner__copy h2 .pro-badge svg {
+  width: 9px;
+  height: 9px;
+}
+.premium-banner__copy p {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.premium-cta {
+  flex: 0 0 auto;
+  color: white;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.premium-cta:hover {
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
 }
 .paywall__benefits {
   list-style: none;
@@ -8818,7 +9000,7 @@ th[title] {
   font-weight: var(--fw-bold);
 }
 .modal--paywall {
-  max-width: 500px;
+  max-width: 660px;
 }
 .modal--paywall .modal__head {
   position: absolute;
@@ -8882,6 +9064,10 @@ th[title] {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+.paywall__eyebrow .pro-badge {
+  margin-left: 4px;
+  vertical-align: middle;
+}
 .paywall__heading {
   margin: 0;
   font-size: var(--fs-2xl);
@@ -8898,6 +9084,53 @@ th[title] {
   color: var(--text-muted);
   font-size: var(--fs-2xs);
   line-height: 1.45;
+}
+.paywall__comparison {
+  margin-top: 24px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: var(--fs-sm);
+}
+.paywall__comparison-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 120px;
+  align-items: center;
+  min-height: 40px;
+  border-top: 1px solid var(--border);
+}
+.paywall__comparison-row:first-child {
+  border-top: none;
+}
+.paywall__comparison-row > span {
+  padding: 9px 12px;
+}
+.paywall__comparison-row > span:not(:first-child) {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--border);
+}
+.paywall__comparison-row--head {
+  min-height: 36px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-elev));
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+.paywall__comparison-row--head > span:last-child {
+  color: var(--accent-strong);
+}
+.paywall__comparison-yes {
+  color: var(--success);
+  font-weight: var(--fw-bold);
+}
+.paywall__comparison-no {
+  color: var(--text-dim);
+}
+.paywall__comparison-limit {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
 }
 .modal--paywall .modal__footer {
   padding: 14px 20px;
@@ -8944,6 +9177,21 @@ th[title] {
   .paywall__note {
     margin-right: 20px;
     margin-left: 20px;
+  }
+  .premium-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .premium-banner .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .paywall__comparison-row {
+    grid-template-columns: minmax(0, 1fr) 82px 92px;
+  }
+  .paywall__comparison-row > span {
+    padding: 8px;
   }
   .modal--paywall .modal__footer {
     align-items: stretch;
@@ -9079,6 +9327,28 @@ th[title] {
   }
   .brow > .asset-id {
     margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .drag-handle {
+    display: none;
+  }
+  .asset-account-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 1 1 100%;
+    order: 3;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+  .asset-account-select .move-select {
+    flex: 0 1 190px;
+    width: auto;
+    margin: 0;
+    color: var(--text);
+    font-size: var(--fs-sm);
   }
   /* Every data cell becomes a "label — value" row. */
   .brow > [data-label] {

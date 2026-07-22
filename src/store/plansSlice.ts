@@ -171,12 +171,38 @@ const emptyPlan = (name: string, freeDemo = false, preferredResidence?: Country)
 const isDefaultBase = (a: Account): boolean =>
   a.custom === false && a.kind === 'taxable' && a.taxMode === 'auto';
 
+/** Every holding belongs to a tax envelope. Older/corrupted data falls back to the first account. */
+const ensureAccountAssignments = (plan: Plan): Plan => {
+  const accounts =
+    plan.accounts.length > 0
+      ? plan.accounts
+      : [defaultTaxableAccount(plan.residenceCountry ?? residenceForCurrency(plan.currency))];
+  const accountIds = new Set(accounts.map((account) => account.id));
+  const fallbackAccountId = accounts[0]!.id;
+  const retainedOrder = plan.withdrawalOrder.filter((id) => accountIds.has(id));
+  const orderedIds = new Set(retainedOrder);
+
+  return {
+    ...plan,
+    accounts,
+    withdrawalOrder: [
+      ...retainedOrder,
+      ...accounts.map((account) => account.id).filter((id) => !orderedIds.has(id)),
+    ],
+    holdings: plan.holdings.map((holding) =>
+      holding.accountId && accountIds.has(holding.accountId)
+        ? holding
+        : { ...holding, accountId: fallbackAccountId },
+    ),
+  };
+};
+
 export const createPlansSlice =
   (initialPlans: Plan[] = [createSeedPlan()]): StateCreator<PlansSlice, [], [], PlansSlice> =>
   (set, get) => ({
     plans: initialPlans,
 
-    hydratePlans: (plans) => set({ plans }),
+    hydratePlans: (plans) => set({ plans: plans.map(ensureAccountAssignments) }),
 
     createPlan: (name = 'Untitled plan', freeDemo = false, residenceCountry) => {
       const plan = emptyPlan(name, freeDemo, residenceCountry);
@@ -248,10 +274,14 @@ export const createPlansSlice =
         plans: s.plans.map((p) =>
           p.id === planId
             ? touch(p, (x) => {
-                // Auto-assign to the sole account so tax is modelled without manual steps.
-                const sole = x.accounts.length === 1 ? x.accounts[0]!.id : null;
+                // Every asset belongs to an account. Keep a valid explicit choice,
+                // otherwise use the plan's default (first) account.
+                const accountIds = new Set(x.accounts.map((account) => account.id));
+                const fallbackAccountId = x.accounts[0]!.id;
                 const h =
-                  holding.accountId == null && sole ? { ...holding, accountId: sole } : holding;
+                  holding.accountId && accountIds.has(holding.accountId)
+                    ? holding
+                    : { ...holding, accountId: fallbackAccountId };
                 return { ...x, holdings: [...x.holdings, h] };
               })
             : p,
@@ -262,10 +292,23 @@ export const createPlansSlice =
       set((s) => ({
         plans: s.plans.map((p) =>
           p.id === planId
-            ? touch(p, (x) => ({
-                ...x,
-                holdings: x.holdings.map((h) => (h.id === holdingId ? { ...h, ...patch } : h)),
-              }))
+            ? touch(p, (x) => {
+                const accountIds = new Set(x.accounts.map((account) => account.id));
+                const accountId =
+                  patch.accountId === undefined
+                    ? undefined
+                    : patch.accountId && accountIds.has(patch.accountId)
+                      ? patch.accountId
+                      : x.accounts[0]!.id;
+                return {
+                  ...x,
+                  holdings: x.holdings.map((h) =>
+                    h.id === holdingId
+                      ? { ...h, ...patch, ...(accountId ? { accountId } : {}) }
+                      : h,
+                  ),
+                };
+              })
             : p,
         ),
       })),
@@ -320,15 +363,18 @@ export const createPlansSlice =
           // A plan always keeps at least one account, so holdings never end up
           // orphaned by deleting the last envelope.
           p.id === planId && p.accounts.length > 1
-            ? touch(p, (x) => ({
-                ...x,
-                accounts: x.accounts.filter((a) => a.id !== accountId),
-                withdrawalOrder: x.withdrawalOrder.filter((id) => id !== accountId),
-                // Unassign holdings that referenced the removed account.
-                holdings: x.holdings.map((h) =>
-                  h.accountId === accountId ? { ...h, accountId: null } : h,
-                ),
-              }))
+            ? touch(p, (x) => {
+                const accounts = x.accounts.filter((a) => a.id !== accountId);
+                const fallbackAccountId = accounts[0]!.id;
+                return {
+                  ...x,
+                  accounts,
+                  withdrawalOrder: x.withdrawalOrder.filter((id) => id !== accountId),
+                  holdings: x.holdings.map((h) =>
+                    h.accountId === accountId ? { ...h, accountId: fallbackAccountId } : h,
+                  ),
+                };
+              })
             : p,
         ),
       })),
@@ -357,9 +403,9 @@ export const createPlansSlice =
             residenceProvince:
               config.residenceCountry === 'CA' ? config.residenceProvince : x.residenceProvince,
             holdings: x.holdings.map((holding) =>
-              holding.accountId && !accountIds.has(holding.accountId)
-                ? { ...holding, accountId: null }
-                : holding,
+              holding.accountId && accountIds.has(holding.accountId)
+                ? holding
+                : { ...holding, accountId: accounts[0]!.id },
             ),
           }));
         }),
