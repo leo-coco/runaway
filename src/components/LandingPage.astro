@@ -1,6 +1,9 @@
 ---
 import { Picture } from 'astro:assets';
-import dashboardScreenshot from '../assets/runaway-dashboard.png';
+import dashboardEnDark from '../assets/dashboard-en-dark.png';
+import dashboardEnLight from '../assets/dashboard-en-light.png';
+import dashboardFrDark from '../assets/dashboard-fr-dark.png';
+import dashboardFrLight from '../assets/dashboard-fr-light.png';
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 import MarketingFooter from './MarketingFooter.astro';
 import MarketingHeader from './MarketingHeader.astro';
@@ -26,6 +29,8 @@ const { copy } = Astro.props as { copy: Copy };
 const isFr = copy.lang === 'fr';
 const appBase = `/${copy.lang}/app`;
 const sandboxHref = isFr ? '/exemples' : '/en/examples';
+const lightDashboard = isFr ? dashboardFrLight : dashboardEnLight;
+const darkDashboard = isFr ? dashboardFrDark : dashboardEnDark;
 ---
 
 <MarketingLayout
@@ -54,12 +59,23 @@ const sandboxHref = isFr ? '/exemples' : '/en/examples';
       <div class="product-window" aria-label={isFr ? "Aperçu de l'application Runaway" : 'Runaway app preview'}>
         <div class="window-top"><i></i><i></i><i></i><span>runaway.money/app</span></div>
         <Picture
-          class="product-screenshot"
-          src={dashboardScreenshot}
+          class="product-screenshot product-screenshot--light"
+          src={lightDashboard}
           formats={['avif', 'webp']}
           widths={[480, 720, 1440]}
           sizes="(max-width: 640px) calc(100vw - 20px), (max-width: 980px) min(720px, calc(100vw - 48px)), 706px"
           alt={isFr ? "Tableau de bord réel de l'application Runaway" : 'Real Runaway application dashboard'}
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
+        />
+        <Picture
+          class="product-screenshot product-screenshot--dark"
+          src={darkDashboard}
+          formats={['avif', 'webp']}
+          widths={[480, 720, 1440]}
+          sizes="(max-width: 640px) calc(100vw - 20px), (max-width: 980px) min(720px, calc(100vw - 48px)), 706px"
+          alt={isFr ? "Tableau de bord réel de l'application Runaway en thème sombre" : 'Real Runaway application dashboard in dark theme'}
           loading="eager"
           decoding="async"
           fetchpriority="high"
