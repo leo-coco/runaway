@@ -1036,6 +1036,13 @@ describe('plan currency invariance', () => {
   // taxFxFactor, so restating the plan in another currency must leave the odds
   // alone. Regression guard — setPlanCurrency used to also flip the tax
   // residence, which moved the success rate by ~17 points.
+  //
+  // Both runs share the fixed DEFAULT_MC_OPTIONS.seed, so the EUR run is a
+  // deterministic scaled mirror of the USD run rather than an independent
+  // sample: the two rates match exactly regardless of iteration count. The
+  // count only has to keep the shared rate off the 0/1 rails (a degenerate
+  // plan would pass this test no matter what the switch did), so it stays low
+  // to keep the two full simulations fast.
   const rates = { base: 'USD', rates: { USD: 1, EUR: 0.92, CAD: 1.37 }, asOf: 0 };
   const startYear = 2026;
   const usdAccount = accountFromPreset(BASE_TAXABLE_PRESET.US);
@@ -1081,7 +1088,7 @@ describe('plan currency invariance', () => {
   };
   const eurPlan: Plan = { ...rescalePlanAmounts(usdPlan, 0.92), currency: 'EUR' };
 
-  const options = { ...DEFAULT_MC_OPTIONS, iterations: 2_000 };
+  const options = { ...DEFAULT_MC_OPTIONS, iterations: 500 };
   const runFor = (plan: Plan) =>
     runMonteCarlo(buildMonteCarloInput(plan, rates, startYear, 60), options);
 
