@@ -336,6 +336,8 @@ export const en = {
   },
   plan: {
     currency: 'Currency',
+    currencyRatesUnavailable:
+      'Exchange rates are unavailable, so the plan’s amounts cannot be converted. Try again shortly.',
     notFound: 'This plan could not be found. It may have been deleted.',
     fxIncomplete:
       'No exchange rate is available for {{currencies}}, so this plan cannot be valued. Figures are hidden rather than shown in mixed currencies. Try again shortly.',

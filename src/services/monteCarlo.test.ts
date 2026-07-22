@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSeedPlan } from '@/store/seed';
+import { accountFromPreset, BASE_TAXABLE_PRESET } from '@/domain/account';
+import { rescalePlanAmounts, type Plan } from '@/domain/plan';
 import { HIST_REAL_LOG_DRIFT } from '@/domain/historicalReturns';
 import {
   BTC_CYCLE_OFFSET,
@@ -1025,6 +1027,84 @@ describe('bracket FX wiring', () => {
     ).toBe(1);
     // No rates table → 1 (legacy behaviour, thresholds applied as-is).
     expect(buildMonteCarloInput(plan, undefined, 2026, 30).taxFxFactor).toBe(1);
+  });
+});
+
+describe('plan currency invariance', () => {
+  // A plan's currency is a unit, not a variable of the model: holdings convert
+  // from their native currency on read and bracket thresholds are rescaled by
+  // taxFxFactor, so restating the plan in another currency must leave the odds
+  // alone. Regression guard — setPlanCurrency used to also flip the tax
+  // residence, which moved the success rate by ~17 points.
+  const rates = { base: 'USD', rates: { USD: 1, EUR: 0.92, CAD: 1.37 }, asOf: 0 };
+  const startYear = 2026;
+  const usdAccount = accountFromPreset(BASE_TAXABLE_PRESET.US);
+
+  const seed = createSeedPlan();
+  const usdPlan: Plan = {
+    ...seed,
+    currency: 'USD',
+    residenceCountry: 'US',
+    accounts: [usdAccount],
+    withdrawalOrder: [usdAccount.id],
+    // Sized so the plan is genuinely uncertain: a 0% or 100% plan would pass
+    // this test no matter what the currency switch did to it.
+    holdings: seed.holdings.map((h) => ({
+      ...h,
+      quantity: h.quantity * 8,
+      accountId: usdAccount.id,
+    })),
+    home: {
+      id: 'home',
+      name: 'Home',
+      currentValue: 400_000,
+      appreciationPct: 2,
+      ownershipCostPct: 2,
+      mortgage: { balance: 150_000, ratePct: 3, termYearsRemaining: 15 },
+    },
+    settings: {
+      ...seed.settings,
+      retirementYear: startYear + 2,
+      annualSpending: 150_000,
+      expensesIncomes: [
+        {
+          id: 'pension',
+          name: 'Pension',
+          amount: 40_000,
+          year: startYear + 10,
+          kind: 'income',
+          frequency: 'recurring',
+          endYear: startYear + 45,
+        },
+      ],
+    },
+  };
+  const eurPlan: Plan = { ...rescalePlanAmounts(usdPlan, 0.92), currency: 'EUR' };
+
+  const options = { ...DEFAULT_MC_OPTIONS, iterations: 2_000 };
+  const runFor = (plan: Plan) =>
+    runMonteCarlo(buildMonteCarloInput(plan, rates, startYear, 60), options);
+
+  it('restating the plan in another currency leaves the success rate alone', () => {
+    const usd = runFor(usdPlan);
+    const eur = runFor(eurPlan);
+
+    expect(usd.successRate).toBeGreaterThan(0.4);
+    expect(usd.successRate).toBeLessThan(0.9);
+    expect(eur.successRate).toBeCloseTo(usd.successRate, 2);
+  });
+
+  it('scales the built input while rescaling the bracket thresholds to match', () => {
+    const usd = buildMonteCarloInput(usdPlan, rates, startYear, 60);
+    const eur = buildMonteCarloInput(eurPlan, rates, startYear, 60);
+
+    expect(eur.annualSpending).toBeCloseTo(usd.annualSpending * 0.92, 6);
+    expect(eur.assets[0]!.startValue).toBeCloseTo(usd.assets[0]!.startValue * 0.92, 6);
+    expect(eur.residence).toBe(usd.residence);
+    // US brackets are legislated in USD: applying them to EUR amounts needs the
+    // same 0.92 factor the amounts themselves were scaled by.
+    expect(usd.taxFxFactor).toBeCloseTo(1, 6);
+    expect(eur.taxFxFactor).toBeCloseTo(0.92, 6);
   });
 });
 
