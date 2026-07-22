@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { Plan } from '@/domain/plan';
+import { rescalePlanAmounts, type Plan } from '@/domain/plan';
 import type { Holding } from '@/domain/asset';
 import type { Home } from '@/domain/home';
 import type { RentalProperty } from '@/domain/rentalProperty';
@@ -14,12 +14,11 @@ import { DEFAULT_RETIREMENT_SETTINGS } from '@/domain/retirementSettings';
 import { DEFAULT_SCENARIO_CONFIG } from '@/domain/scenario';
 import {
   accountFromPreset,
-  BASE_TAXABLE_PRESET,
   defaultFreeAccount,
   defaultTaxableAccount,
   sanitizeAccountTaxFields,
 } from '@/domain/account';
-import { DEFAULT_PROVINCE, residenceForCurrency } from '@/domain/country';
+import { DEFAULT_PROVINCE, RESIDENCE_CURRENCY } from '@/domain/country';
 import { newId } from '@/lib/id';
 import { createSeedPlan } from './seed';
 
@@ -38,7 +37,13 @@ export interface PlansSlice {
   duplicatePlan: (id: string) => string | null;
   deletePlan: (id: string) => void;
   renamePlan: (id: string, name: string, description: string) => void;
-  setPlanCurrency: (id: string, currency: CurrencyCode) => void;
+  /**
+   * Change the plan's reference currency. `fxFactor` is units of `currency` per
+   * unit of the plan's current one: every amount the plan stores in its own
+   * currency is rescaled by it, so the switch is a pure change of unit. Pass 1
+   * to relabel without converting (a brand-new plan choosing its currency).
+   */
+  setPlanCurrency: (id: string, currency: CurrencyCode, fxFactor: number) => void;
 
   addHolding: (planId: string, holding: Holding) => void;
   updateHolding: (
@@ -145,8 +150,11 @@ const touch = (plan: Plan, mutate: (p: Plan) => Plan): Plan => ({
 
 const emptyPlan = (name: string, freeDemo = false, preferredResidence?: Country): Plan => {
   const now = new Date().toISOString();
-  const currency: CurrencyCode = 'USD';
-  const residenceCountry = preferredResidence ?? residenceForCurrency(currency);
+  const residenceCountry = preferredResidence ?? 'US';
+  // Residence picks the currency, never the reverse: the tax engine is the thing
+  // the user actually configures, and a resident's own currency is the sane
+  // default to enter amounts in. Both stay independently editable afterwards.
+  const currency: CurrencyCode = RESIDENCE_CURRENCY[residenceCountry];
   // Free plans start with a single tax-free "My account" sandbox; everyone else starts
   // with one basic taxable account matching the residence, so assets have an
   // envelope and tax is modelled from the start.
@@ -166,10 +174,6 @@ const emptyPlan = (name: string, freeDemo = false, preferredResidence?: Country)
     updatedAt: now,
   };
 };
-
-/** Is this the auto-created default base account (locked, taxable, auto)? */
-const isDefaultBase = (a: Account): boolean =>
-  a.custom === false && a.kind === 'taxable' && a.taxMode === 'auto';
 
 export const createPlansSlice =
   (initialPlans: Plan[] = [createSeedPlan()]): StateCreator<PlansSlice, [], [], PlansSlice> =>
@@ -224,22 +228,10 @@ export const createPlansSlice =
         ),
       })),
 
-    setPlanCurrency: (id, currency) =>
+    setPlanCurrency: (id, currency, fxFactor) =>
       set((s) => ({
         plans: s.plans.map((p) =>
-          p.id === id
-            ? touch(p, (x) => {
-                // Currency implies a tax residence; re-point the sole default base
-                // account to the new country (keep its id so holdings stay assigned).
-                const residenceCountry = residenceForCurrency(currency);
-                const sole = x.accounts.length === 1 ? x.accounts[0] : undefined;
-                const accounts =
-                  sole && isDefaultBase(sole)
-                    ? [{ ...sole, ...BASE_TAXABLE_PRESET[residenceCountry] }]
-                    : x.accounts;
-                return { ...x, currency, residenceCountry, accounts };
-              })
-            : p,
+          p.id === id ? touch(p, (x) => ({ ...rescalePlanAmounts(x, fxFactor), currency })) : p,
         ),
       })),
 

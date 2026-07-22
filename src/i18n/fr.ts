@@ -351,6 +351,8 @@ export const fr: Resources = {
   },
   plan: {
     currency: 'Devise',
+    currencyRatesUnavailable:
+      'Les taux de change sont indisponibles : les montants du plan ne peuvent pas être convertis. Réessayez dans un instant.',
     notFound: 'Ce plan est introuvable. Il a peut-être été supprimé.',
     fxIncomplete:
       'Aucun taux de change disponible pour {{currencies}} : ce plan ne peut pas être valorisé. Les montants sont masqués plutôt qu’affichés dans des devises mélangées. Réessayez dans un instant.',

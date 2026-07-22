@@ -107,42 +107,64 @@ describe('createPlan', () => {
 });
 
 describe('setPlanCurrency', () => {
-  it('re-points the sole default base account to the new residence, keeping its id', () => {
+  it('leaves the tax residence and the accounts alone', () => {
     const store = makeStore();
-    const id = store.getState().createPlan();
+    const id = store.getState().createPlan('Test', false, 'US');
     const before = store.getState().plans.find((p) => p.id === id)!;
-    const accountId = before.accounts[0]!.id;
 
-    store.getState().setPlanCurrency(id, 'EUR');
+    store.getState().setPlanCurrency(id, 'EUR', 0.92);
 
     const after = store.getState().plans.find((p) => p.id === id)!;
     expect(after.currency).toBe('EUR');
-    expect(after.residenceCountry).toBe('FR');
-    expect(after.accounts[0]!.id).toBe(accountId);
-    expect(after.accounts[0]!.name).toBe('CTO (France)');
-    expect(after.accounts[0]!.sourceCountry).toBe('FR');
-  });
-
-  it('leaves accounts untouched when the sole account is a custom one', () => {
-    const store = makeStore();
-    const id = store.getState().createPlan('Free', true); // tax-free custom sandbox
-    const before = store.getState().plans.find((p) => p.id === id)!;
-
-    store.getState().setPlanCurrency(id, 'EUR');
-
-    const after = store.getState().plans.find((p) => p.id === id)!;
-    expect(after.currency).toBe('EUR');
+    expect(after.residenceCountry).toBe('US');
     expect(after.accounts).toEqual(before.accounts);
   });
 
-  it('leaves accounts untouched when the plan has several accounts', () => {
+  it('rescales every amount the plan stores in its own currency', () => {
     const store = makeStore();
-    const plan = store.getState().plans[0]!; // seed plan: 3 accounts
+    const id = store.getState().createPlan('Test', false, 'US');
+    store.getState().updateSettings(id, {
+      ...store.getState().plans.find((p) => p.id === id)!.settings,
+      annualSpending: 60_000,
+      expensesIncomes: [
+        {
+          id: 'pension',
+          name: 'Pension',
+          amount: 20_000,
+          year: 2040,
+          kind: 'income',
+          taxableAmounts: { 2040: 15_000 },
+        },
+      ],
+    });
+    store.getState().setHome(id, {
+      id: 'home',
+      name: 'Home',
+      currentValue: 500_000,
+      appreciationPct: 2,
+      mortgage: { balance: 200_000, ratePct: 3, termYearsRemaining: 20 },
+    });
 
-    store.getState().setPlanCurrency(plan.id, 'EUR');
+    store.getState().setPlanCurrency(id, 'EUR', 0.92);
 
-    const after = store.getState().plans.find((p) => p.id === plan.id)!;
-    expect(after.accounts).toEqual(plan.accounts);
+    const after = store.getState().plans.find((p) => p.id === id)!;
+    expect(after.settings.annualSpending).toBe(55_200);
+    expect(after.settings.expensesIncomes![0]!.amount).toBe(18_400);
+    expect(after.settings.expensesIncomes![0]!.taxableAmounts).toEqual({ 2040: 13_800 });
+    expect(after.home!.currentValue).toBe(460_000);
+    expect(after.home!.mortgage!.balance).toBe(184_000);
+  });
+
+  it('relabels without converting when the factor is 1', () => {
+    const store = makeStore();
+    const id = store.getState().createPlan('Test', false, 'US');
+    const before = store.getState().plans.find((p) => p.id === id)!;
+
+    store.getState().setPlanCurrency(id, 'EUR', 1);
+
+    const after = store.getState().plans.find((p) => p.id === id)!;
+    expect(after.currency).toBe('EUR');
+    expect(after.settings).toEqual(before.settings);
   });
 });
 
