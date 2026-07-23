@@ -45,8 +45,4 @@ jobs:
       - uses: vercel/repository-dispatch/actions/status@v1
         if: ${{ !cancelled() }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          state: ${{ job.status == 'success' && 'success' || 'failure' }}
-          context: "Post-deploy smoke"
-          description: "Playwright smoke against the new deployment"
-          sha: ${{ github.event.client_payload.git.sha }}
+          name: "Vercel - runaway: smoke"
