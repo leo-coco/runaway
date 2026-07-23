@@ -8,7 +8,12 @@ import { useAppStore } from '@/store';
 import { ageInYear, lifeExpectancyYear } from '@/domain/retirementSettings';
 import { successStatus } from '@/domain/successRate';
 import { DEFAULT_MC_OPTIONS, buildMonteCarloInput } from '@/services/monteCarlo';
-import { neutralLevers, type ActiveLeverKey, type Levers } from '@/services/goalSeek';
+import {
+  leversToHoldingPatches,
+  neutralLevers,
+  type ActiveLeverKey,
+  type Levers,
+} from '@/services/goalSeek';
 import { useGoalSeekBalance, useGoalSeekEval } from '@/hooks/useGoalSeekWorker';
 import type { RatesTable } from '@/services/currencyService';
 import type { Plan } from '@/domain/plan';
@@ -39,7 +44,8 @@ const META_BY_KEY = Object.fromEntries(META.map((m) => [m.key, m])) as Record<
   (typeof META)[number]
 >;
 
-// Two groups: levers that commit to the plan, and exploratory ones (holdings).
+// Two groups: plan-level settings, and portfolio-level moves. Both now commit
+// for real on Apply — this is a UI grouping, not a preview/commit distinction.
 const SECTIONS: { titleKey: string; hintKey: string; keys: ActiveLeverKey[] }[] = [
   {
     titleKey: 'goalSeek.appliedTitle',
@@ -74,6 +80,7 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const updateHolding = useAppStore((s) => s.updateHolding);
 
   const base = useMemo(() => {
     const startYear = new Date().getFullYear();
@@ -144,6 +151,7 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
   });
   const { balancing, error: balanceError, solve } = useGoalSeekBalance();
   const [note, setNote] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const draftTimer = useRef<number | null>(null);
   const refineTimer = useRef<number | null>(null);
   const lastComputed = useRef<Levers>(neutral); // the levers reflected in `solos`
@@ -229,12 +237,15 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
     setLevers(neutral);
   };
 
-  const apply = () => {
+  const holdingPatches = leversToHoldingPatches(plan, rates, base.input, levers);
+
+  const confirmApply = () => {
     updateSettings(plan.id, {
       ...plan.settings,
       annualSpending: Math.round(levers.spending),
       retirementYear: plan.settings.retirementYear + Math.round(levers.retireDelayYears),
     });
+    holdingPatches.forEach(({ holdingId, patch }) => updateHolding(plan.id, holdingId, patch));
     onClose();
   };
 
@@ -254,7 +265,12 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
   const sumSolo = META.reduce((s, m) => s + solos[m.key], 0);
   const span = Math.max(0, cur - baseline);
   const segW = (k: ActiveLeverKey) => (sumSolo > 1e-6 ? (solos[k] / sumSolo) * span : 0);
-  const dirty = levers.extraMonthlySavings > 0 || levers.extraCapital > 0;
+  const changedLevers = META.filter((m) => {
+    if (m.key === 'spending') return levers.spending < bounds.baseSpending;
+    if (m.key === 'retireDelayYears') return levers.retireDelayYears > 0;
+    if (m.key === 'extraMonthlySavings') return levers.extraMonthlySavings > 0;
+    return levers.extraCapital > 0;
+  });
 
   const sliderConf = (key: ActiveLeverKey) => {
     if (key === 'spending')
@@ -303,6 +319,45 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
       : t('goalSeek.noChange');
   };
 
+  if (confirming) {
+    return (
+      <Modal
+        title={t('goalSeek.confirmTitle')}
+        description={t('goalSeek.confirmDesc')}
+        onClose={onClose}
+        wide
+        footer={
+          <>
+            <Button onClick={() => setConfirming(false)}>{t('goalSeek.confirmCancel')}</Button>
+            <Button variant="primary" onClick={confirmApply}>
+              {t('goalSeek.confirmApply')}
+            </Button>
+          </>
+        }
+      >
+        <div className="gs-levers">
+          {changedLevers.map((m) => (
+            <div className="gs-lever" key={m.key}>
+              <div className="gs-lever__head">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="gs-dot" style={{ background: m.color }} />
+                  {t(m.labelKey)}
+                </span>
+                <b>{valueText(m.key)}</b>
+              </div>
+              {(m.key === 'extraMonthlySavings' || m.key === 'extraCapital') && (
+                <p className="field__hint" style={{ margin: 0 }}>
+                  {t('goalSeek.confirmHoldingsCount', { count: holdingPatches.length })}
+                </p>
+              )}
+            </div>
+          ))}
+          {changedLevers.length === 0 && <p className="field__hint">{t('goalSeek.noChange')}</p>}
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       title={t('goalSeek.title')}
@@ -315,7 +370,7 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
           <Button onClick={balance} disabled={balancing}>
             {balancing ? t('goalSeek.balancing') : t('goalSeek.balanceToTarget')}
           </Button>
-          <Button variant="primary" onClick={apply}>
+          <Button variant="primary" onClick={() => setConfirming(true)}>
             {t('goalSeek.applyMix')}
           </Button>
         </>
@@ -476,10 +531,7 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
           {note ?? balanceError}
         </p>
       )}
-      <p className="field__hint">
-        {t('goalSeek.bottomHint')}
-        {dirty ? t('goalSeek.bottomHintDirty') : ''}
-      </p>
+      <p className="field__hint">{t('goalSeek.bottomHint')}</p>
     </Modal>
   );
 };
