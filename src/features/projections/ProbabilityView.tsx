@@ -335,6 +335,10 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
       ? t(`assetClass.${assetClass as AssetClass}`)
       : assetClass.replaceAll('_', ' ');
   };
+  const resolveAssetClass = (assetClass: string | undefined): AssetClass =>
+    (ASSET_CLASSES as readonly string[]).includes(assetClass ?? '')
+      ? (assetClass as AssetClass)
+      : 'other';
 
   return (
     <div className="prob-view">
@@ -930,7 +934,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                       const returnOverridden = draft?.mcExpectedReturnPct !== undefined;
                       const volDefault =
                         hid !== undefined
-                          ? volatilityFor(a.assetClass, a.symbol ?? '')
+                          ? volatilityFor(resolveAssetClass(a.assetClass), a.symbol ?? '')
                           : a.sigmaPct;
                       const returnValue =
                         draft?.mcExpectedReturnPct ?? holding?.expectedCagrPct ?? a.driftPct;
@@ -1063,7 +1067,10 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                                 ? 1
                                 : (draftCorrelationOverrides[correlationKey(idA, idB)] ??
                                   (assetA && assetB
-                                    ? classCorrelation(assetA.assetClass, assetB.assetClass)
+                                    ? classCorrelation(
+                                        resolveAssetClass(assetA.assetClass),
+                                        resolveAssetClass(assetB.assetClass),
+                                      )
                                     : liveC));
                             const editable =
                               editingCorrelations &&
