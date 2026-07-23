@@ -201,7 +201,7 @@ test('critical journey: sign in, plan, dashboard, projection, portfolio, simulat
     // Wait on `.or()` rather than branching on a count: the simulation runs in a
     // worker, so an immediate count would race it and see neither state.
     await gotoSection(page, planId, 'monte-carlo');
-    const verdict = page.locator('.prob-success-card__value .hero__big');
+    const verdict = page.locator('.prob-success-card .mc-donut__pct');
     const upsell = page.locator('.upgrade-card');
     await expect(verdict.or(upsell).first()).toBeVisible();
     if (await verdict.isVisible()) {
