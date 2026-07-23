@@ -1,5 +1,8 @@
 import { ASSET_CLASSES, type AssetClass } from '@/domain/assetClass';
 import { classCorrelation } from '@/domain/volatility';
+import type { Holding } from '@/domain/asset';
+import type { Plan } from '@/domain/plan';
+import { convertChecked, type RatesTable } from './currencyService';
 import {
   runMonteCarlo,
   type MonteCarloAsset,
@@ -136,6 +139,78 @@ export const applyLevers = (
     retirementHorizon: Math.max(1, baseOpts.retirementHorizon - delay),
   };
   return { input, options };
+};
+
+export interface HoldingPatch {
+  readonly holdingId: string;
+  readonly patch: Partial<Pick<Holding, 'quantity' | 'costBasis' | 'monthlyContribution'>>;
+}
+
+/**
+ * Real portfolio patches for the `extraCapital`/`extraMonthlySavings` levers,
+ * using the same drawable-weighted split {@link applyLevers} uses for the
+ * preview — so what "Apply" commits matches what the success-rate preview showed.
+ */
+export const leversToHoldingPatches = (
+  plan: Plan,
+  rates: RatesTable | undefined,
+  baseInput: MonteCarloInput,
+  levers: Levers,
+): readonly HoldingPatch[] => {
+  const capital = Math.max(0, levers.extraCapital);
+  const extraAnnualSavings = Math.max(0, levers.extraMonthlySavings) * 12;
+  if (capital <= 0 && extraAnnualSavings <= 0) return [];
+
+  const drawable = baseInput.assets.filter(isDrawable);
+  const drawableStart = drawable.reduce((s, a) => s + a.startValue, 0);
+  const weightOf = (a: MonteCarloAsset): number => {
+    if (drawableStart > 0) return a.startValue / drawableStart;
+    return drawable.length > 0 ? 1 / drawable.length : 0;
+  };
+
+  const patches: HoldingPatch[] = [];
+  for (const a of drawable) {
+    if (!a.holdingId) continue;
+    const holding = plan.holdings.find((h) => h.id === a.holdingId);
+    if (!holding) continue;
+    const w = weightOf(a);
+    if (w <= 0) continue;
+
+    const native = holding.instrument.nativeCurrency;
+    const toNative = (planAmount: number) =>
+      native === plan.currency || !rates
+        ? planAmount
+        : convertChecked(planAmount, plan.currency, native, rates);
+
+    let quantity: number | undefined;
+    let costBasis: number | undefined;
+    if (capital > 0) {
+      const deltaQty = holding.pricePerUnit > 0 ? toNative(capital * w) / holding.pricePerUnit : 0;
+      if (deltaQty > 0) {
+        quantity = holding.quantity + deltaQty;
+        if (holding.costBasis !== undefined) {
+          costBasis =
+            (holding.costBasis * holding.quantity + holding.pricePerUnit * deltaQty) / quantity;
+        }
+      }
+    }
+    let monthlyContribution: number | undefined;
+    if (extraAnnualSavings > 0) {
+      const deltaMonthly = toNative((extraAnnualSavings * w) / 12);
+      if (deltaMonthly > 0) monthlyContribution = holding.monthlyContribution + deltaMonthly;
+    }
+    if (quantity !== undefined || monthlyContribution !== undefined) {
+      patches.push({
+        holdingId: holding.id,
+        patch: {
+          ...(quantity !== undefined && { quantity }),
+          ...(costBasis !== undefined && { costBasis }),
+          ...(monthlyContribution !== undefined && { monthlyContribution }),
+        },
+      });
+    }
+  }
+  return patches;
 };
 
 /** Monte Carlo success rate (0..1) for a given lever combination. */

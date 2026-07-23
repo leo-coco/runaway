@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { Holding } from '@/domain/asset';
+import type { Plan } from '@/domain/plan';
 import { DEFAULT_MC_OPTIONS, type MonteCarloInput } from './monteCarlo';
+import type { RatesTable } from './currencyService';
 import {
   applyLevers,
   balanceToTarget,
   evalSuccess,
+  leversToHoldingPatches,
   neutralLevers,
   type ActiveLeverKey,
   type Levers,
@@ -256,5 +260,143 @@ describe('balanceToTarget', () => {
     const r = balanceToTarget(baseInput(), baseOpts, 0.99, allLocked, neutral, bounds, ITERS);
     expect(r.reached).toBe(false);
     expect(r.levers).toEqual(neutral);
+  });
+});
+
+describe('leversToHoldingPatches', () => {
+  const mkHolding = (over: Partial<Holding> & { id: string; nativeCurrency?: string }): Holding =>
+    ({
+      id: over.id,
+      instrument: {
+        id: over.id,
+        symbol: over.id,
+        name: over.id,
+        assetClass: 'us_equity',
+        exchange: 'NASDAQ',
+        nativeCurrency: over.nativeCurrency ?? 'USD',
+      },
+      quantity: over.quantity ?? 0,
+      pricePerUnit: over.pricePerUnit ?? 1,
+      expectedCagrPct: 7,
+      monthlyContribution: over.monthlyContribution ?? 0,
+      accountId: 'a',
+      costBasis: over.costBasis,
+    }) as unknown as Holding;
+
+  const mkPlan = (holdings: Holding[], currency = 'USD'): Plan =>
+    ({ id: 'p', currency, holdings }) as unknown as Plan;
+
+  // h1: 100k @ $100/unit (1000 units); h2: 400k @ $50/unit (8000 units) — 20/80 split.
+  const h1 = mkHolding({ id: 'h1', quantity: 1_000, pricePerUnit: 100 });
+  const h2 = mkHolding({ id: 'h2', quantity: 8_000, pricePerUnit: 50, monthlyContribution: 100 });
+  const assetsFor = (holdings: Holding[]) =>
+    holdings.map((h) => ({
+      startValue: h.quantity * h.pricePerUnit,
+      driftPct: 7,
+      sigmaPct: 15,
+      annualContribution: h.monthlyContribution * 12,
+      accountId: h.accountId,
+      holdingId: h.id,
+      drawable: (h as unknown as { drawable?: boolean }).drawable,
+    }));
+  const input = (holdings: Holding[]): MonteCarloInput => ({
+    ...baseInput(),
+    assets: assetsFor(holdings),
+  });
+
+  it('splits extra capital pro-rata by drawable value and converts to units', () => {
+    const plan = mkPlan([h1, h2]);
+    const patches = leversToHoldingPatches(
+      plan,
+      undefined,
+      input([h1, h2]),
+      lev({ extraCapital: 100_000 }),
+    );
+    expect(patches).toHaveLength(2);
+    const p1 = patches.find((p) => p.holdingId === 'h1')!;
+    const p2 = patches.find((p) => p.holdingId === 'h2')!;
+    // 20% of 100k = 20k -> +200 units on h1 ($100/unit); 80% = 80k -> +1600 units on h2 ($50/unit).
+    expect(p1.patch.quantity).toBeCloseTo(1_000 + 200, 6);
+    expect(p2.patch.quantity).toBeCloseTo(8_000 + 1_600, 6);
+  });
+
+  it('splits extra monthly savings pro-rata and adds to monthlyContribution', () => {
+    const plan = mkPlan([h1, h2]);
+    const patches = leversToHoldingPatches(
+      plan,
+      undefined,
+      input([h1, h2]),
+      lev({ extraMonthlySavings: 1_000 }),
+    );
+    const p1 = patches.find((p) => p.holdingId === 'h1')!;
+    const p2 = patches.find((p) => p.holdingId === 'h2')!;
+    expect(p1.patch.monthlyContribution).toBeCloseTo(0 + 200, 6); // 20% of 1000
+    expect(p2.patch.monthlyContribution).toBeCloseTo(100 + 800, 6); // 100 + 80% of 1000
+  });
+
+  it('recomputes a weighted-average cost basis when one was already set', () => {
+    const withBasis = mkHolding({ id: 'h1', quantity: 1_000, pricePerUnit: 100, costBasis: 80 });
+    const plan = mkPlan([withBasis]);
+    const patches = leversToHoldingPatches(
+      plan,
+      undefined,
+      input([withBasis]),
+      lev({ extraCapital: 20_000 }),
+    );
+    const p1 = patches[0]!;
+    // +200 units bought at $100 (current price): (80*1000 + 100*200) / 1200 = 83.33
+    expect(p1.patch.costBasis).toBeCloseTo((80 * 1_000 + 100 * 200) / 1_200, 4);
+  });
+
+  it('never emits costBasis when the holding had none set', () => {
+    const plan = mkPlan([h1]);
+    const patches = leversToHoldingPatches(
+      plan,
+      undefined,
+      input([h1]),
+      lev({ extraCapital: 20_000 }),
+    );
+    expect(patches[0]!.patch.costBasis).toBeUndefined();
+  });
+
+  it('skips illiquid holdings, same as the preview', () => {
+    const illiquid = { ...h2, drawable: false } as unknown as Holding;
+    const plan = mkPlan([h1, illiquid]);
+    const assets = assetsFor([h1, illiquid]).map((a, i) => ({
+      ...a,
+      drawable: i === 1 ? false : true,
+    }));
+    const patches = leversToHoldingPatches(
+      plan,
+      undefined,
+      { ...baseInput(), assets },
+      lev({ extraCapital: 100_000 }),
+    );
+    expect(patches).toHaveLength(1);
+    expect(patches[0]!.holdingId).toBe('h1');
+  });
+
+  it('converts amounts through the rates table when the holding is in a different currency', () => {
+    const eurHolding = mkHolding({
+      id: 'h1',
+      quantity: 1_000,
+      pricePerUnit: 90, // native EUR price
+      nativeCurrency: 'EUR',
+    });
+    const plan = mkPlan([eurHolding], 'USD');
+    const table: RatesTable = { base: 'USD', rates: { USD: 1, EUR: 0.9 }, asOf: 0 };
+    const patches = leversToHoldingPatches(
+      plan,
+      table,
+      input([eurHolding]),
+      lev({ extraCapital: 10_000 }),
+    );
+    // $10,000 plan-currency -> €9,000 native -> 9000/90 = 100 units.
+    expect(patches[0]!.patch.quantity).toBeCloseTo(1_000 + 100, 6);
+  });
+
+  it('returns nothing for neutral levers', () => {
+    const plan = mkPlan([h1, h2]);
+    expect(leversToHoldingPatches(plan, undefined, input([h1, h2]), neutral)).toEqual([]);
   });
 });
