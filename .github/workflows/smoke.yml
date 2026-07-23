@@ -1,21 +1,29 @@
 name: Post-deploy smoke
 
-# Vercel's Git integration creates GitHub Deployments and emits a
-# `deployment_status` event when a deploy finishes. We run the Playwright smoke
-# against the deployed URL once a Production deploy reports success. A failure
-# turns this check red on the deployment so a bad release is caught immediately.
+# Vercel's Git integration dispatches a `vercel.deployment.ready`
+# repository_dispatch event once a deployment is built but before it is
+# promoted/aliased to a custom domain. We run the Playwright smoke against that
+# deployment's URL and publish the result as a commit status via
+# vercel/repository-dispatch/actions/status@v1. Vercel's "Deployment Checks"
+# setting (Project Settings > Build & Deployment) is configured to require this
+# check before it will alias the production domain to the new deployment, so a
+# failure here blocks the release instead of merely flagging it after the fact.
 on:
-  deployment_status
+  repository_dispatch:
+    types: [vercel.deployment.ready]
+
+permissions:
+  contents: read
+  statuses: write
 
 jobs:
   smoke:
-    # Only production deploys, and only after they succeed.
-    if: >-
-      github.event.deployment_status.state == 'success' &&
-      github.event.deployment_status.environment == 'Production'
+    if: github.event.client_payload.environment == 'production'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.client_payload.git.sha }}
       - uses: actions/setup-node@v6
         with:
           node-version: "22.12.0"
@@ -24,7 +32,7 @@ jobs:
       - run: npm run test:e2e
         env:
           CI: "true"
-          SMOKE_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          SMOKE_BASE_URL: ${{ github.event.client_payload.url }}
           SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
           SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
@@ -34,3 +42,11 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+      - uses: vercel/repository-dispatch/actions/status@v1
+        if: ${{ !cancelled() }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          state: ${{ job.status == 'success' && 'success' || 'failure' }}
+          context: "Post-deploy smoke"
+          description: "Playwright smoke against the new deployment"
+          sha: ${{ github.event.client_payload.git.sha }}
