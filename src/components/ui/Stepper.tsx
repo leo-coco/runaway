@@ -20,6 +20,8 @@ interface StepperProps {
   disabled?: boolean;
   /** Place the decrement button before the value and the increment button after it. */
   splitButtons?: boolean;
+  /** Called after the current draft is committed with the Enter key. */
+  onEnter?: () => void;
 }
 
 /**
@@ -40,6 +42,7 @@ export const Stepper = ({
   compact = false,
   disabled = false,
   splitButtons = false,
+  onEnter,
 }: StepperProps) => {
   const [draft, setDraft] = useState(String(value));
   // Sync the editable draft when the controlled value changes externally,
@@ -96,7 +99,14 @@ export const Stepper = ({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key !== 'Enter') return;
+          if (onEnter) {
+            e.preventDefault();
+            commit(e.currentTarget.value);
+            onEnter();
+          } else {
+            e.currentTarget.blur();
+          }
         }}
       />
       {suffix && <span className="stepper__suffix">{suffix}</span>}

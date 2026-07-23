@@ -398,6 +398,7 @@ export const fr: Resources = {
     colValue: 'Valeur',
     colRoi: 'Rendement',
     allocation: 'Répartition',
+    addNewAsset: 'Ajouter un nouvel actif',
     simulating: 'Simulation…',
     fundedIn:
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
@@ -563,10 +564,13 @@ export const fr: Resources = {
     seriesSurvival: 'Survie',
     retirement: 'Retraite {{year}}',
     retirementAge: 'Retraite {{year}} ({{age}} ans)',
+    retirementAgeOnly: 'Retraite {{age}} ans',
     planEnds: 'Fin du plan {{year}}',
     planEndsAge: 'Fin du plan {{year}} ({{age}} ans)',
+    planEndsAgeOnly: 'Fin du plan {{age}} ans',
     depletion: 'Épuisement {{year}}',
     depletionAge: 'Épuisement {{year}} ({{age}} ans)',
+    depletionAgeOnly: 'Épuisement {{age}} ans',
     legendOpening: 'Solde d’ouverture',
     legendClosing: 'Solde de clôture',
     yearsValue: '{{years}} ans',
@@ -1362,6 +1366,8 @@ export const fr: Resources = {
     fadeToggle: 'Atténuer les CAGR',
     fadeHint:
       'Les actifs dont le CAGR dépasse {{target}} % convergent progressivement vers {{target}} % par an sur {{years}} ans, puis restent à ce taux. Les actifs déjà à ce niveau ou en dessous ne changent pas.',
+    fadeHintDisabled:
+      'Sans effet avec le modèle {{model}} : la dérive de chaque actif volatil vient d’une moyenne historique au lieu de votre CAGR, il n’y a donc aucun CAGR à atténuer. Passez à un modèle qui respecte votre CAGR (Normale, Queues lourdes, Alerte krach, Motif historique, ou Cohorte historique) pour l’utiliser.',
     top25: 'Top 25 %',
     median: 'Médiane',
     bottom25: 'Bottom 25 %',
@@ -1421,6 +1427,11 @@ export const fr: Resources = {
     colClass: 'Classe',
     colStartValue: 'Valeur initiale',
     colExpectedReturn: 'Rendement attendu',
+    driftUserCagr: 'votre CAGR : {{value}} %',
+    driftOverrideTitle:
+      'Vous avez saisi un CAGR de {{userCagr}} %, mais {{source}} le remplace par {{effective}} % pour ce modèle.',
+    driftSourceClass2001: 'la moyenne historique 2001-2024 de la classe d’actifs',
+    driftSourceClass1928: 'la moyenne historique 1928-2024 de la classe d’actifs',
     colVolatility: 'Volatilité (±1σ · modifiable)',
     colAnnualContribution: 'Contribution annuelle',
     colAccount: 'Compte',

@@ -32,6 +32,7 @@ import {
   DEFAULT_MC_OPTIONS,
   MODEL_PARAMS,
   buildMonteCarloInput,
+  effectiveDriftPct,
   isBitcoinSymbol,
   type MonteCarloOptions,
   type TrialOutcomeCategory,
@@ -45,6 +46,12 @@ import { SimulationMethodology } from './SimulationDataSourcesModal';
 import { GoalSeekModal } from './GoalSeekModal';
 import { TrialExplorerModal } from './TrialExplorerModal';
 import { AxisModeSwitch } from './AxisModeSwitch';
+import {
+  buildLandmarkTicks,
+  ImportantYearTick,
+  LANDMARK_COLOR,
+  LandmarkLabel,
+} from './ChartLandmarks';
 
 interface Props {
   plan: Plan;
@@ -149,6 +156,10 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
   // The matrix is still shown under a replay model (it documents the class
   // defaults) but is read-only: editing it there would change nothing.
   const correlationLive = usesCorrelationMatrix(model);
+  // Both models substitute a hardcoded historical class average for the drift of
+  // any asset with nonzero volatility (see effectiveDriftPct in monteCarlo.ts), so
+  // the user's CAGR — and therefore its fade — never enters the calculation.
+  const fadeIgnoredByModel = model === 'historical-real' || model === 'bootstrap-uncentered';
   const setModel = (m: MonteCarloModel) =>
     updateSettings(plan.id, { ...plan.settings, monteCarloModel: m });
   const histStartYear = plan.settings.histStartYear;
@@ -201,6 +212,12 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
     v50: p.p50,
     v75: p.p75,
   }));
+  const medianDryYear =
+    result?.percentiles.find((p) => p.year >= result.retirementYear && p.p50 <= 0.5)?.year ?? null;
+  const fanXAxisTicks = buildLandmarkTicks(
+    fanData.map(({ year }) => year),
+    [retirementYear, endYear, ...(medianDryYear === null ? [] : [medianDryYear])],
+  );
 
   const sx = result ? successStatus(result.successRate) : null;
 
@@ -211,11 +228,10 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
     result?.percentiles.find((p) => p.year === horizonEndYear) ??
     result?.percentiles.at(-1) ??
     null;
-  const medianDryYear =
-    result?.percentiles.find((p) => p.year >= result.retirementYear && p.p50 <= 0.5)?.year ?? null;
-
   // Inspector data: the assumptions used for both the "view data" table and the
   // trial explorer modal.
+  /* eslint-disable react-hooks/preserve-manual-memoization -- buildMonteCarloInput is intentionally
+     cached here; the compiler cannot prove that the plan/rates inputs remain immutable. */
   const inspector = useMemo(() => {
     if (!hasAssets) return null;
     const horizonYears = Math.max(1, endYear - startYear);
@@ -231,6 +247,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
     };
     return { input, options };
   }, [hasAssets, plan, rates, startYear, endYear, retirementYear, monteCarlo.seed]);
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   const accountName = (id: string | null): string =>
     id === null
@@ -343,7 +360,17 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                       <CartesianGrid stroke="var(--border)" vertical={false} />
                       <XAxis
                         dataKey="year"
-                        tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
+                        tick={
+                          <ImportantYearTick
+                            importantYears={[retirementYear, endYear]}
+                            dangerYears={medianDryYear === null ? [] : [medianDryYear]}
+                            firstYear={fanData[0]?.year ?? retirementYear}
+                            lastYear={fanData.at(-1)?.year ?? endYear}
+                            formatter={xAxisTickFormatter}
+                          />
+                        }
+                        ticks={fanXAxisTicks}
+                        interval={0}
                         stroke="var(--border)"
                         minTickGap={40}
                         tickFormatter={xAxisTickFormatter}
@@ -360,37 +387,57 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                       />
                       <ReferenceLine
                         x={retirementYear}
-                        stroke="var(--text-dim)"
+                        stroke={LANDMARK_COLOR}
                         strokeDasharray="4 4"
-                        label={{
-                          value: t('projChart.retirement', { year: retirementYear }),
-                          fill: 'var(--text-dim)',
-                          fontSize: 10,
-                          position: 'insideTopLeft',
-                        }}
+                        label={
+                          <LandmarkLabel
+                            value={
+                              showAge
+                                ? t('projChart.retirementAgeOnly', {
+                                    age: ageAt(retirementYear),
+                                  })
+                                : t('projChart.retirement', { year: retirementYear })
+                            }
+                            align="left"
+                            verticalAlign="top"
+                          />
+                        }
                       />
                       <ReferenceLine
                         x={endYear}
-                        stroke="#5eead4"
+                        stroke={LANDMARK_COLOR}
                         strokeDasharray="4 4"
-                        label={{
-                          value: t('projChart.planEnds', { year: endYear }),
-                          fill: '#5eead4',
-                          fontSize: 10,
-                          position: 'insideTopRight',
-                        }}
+                        label={
+                          <LandmarkLabel
+                            value={
+                              showAge
+                                ? t('projChart.planEndsAgeOnly', { age: ageAt(endYear) })
+                                : t('projChart.planEnds', { year: endYear })
+                            }
+                            align="right"
+                            verticalAlign="top"
+                          />
+                        }
                       />
                       {medianDryYear !== null && (
                         <ReferenceLine
                           x={medianDryYear}
-                          stroke={FAN_RED}
+                          stroke="var(--danger)"
                           strokeDasharray="6 4"
-                          label={{
-                            value: `Median dry ${medianDryYear}`,
-                            fill: FAN_RED,
-                            fontSize: 10,
-                            position: 'top',
-                          }}
+                          label={
+                            <LandmarkLabel
+                              value={
+                                showAge
+                                  ? t('projChart.depletionAgeOnly', {
+                                      age: ageAt(medianDryYear),
+                                    })
+                                  : t('projChart.depletion', { year: medianDryYear })
+                              }
+                              align="left"
+                              verticalAlign="middle"
+                              tone="danger"
+                            />
+                          }
                         />
                       )}
                       {/* Central likely range (p25–p75), then the red downside tail
@@ -668,18 +715,23 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   </div>
 
                   <div className="mc-option">
-                    <label className="mc-switch">
-                      <input
-                        type="checkbox"
-                        checked={fadeCfg.enabled}
-                        onChange={(e) => setFade(e.target.checked)}
-                      />
-                      <span>{t('mc.fadeToggle')}</span>
+                    <label className={cn('mc-switch', fadeIgnoredByModel && 'is-disabled')}>
+                      <span className="mc-switch__control">
+                        <input
+                          type="checkbox"
+                          checked={fadeCfg.enabled}
+                          disabled={fadeIgnoredByModel}
+                          onChange={(e) => setFade(e.target.checked)}
+                        />
+                        <span>{t('mc.fadeToggle')}</span>
+                      </span>
                       <span className="mc-tip mc-tip--right" role="tooltip">
-                        {t('mc.fadeHint', {
-                          target: fadeCfg.targetPct,
-                          years: fadeCfg.years,
-                        })}
+                        {fadeIgnoredByModel
+                          ? t('mc.fadeHintDisabled', { model: t(`modelName.${model}`) })
+                          : t('mc.fadeHint', {
+                              target: fadeCfg.targetPct,
+                              years: fadeCfg.years,
+                            })}
                       </span>
                     </label>
                   </div>
@@ -745,18 +797,6 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                 min: MODEL_PARAMS.returnCapMinPct,
               })}
             </div>
-            <div className="mc-method-note">
-              <SimulationMethodology
-                assets={inspector.input.assets}
-                model={model}
-                btcCycle={btcCycleOn && hasBtc}
-              />
-              <p className="field__hint" style={{ marginTop: 8 }}>
-                <Link to={`/plan/${plan.id}/methodology`} className="method-link">
-                  {t('methodology.seeFull')}
-                </Link>
-              </p>
-            </div>
             <div className="wo-section-label" style={{ marginTop: 4 }}>
               {t('mc.dataPerAsset')}
             </div>
@@ -782,12 +822,38 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                     const overridden =
                       hid !== undefined &&
                       plan.holdings.find((h) => h.id === hid)?.volatilityPct !== undefined;
+                    const effective = effectiveDriftPct(a, model);
+                    const diverges = Math.abs(effective.pct - a.driftPct) > 0.05;
                     return (
                       <tr key={i}>
                         <td>{a.symbol ?? `Asset ${i + 1}`}</td>
                         <td>{a.assetClass ?? '—'}</td>
                         <td>{fmt.compact(a.startValue)}</td>
-                        <td>{a.driftPct.toFixed(1)}%</td>
+                        <td>
+                          {diverges ? (
+                            <span
+                              className="mc-drift-cell"
+                              title={t('mc.driftOverrideTitle', {
+                                userCagr: a.driftPct.toFixed(1),
+                                effective: effective.pct.toFixed(1),
+                                source: t(
+                                  effective.source === 'class-history-2001'
+                                    ? 'mc.driftSourceClass2001'
+                                    : 'mc.driftSourceClass1928',
+                                ),
+                              })}
+                            >
+                              <span className="mc-drift-cell__effective">
+                                {effective.pct.toFixed(1)}%
+                              </span>
+                              <span className="mc-drift-cell__user">
+                                {t('mc.driftUserCagr', { value: a.driftPct.toFixed(1) })}
+                              </span>
+                            </span>
+                          ) : (
+                            `${a.driftPct.toFixed(1)}%`
+                          )}
+                        </td>
                         <td>
                           {hid !== undefined ? (
                             <span className="mc-vol-cell">
@@ -829,6 +895,18 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   })}
                 </tbody>
               </table>
+            </div>
+            <div className="mc-method-note">
+              <SimulationMethodology
+                assets={inspector.input.assets}
+                model={model}
+                btcCycle={btcCycleOn && hasBtc}
+              />
+              <p className="field__hint" style={{ marginTop: 8 }}>
+                <Link to={`/plan/${plan.id}/methodology`} className="method-link">
+                  {t('methodology.seeFull')}
+                </Link>
+              </p>
             </div>
 
             {inspector.input.assets.length > 1 && (
