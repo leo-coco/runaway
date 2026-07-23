@@ -99,7 +99,9 @@ export const QuickStart = ({ onExit }: { onExit: () => void }) => {
     const accounts = accountsForDraft(presets, residence);
     const primaryId = accounts[0]!.id;
 
-    setPlanCurrency(plan.id, currency);
+    // Factor 1: the guest is declaring the currency their answers are already in,
+    // not converting a plan they had built in another one.
+    setPlanCurrency(plan.id, currency, 1);
     saveAccountsTaxConfig(plan.id, {
       accounts,
       residenceCountry: residence,

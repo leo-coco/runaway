@@ -5,7 +5,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { colorForSymbol } from '@/lib/assetColors';
 import { gainForHoldings, valueHoldings, type GainSummary } from '@/services/portfolioService';
 import type { HoldingValue } from '@/services/portfolioService';
-import type { Account } from '@/domain/account';
+import { isIlliquidAccount, type Account } from '@/domain/account';
 import type { Holding } from '@/domain/asset';
 import type { Plan } from '@/domain/plan';
 import type { RatesTable } from '@/services/currencyService';
@@ -19,7 +19,7 @@ interface DashboardAssetsCardProps {
 
 interface Group {
   key: string;
-  account: Account | null; // null = unassigned
+  account: Account;
   holdings: readonly Holding[];
   subtotal: number;
   gain: GainSummary;
@@ -41,12 +41,12 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
     [plan.holdings, plan.currency, rates],
   );
 
-  // Group holdings into account sections (accounts in plan order, then Unassigned),
-  // mirroring InvestmentBreakdown so subtotals and gains line up.
+  // Group holdings into account sections (accounts in plan order), mirroring
+  // InvestmentBreakdown so subtotals and gains line up. Every holding is assigned
+  // to an account (the store guarantees it), so there is no "unassigned" section.
   const { groups, valueById } = useMemo(() => {
     const byId = new Map(allValues.map((v) => [v.holdingId, v]));
-    const isKnown = (id: string | null): boolean => plan.accounts.some((a) => a.id === id);
-    const build = (key: string, account: Account | null, holdings: readonly Holding[]): Group => {
+    const build = (key: string, account: Account, holdings: readonly Holding[]): Group => {
       const vals = holdings
         .map((h) => byId.get(h.id))
         .filter((v): v is HoldingValue => v !== undefined);
@@ -61,10 +61,7 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
         plan.holdings.filter((h) => h.accountId === account.id),
       ),
     );
-    const unassigned = plan.holdings.filter((h) => !isKnown(h.accountId));
-    const result = accountGroups.filter((g) => g.holdings.length > 0);
-    if (unassigned.length > 0) result.push(build('__unassigned__', null, unassigned));
-    return { groups: result, valueById: byId };
+    return { groups: accountGroups.filter((g) => g.holdings.length > 0), valueById: byId };
   }, [allValues, plan.holdings, plan.accounts]);
 
   const totalGain = useMemo(
@@ -90,7 +87,9 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
           </div>
 
           {groups.map((g) => {
-            const name = g.account ? g.account.name : t('portfolio.unassigned');
+            const name = isIlliquidAccount(g.account)
+              ? t('addAsset.illiquidBucketName')
+              : g.account.name;
             return (
               <div className="mini-assets__group" key={g.key}>
                 <div className="mini-acct">

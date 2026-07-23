@@ -19,6 +19,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
 import { accountTaxAtSpending } from '@/domain/accountTaxRate';
+import { isIlliquidAccount } from '@/domain/account';
 import { scenarioAdjustmentPts } from '@/domain/scenario';
 import { valueHoldings } from '@/services/portfolioService';
 import { buildProjectionInput } from '@/services/projectionBuilder';
@@ -141,6 +142,13 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
   const setWithdrawalOrder = useAppStore((s) => s.setWithdrawalOrder);
   const [outflowView, setOutflowView] = useState<'flow' | 'yearly'>('yearly');
 
+  // The auto-managed illiquid bucket is never a withdrawal envelope, so it is
+  // excluded from the whole draw-down strategy view (order, chart, optimizer).
+  const envelopes = useMemo(
+    () => plan.accounts.filter((a) => !isIlliquidAccount(a)),
+    [plan.accounts],
+  );
+
   const startYear = new Date().getFullYear();
   const { currentAge, annualSpending, inflationPct, retirementYear } = plan.settings;
   const inflationOn = inflationPct > 0;
@@ -148,10 +156,10 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
 
   // Normalised draw order: stored order (valid ids) then any missing account.
   const order = useMemo(() => {
-    const ids = plan.withdrawalOrder.filter((id) => plan.accounts.some((a) => a.id === id));
-    for (const a of plan.accounts) if (!ids.includes(a.id)) ids.push(a.id);
+    const ids = plan.withdrawalOrder.filter((id) => envelopes.some((a) => a.id === id));
+    for (const a of envelopes) if (!ids.includes(a.id)) ids.push(a.id);
     return ids;
-  }, [plan.withdrawalOrder, plan.accounts]);
+  }, [plan.withdrawalOrder, envelopes]);
 
   // Per-account balance / blended return / tax (for the list + presets). The
   // tax badge uses the engine-faithful rate AT the plan's spending level with
@@ -160,7 +168,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
   const summaries = useMemo(() => {
     const values = valueHoldings(plan.holdings, plan.currency, rates);
     const adj = scenarioAdjustmentPts(plan.scenario, plan.scenario.active);
-    return plan.accounts.map((acc) => {
+    return envelopes.map((acc) => {
       const held = values.filter((v) => v.accountId === acc.id);
       const balance = held.reduce((s, v) => s + v.value, 0);
       const basis = held.reduce(
@@ -188,7 +196,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
     });
   }, [
     plan.holdings,
-    plan.accounts,
+    envelopes,
     plan.scenario,
     plan.currency,
     plan.residenceCountry,
@@ -199,9 +207,9 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
   const summaryById = useMemo(() => new Map(summaries.map((s) => [s.id, s])), [summaries]);
   const colorById = useMemo(() => {
     const m = new Map<string, string>();
-    plan.accounts.forEach((a, i) => m.set(a.id, PALETTE[i % PALETTE.length] ?? '#8b8bf6'));
+    envelopes.forEach((a, i) => m.set(a.id, PALETTE[i % PALETTE.length] ?? '#8b8bf6'));
     return m;
-  }, [plan.accounts]);
+  }, [envelopes]);
 
   // The actual simulation uses the shared projection engine (same as the page).
   const projection = useMemo(
@@ -222,7 +230,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
   const { chartData, emptiesYear } = useMemo(() => {
     const rows = projection.years.map((y) => {
       const row: Record<string, number> = { year: y.year };
-      for (const a of plan.accounts) row[a.id] = 0;
+      for (const a of envelopes) row[a.id] = 0;
       for (const pa of y.perAsset) {
         const accId = accountIdByHolding.get(pa.holdingId) ?? null;
         if (accId && row[accId] !== undefined) row[accId] += pa.value;
@@ -230,7 +238,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
       return row;
     });
     const empties: Record<string, number | null> = {};
-    for (const a of plan.accounts) {
+    for (const a of envelopes) {
       let started = false;
       let year: number | null = null;
       for (const row of rows) {
@@ -241,7 +249,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
       empties[a.id] = year;
     }
     return { chartData: rows, emptiesYear: empties };
-  }, [projection, plan.accounts, accountIdByHolding]);
+  }, [projection, envelopes, accountIdByHolding]);
 
   // Per-account amount withdrawn each year, derived from the balance series and
   // each account's (constant, pro-rata) blended return:
@@ -251,7 +259,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
     const rByAccount = new Map(summaries.map((s) => [s.id, s.returnPct / 100]));
     return chartData.map((row, i) => {
       const out: Record<string, number> = { year: row.year as number };
-      for (const a of plan.accounts) {
+      for (const a of envelopes) {
         if (i === 0) {
           out[a.id] = 0;
           continue;
@@ -265,20 +273,20 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
       }
       return out;
     });
-  }, [chartData, summaries, plan.accounts]);
+  }, [chartData, summaries, envelopes]);
 
   // Sankey: total withdrawn from each account over the horizon, split into the
   // net that funds spending and the tax paid. Shows where retirement money comes
   // from and how much each account leaks to tax under the chosen order.
   const sankey = useMemo(() => {
     const totals = new Map<string, number>();
-    for (const a of plan.accounts) totals.set(a.id, 0);
+    for (const a of envelopes) totals.set(a.id, 0);
     for (const row of outflowData) {
-      for (const a of plan.accounts) {
+      for (const a of envelopes) {
         totals.set(a.id, (totals.get(a.id) ?? 0) + ((row[a.id] as number) ?? 0));
       }
     }
-    const active = plan.accounts
+    const active = envelopes
       .map((a) => ({ a, gross: totals.get(a.id) ?? 0 }))
       .filter((x) => x.gross > 0.5);
 
@@ -309,7 +317,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
     });
 
     return { nodes, links };
-  }, [outflowData, plan.accounts, colorById, summaryById, t]);
+  }, [outflowData, envelopes, colorById, summaryById, t]);
 
   const depletionYear = projection.depletionYear;
   const fullyFunded = depletionYear === null;
@@ -322,7 +330,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
 
   // Best / worst depletion AND lifetime tax across all orderings (≤ 7 accounts).
   const comparison = useMemo(() => {
-    if (plan.accounts.length === 0 || plan.accounts.length > 7) return null;
+    if (envelopes.length === 0 || envelopes.length > 7) return null;
     const metric = (ord: string[]): { deplete: number; tax: number } => {
       const p = project(
         buildProjectionInput(plan, rates, startYear, HORIZON_YEARS, ord),
@@ -337,7 +345,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
     let worst = Infinity;
     let minTax = Infinity;
     let maxTax = -Infinity;
-    for (const perm of permutations(plan.accounts.map((a) => a.id))) {
+    for (const perm of permutations(envelopes.map((a) => a.id))) {
       const m = metric(perm);
       if (m.deplete > best) best = m.deplete;
       if (m.deplete < worst) worst = m.deplete;
@@ -355,7 +363,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
       maxTax,
       currentIsLowestTax: current.tax <= minTax + 0.5,
     };
-  }, [plan, rates, order, startYear, horizonEndYear]);
+  }, [plan, rates, order, startYear, horizonEndYear, envelopes]);
 
   const ranking: AccountRanking[] = summaries.map((s) => ({
     id: s.id,
@@ -421,7 +429,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
         </Button>
       }
     >
-      {plan.accounts.length === 0 ? (
+      {envelopes.length === 0 ? (
         <div className="state-box" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <span>{t('withdrawal.needAccounts')}</span>
           <div>
@@ -611,7 +619,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                       />
                     }
                   />
-                  {plan.accounts.map((a) => (
+                  {envelopes.map((a) => (
                     <Area
                       key={a.id}
                       type="monotone"
@@ -626,7 +634,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
               </ResponsiveContainer>
 
               <div className="legend">
-                {plan.accounts.map((a) => (
+                {envelopes.map((a) => (
                   <span key={a.id}>
                     <i style={{ background: colorById.get(a.id) }} />
                     {a.name}
@@ -728,7 +736,7 @@ export const WithdrawalOrderModal = ({ plan, rates, onClose }: Props) => {
                         />
                       }
                     />
-                    {plan.accounts.map((a) => (
+                    {envelopes.map((a) => (
                       <Bar
                         key={a.id}
                         dataKey={a.id}

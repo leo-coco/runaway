@@ -35,6 +35,12 @@ interface AssetRowProps {
   /** Drag-and-drop to another account: fired when this row starts/ends a drag. */
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  /**
+   * Whether the row can be dragged to another account. Defaults to `true`. The
+   * illiquid bucket sets it `false` — its non-drawable holdings belong to no tax
+   * envelope, so a drag would only snap straight back.
+   */
+  draggable?: boolean;
 }
 
 export const AssetRow = ({
@@ -49,6 +55,7 @@ export const AssetRow = ({
   onRemove,
   onDragStart,
   onDragEnd,
+  draggable = true,
 }: AssetRowProps) => {
   const { t } = useTranslation();
   const planFmt = useCurrencyFormatter(plan.currency);
@@ -116,24 +123,26 @@ export const AssetRow = ({
   return (
     <div className="brow" ref={rowRef}>
       <div className="asset-id">
-        <span
-          className="drag-handle"
-          data-tour={index === 0 ? 'drag-handle' : undefined}
-          draggable
-          role="button"
-          tabIndex={0}
-          aria-label={t('portfolio.dragAria', { symbol: holding.instrument.symbol })}
-          title={t('portfolio.dragTitle')}
-          onDragStart={(e) => {
-            e.dataTransfer.setData('text/plain', holding.id);
-            e.dataTransfer.effectAllowed = 'move';
-            if (rowRef.current) e.dataTransfer.setDragImage(rowRef.current, 16, 16);
-            onDragStart?.();
-          }}
-          onDragEnd={() => onDragEnd?.()}
-        >
-          <DragHandleIcon size={16} />
-        </span>
+        {draggable && (
+          <span
+            className="drag-handle"
+            data-tour={index === 0 ? 'drag-handle' : undefined}
+            draggable
+            role="button"
+            tabIndex={0}
+            aria-label={t('portfolio.dragAria', { symbol: holding.instrument.symbol })}
+            title={t('portfolio.dragTitle')}
+            onDragStart={(e) => {
+              e.dataTransfer.setData('text/plain', holding.id);
+              e.dataTransfer.effectAllowed = 'move';
+              if (rowRef.current) e.dataTransfer.setDragImage(rowRef.current, 16, 16);
+              onDragStart?.();
+            }}
+            onDragEnd={() => onDragEnd?.()}
+          >
+            <DragHandleIcon size={16} />
+          </span>
+        )}
         <span className="asset-badge" style={{ background: color }}>
           {holding.instrument.symbol.slice(0, 1)}
         </span>

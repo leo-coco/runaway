@@ -34,7 +34,6 @@ export const PlanLayout = () => {
   const plansSynced = useAppStore((s) => s.plansSynced);
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
-  const updateSettings = useAppStore((s) => s.updateSettings);
   const setPlanSuccess = useAppStore((s) => s.setPlanSuccess);
 
   const fx = useExchangeRate(plan?.currency ?? 'USD');
@@ -102,20 +101,17 @@ export const PlanLayout = () => {
     projection.active.years.find((y) => y.year === plan.settings.retirementYear)?.openingBalance ??
     0;
 
-  // Convert lifestyle spending (a plan-currency amount) when the currency changes,
-  // so its real value is preserved (holdings are already stored in native currency).
+  // Changing the currency restates the whole plan in it: holdings already convert
+  // from their native currency on read, so every amount stored in the plan's own
+  // currency is rescaled by the same factor to keep the plan's real content intact.
   const changeCurrency = (next: CurrencyCode) => {
-    if (next === plan.currency) return;
+    if (next === plan.currency || !rates) return;
     // `next` is outside the plan's currencies until this lands, so it sits outside
-    // the guard above: an unquotable target leaves the amount untouched (the same
-    // thing that happens with no table at all) rather than inventing a figure.
-    const converted = rates
-      ? convert(plan.settings.annualSpending, plan.currency, next, rates)
-      : null;
-    if (converted?.ok && Math.round(converted.value) !== plan.settings.annualSpending) {
-      updateSettings(plan.id, { ...plan.settings, annualSpending: Math.round(converted.value) });
-    }
-    setPlanCurrency(plan.id, next);
+    // the guard above: an unquotable target aborts the switch rather than leaving
+    // the plan half-converted.
+    const factor = convert(1, plan.currency, next, rates);
+    if (!factor.ok) return;
+    setPlanCurrency(plan.id, next, factor.value);
   };
 
   const ctx: PlanContext = { plan, rates, totalValue, projection, monteCarlo };
@@ -135,6 +131,8 @@ export const PlanLayout = () => {
                     id="master-currency"
                     className="select"
                     value={plan.currency}
+                    disabled={!rates}
+                    title={rates ? undefined : t('plan.currencyRatesUnavailable')}
                     onChange={(e) => changeCurrency(e.target.value as CurrencyCode)}
                   >
                     {MASTER_CURRENCIES.map((c) => (
