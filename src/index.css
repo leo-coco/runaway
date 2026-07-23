@@ -134,6 +134,9 @@
   --tip-fg: #0d0d0d;
   --tip-fg-muted: rgb(13 13 13 / 72%);
   --tip-border: rgb(13 13 13 / 12%);
+  --chart-landmark-line: #ffffff;
+  --chart-landmark-label-bg: #ffffff;
+  --chart-landmark-label-fg: #0d0d0d;
 }
 
 /* Light theme — Runway "Copper Champagne" (Design System v1): a warm paper
@@ -214,6 +217,9 @@
   --tip-fg: #f6f4f0;
   --tip-fg-muted: rgb(246 244 240 / 72%);
   --tip-border: rgb(255 255 255 / 12%);
+  --chart-landmark-line: #0d0d0d;
+  --chart-landmark-label-bg: #0d0d0d;
+  --chart-landmark-label-fg: #ffffff;
 }
 
 * {
@@ -2882,6 +2888,17 @@ h4 {
   flex-direction: column;
   max-height: 262px;
 }
+.dash-assets-card .dash-assets-card__add {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  margin: 0 8px 10px;
+}
+.dash-assets-card .dash-assets-card__add:disabled {
+  color: var(--text-dim);
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
 .dash-assets-card .mini-assets-scroll {
   flex: 1;
   min-height: 0;
@@ -5207,6 +5224,22 @@ th[title] {
 }
 .mc-vol-reset:hover {
   color: var(--accent-strong);
+}
+.mc-drift-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+  cursor: help;
+}
+.mc-drift-cell__effective {
+  color: var(--amber);
+  font-weight: 500;
+}
+.mc-drift-cell__user {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-decoration: line-through;
 }
 /* While a re-run is in flight, keep the previous result visible (stable height)
    and just dim it slightly so the layout never collapses to a loading box. */
@@ -8611,8 +8644,12 @@ th[title] {
 }
 
 /* Full Runway explorer: a scrollable vertical path with one stop per event. */
+.modal.runway-events-modal {
+  height: min(560px, 50vh);
+}
 .runway-events-modal .modal__body {
   padding-top: 8px;
+  overscroll-behavior: contain;
 }
 .runway,
 .runway-events {

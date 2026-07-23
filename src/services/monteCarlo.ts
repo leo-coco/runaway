@@ -479,6 +479,32 @@ const assetClassOf = (a: MonteCarloAsset): AssetClass => {
   return c && c in STANDARDIZED_HISTORY ? c : 'other';
 };
 
+/** Where an asset's effective mean return comes from under a given model. */
+export type DriftSource = 'user-cagr' | 'class-history-2001' | 'class-history-1928';
+
+/**
+ * The mean annual return a model ACTUALLY applies to an asset — which, for
+ * `bootstrap-uncentered` and `historical-real`, silently overrides the user's
+ * stated CAGR with a hardcoded historical class average (see `driftBase` in
+ * `runMonteCarlo`/`sampleMonteCarloPath`). Every other model honors the CAGR as
+ * the mean (some only borrow historical *shape*, not the historical *mean*).
+ * Zero-volatility ("riskless") assets always keep their stated CAGR.
+ */
+export const effectiveDriftPct = (
+  a: MonteCarloAsset,
+  model: MonteCarloModel,
+): { pct: number; source: DriftSource } => {
+  if (a.sigmaPct <= 0) return { pct: a.driftPct, source: 'user-cagr' };
+  const c = assetClassOf(a);
+  if (model === 'bootstrap-uncentered') {
+    return { pct: (Math.exp(CLASS_LOG_DRIFT[c]) - 1) * 100, source: 'class-history-2001' };
+  }
+  if (model === 'historical-real') {
+    return { pct: (Math.exp(HIST_REAL_LOG_DRIFT[c]) - 1) * 100, source: 'class-history-1928' };
+  }
+  return { pct: a.driftPct, source: 'user-cagr' };
+};
+
 export const DEFAULT_MC_OPTIONS: MonteCarloOptions = {
   iterations: 5_000,
   seed: 0x9e3779b9,

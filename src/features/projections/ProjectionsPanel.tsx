@@ -33,6 +33,12 @@ import {
 } from './chartData';
 import { ChartTooltip } from './ChartTooltip';
 import { AxisModeSwitch } from './AxisModeSwitch';
+import {
+  buildLandmarkTicks,
+  ImportantYearTick,
+  LANDMARK_COLOR,
+  LandmarkLabel,
+} from './ChartLandmarks';
 
 type ChartView =
   | 'composition'
@@ -85,12 +91,10 @@ const SCENARIO_SERIES_KEY: Record<string, string> = {
 
 const C_APPRECIATION = '#38bdf8';
 const C_EXPENSES = '#f5a623';
-const C_HORIZON = '#5eead4';
 const C_PORTFOLIO = '#38bdf8';
 const C_HOME_EQUITY = '#f7931a';
 const C_RENTAL_EQUITY = '#a855f7';
 const C_TOTAL = '#22c55e';
-const C_RETIREMENT = '#818cf8';
 const MARKER_STROKE_WIDTH = 2;
 
 const PIE_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#f7931a', '#f43f5e'];
@@ -163,20 +167,6 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   // The planning horizon — the year the user reaches their life-expectancy age.
   const horizonYear = projection.startYear + (plan.settings.lifeExpectancyAge - currentAge);
   const horizonAge = ageAt(horizonYear);
-  // A centered label overflows the chart when its reference line sits near an
-  // edge of the plotted range — anchor it to the line instead so the text
-  // grows inward.
-  const depletionFraction =
-    depletion !== null && horizonYear > projection.startYear
-      ? (depletion - projection.startYear) / (horizonYear - projection.startYear)
-      : null;
-  const depletionLabelPosition =
-    depletionFraction !== null && depletionFraction > 0.85
-      ? 'insideBottomRight'
-      : depletionFraction !== null && depletionFraction < 0.15
-        ? 'insideBottomLeft'
-        : 'insideBottom';
-
   // Whether the year/age switch on the X axis is shown at all: it's meaningless
   // without a valid current age to convert from.
   const canShowAge = currentAge > 0;
@@ -186,6 +176,19 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
     const year = Number(label);
     return showAge ? `${ageAt(year) ?? year}` : `${year}`;
   };
+  const importantYearTick = (
+    <ImportantYearTick
+      importantYears={[plan.settings.retirementYear, horizonYear]}
+      dangerYears={depletion === null ? [] : [depletion]}
+      firstYear={projection.active.years[0]?.year ?? projection.startYear}
+      lastYear={projection.active.years.at(-1)?.year ?? horizonYear}
+      formatter={xAxisTickFormatter}
+    />
+  );
+  const xAxisTicks = buildLandmarkTicks(
+    projection.active.years.map(({ year }) => year),
+    [plan.settings.retirementYear, horizonYear, ...(depletion === null ? [] : [depletion])],
+  );
 
   // Vertical markers shared by every time-axis chart: retirement, plan-end
   // (death) and, if the money runs out, the depletion year. Always labelled —
@@ -195,39 +198,38 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
       <ReferenceLine
         key="ret"
         x={plan.settings.retirementYear}
-        stroke={C_RETIREMENT}
+        stroke={LANDMARK_COLOR}
         strokeWidth={MARKER_STROKE_WIDTH}
         strokeDasharray="4 4"
-        label={{
-          value:
-            retirementAge !== null
-              ? t('projChart.retirementAge', {
-                  year: plan.settings.retirementYear,
-                  age: retirementAge,
-                })
-              : t('projChart.retirement', { year: plan.settings.retirementYear }),
-          fill: C_RETIREMENT,
-          fontSize: 11,
-          fontWeight: 600,
-          position: 'insideBottomLeft',
-        }}
+        label={
+          <LandmarkLabel
+            value={
+              showAge && retirementAge !== null
+                ? t('projChart.retirementAgeOnly', { age: retirementAge })
+                : t('projChart.retirement', { year: plan.settings.retirementYear })
+            }
+            align="left"
+            verticalAlign="top"
+          />
+        }
       />,
       <ReferenceLine
         key="hor"
         x={horizonYear}
-        stroke={C_HORIZON}
+        stroke={LANDMARK_COLOR}
         strokeWidth={MARKER_STROKE_WIDTH}
         strokeDasharray="4 4"
-        label={{
-          value:
-            horizonAge !== null
-              ? t('projChart.planEndsAge', { year: horizonYear, age: horizonAge })
-              : t('projChart.planEnds', { year: horizonYear }),
-          fill: C_HORIZON,
-          fontSize: 11,
-          fontWeight: 600,
-          position: 'insideBottomRight',
-        }}
+        label={
+          <LandmarkLabel
+            value={
+              showAge && horizonAge !== null
+                ? t('projChart.planEndsAgeOnly', { age: horizonAge })
+                : t('projChart.planEnds', { year: horizonYear })
+            }
+            align="right"
+            verticalAlign="top"
+          />
+        }
       />,
     ];
     if (depletion !== null) {
@@ -238,16 +240,18 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
           stroke="var(--danger)"
           strokeWidth={MARKER_STROKE_WIDTH}
           strokeDasharray="6 4"
-          label={{
-            value:
-              depletionAge !== null
-                ? t('projChart.depletionAge', { year: depletion, age: depletionAge })
-                : t('projChart.depletion', { year: depletion }),
-            fill: 'var(--danger)',
-            fontSize: 11,
-            fontWeight: 600,
-            position: depletionLabelPosition,
-          }}
+          label={
+            <LandmarkLabel
+              value={
+                showAge && depletionAge !== null
+                  ? t('projChart.depletionAgeOnly', { age: depletionAge })
+                  : t('projChart.depletion', { year: depletion })
+              }
+              align="left"
+              verticalAlign="middle"
+              tone="danger"
+            />
+          }
         />,
       );
     }
@@ -284,7 +288,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}
@@ -325,7 +331,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}
@@ -361,7 +369,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}
@@ -394,7 +404,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}
@@ -431,7 +443,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}
@@ -465,7 +479,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}
@@ -526,7 +542,9 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={axisTick}
+              tick={importantYearTick}
+              ticks={xAxisTicks}
+              interval={0}
               stroke="var(--border)"
               minTickGap={40}
               tickFormatter={xAxisTickFormatter}

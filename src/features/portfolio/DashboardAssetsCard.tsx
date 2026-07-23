@@ -2,7 +2,11 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useLimit } from '@/hooks/useEntitlements';
+import { useAppStore } from '@/store';
+import { useAppMode } from '@/providers/AppModeContext';
 import { colorForSymbol } from '@/lib/assetColors';
+import { atLimit } from '@/domain/entitlements';
 import { gainForHoldings, valueHoldings, type GainSummary } from '@/services/portfolioService';
 import type { HoldingValue } from '@/services/portfolioService';
 import { isIlliquidAccount, type Account } from '@/domain/account';
@@ -34,6 +38,12 @@ interface Group {
 export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssetsCardProps) => {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
+  const { sandbox } = useAppMode();
+  const openModal = useAppStore((s) => s.openModal);
+  const openPaywall = useAppStore((s) => s.openPaywall);
+  const maxAssets = useLimit('maxAssets');
+  const onAddAsset = () =>
+    atLimit(plan.holdings.length, maxAssets) ? openPaywall('assets') : openModal('addAsset');
 
   // Every holding valued in the plan currency, keyed for per-row lookup.
   const allValues = useMemo<readonly HoldingValue[]>(
@@ -75,6 +85,14 @@ export const DashboardAssetsCard = ({ plan, totalValue, rates }: DashboardAssets
 
   return (
     <Card padded className="dash-assets-card" data-tour="dash-assets-card">
+      <button
+        type="button"
+        className="runway__more dash-assets-card__add"
+        onClick={onAddAsset}
+        disabled={sandbox}
+      >
+        {t('dashboard.addNewAsset')} →
+      </button>
       <div className="mini-assets-scroll">
         <div className="mini-assets">
           <div className="mini-row mini-row--head">

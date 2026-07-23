@@ -179,6 +179,7 @@ export const AssetRow = ({
               suffix={native}
               hideButtons
               onChange={(v) => onUpdate(holding.id, { pricePerUnit: v })}
+              onEnter={onToggleEdit}
             />
           ) : (
             <span className="read-value">{nativeFmt.price(holding.pricePerUnit)}</span>
@@ -219,6 +220,7 @@ export const AssetRow = ({
             suffix={native}
             hideButtons
             onChange={(v) => onUpdate(holding.id, { costBasis: v })}
+            onEnter={onToggleEdit}
           />
         ) : (
           <span className="read-value">{nativeFmt.price(costBasisPerUnit)}</span>
@@ -238,6 +240,7 @@ export const AssetRow = ({
             min={0}
             hideButtons
             onChange={(v) => onUpdate(holding.id, { quantity: v })}
+            onEnter={onToggleEdit}
           />
         ) : (
           <span className="read-value">{holding.quantity}</span>
@@ -283,6 +286,7 @@ export const AssetRow = ({
               hideButtons
               compact
               onChange={(v) => onUpdate(holding.id, { expectedCagrPct: v })}
+              onEnter={onToggleEdit}
             />
             <div className="cagr-note">
               {t('portfolio.appliedCagr')} <b>{effectiveCagr}%</b>
