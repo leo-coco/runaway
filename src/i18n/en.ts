@@ -911,7 +911,7 @@ export const en = {
   },
   addAsset: {
     title: 'Add New Asset',
-    add: 'Add Asset',
+    add: 'Save and add another',
     account: 'Account',
     accountAria: 'Account to hold this asset in',
     newAccount: '＋ New account…',

@@ -6,7 +6,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Toggle } from '@/components/ui/Toggle';
 import { Spinner } from '@/components/ui/Spinner';
 import { InlineError } from '@/components/InlineError';
-import { InfoIcon, PlusIcon, SearchIcon, TrashIcon } from '@/components/icons';
+import { ChevronDownIcon, InfoIcon, PlusIcon, SearchIcon, TrashIcon } from '@/components/icons';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAssetSearch } from '@/hooks/useAssetSearch';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -204,6 +204,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     crypto: 0,
     other: 0,
   });
+  const [compositionOpen, setCompositionOpen] = useState(false);
   const [infoTopic, setInfoTopic] = useState<'type' | 'drawable' | null>(null);
 
   const nativeFmt = useCurrencyFormatter(selected?.nativeCurrency ?? plan.currency);
@@ -286,11 +287,11 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     else setPriceError(result.error);
   };
 
-  const handleAdd = () => {
-    if (!selected) return;
+  const handleAdd = (): boolean => {
+    if (!selected) return false;
     if (atLimit(plan.holdings.length, maxAssets)) {
       openPaywall('assets');
-      return;
+      return false;
     }
     const id = newId();
     onAdd({
@@ -311,6 +312,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     setAllocation(null);
     setQuery('');
     setQuantity(1);
+    return true;
   };
 
   const customCompTotal = useMemo(
@@ -336,11 +338,11 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
 
   const canAddCustom = customName.trim().length > 0 && customPrice >= 0 && quantity > 0;
 
-  const handleAddCustom = () => {
-    if (!canAddCustom) return;
+  const handleAddCustom = (): boolean => {
+    if (!canAddCustom) return false;
     if (atLimit(plan.holdings.length, maxAssets)) {
       openPaywall('assets');
-      return;
+      return false;
     }
     const id = newId();
     onAdd({
@@ -367,7 +369,24 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
     setCustomName('');
     setCustomPrice(0);
     setCustomComp({ stocks: 0, bonds: 0, cash: 0, crypto: 0, other: 0 });
+    setCompositionOpen(false);
     setQuantity(1);
+    return true;
+  };
+
+  const hasCustomDraft =
+    customName.trim().length > 0 || customPrice !== 0 || quantity !== 1 || customCompTotal !== 0;
+
+  const handleDone = () => {
+    if (mode === 'search' && selected) {
+      if (handleAdd()) onClose();
+      return;
+    }
+    if (mode === 'custom' && hasCustomDraft) {
+      if (handleAddCustom()) onClose();
+      return;
+    }
+    onClose();
   };
 
   // Create-account flow (nested modal): add the checked presets (or a blank
@@ -483,7 +502,11 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         mode === 'search' && !selected && 'addasset-modal--searching',
       )}
       footer={
-        <Button variant="primary" onClick={onClose}>
+        <Button
+          variant="primary"
+          onClick={handleDone}
+          disabled={mode === 'custom' && hasCustomDraft && !canAddCustom}
+        >
           {t('common.done')}
         </Button>
       }
@@ -629,34 +652,54 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
               />
             </div>
           </div>
-          <div className="field">
-            <span className="field__label">{t('addAsset.compositionOptional')}</span>
-            <p className="field__hint" style={{ marginTop: 0, marginBottom: 8 }}>
-              {t('addAsset.compositionOptionalHint')}
-            </p>
-            <div className="addasset-comp">
-              {CUSTOM_COMP_ROWS.map(({ key, labelKey }) => (
-                <div key={key} className="addasset-comp__row">
-                  <span className={cn('comp-dot', `comp-dot--${key}`)} />
-                  <span className="addasset-comp__label">{t(labelKey)}</span>
-                  <Stepper
-                    ariaLabel={t(labelKey)}
-                    min={0}
-                    max={100}
-                    step={1}
-                    suffix="%"
-                    hideButtons
-                    value={customComp[key]}
-                    onChange={(v) => setCustomComp((c) => ({ ...c, [key]: v }))}
-                  />
-                </div>
-              ))}
+          <div className={cn('addasset-comp-drawer', compositionOpen && 'is-open')}>
+            <button
+              type="button"
+              className="addasset-comp-drawer__trigger"
+              aria-expanded={compositionOpen}
+              aria-controls="custom-asset-composition"
+              onClick={() => setCompositionOpen((open) => !open)}
+            >
+              <span>{t('addAsset.compositionOptional')}</span>
+              <span className="addasset-comp-drawer__meta">
+                {customCompTotal > 0 && <span>{customCompTotal}%</span>}
+                <ChevronDownIcon
+                  className="addasset-comp-drawer__chevron"
+                  size={16}
+                  aria-hidden="true"
+                />
+              </span>
+            </button>
+            <div
+              id="custom-asset-composition"
+              className="addasset-comp-drawer__body"
+              hidden={!compositionOpen}
+            >
+              <p className="field__hint">{t('addAsset.compositionOptionalHint')}</p>
+              <div className="addasset-comp">
+                {CUSTOM_COMP_ROWS.map(({ key, labelKey }) => (
+                  <div key={key} className="addasset-comp__row">
+                    <span className={cn('comp-dot', `comp-dot--${key}`)} />
+                    <span className="addasset-comp__label">{t(labelKey)}</span>
+                    <Stepper
+                      ariaLabel={t(labelKey)}
+                      min={0}
+                      max={100}
+                      step={1}
+                      suffix="%"
+                      hideButtons
+                      value={customComp[key]}
+                      onChange={(v) => setCustomComp((c) => ({ ...c, [key]: v }))}
+                    />
+                  </div>
+                ))}
+              </div>
+              {customCompTotal > 0 && customCompTotal !== 100 && (
+                <p className="field__hint addasset-comp-drawer__total">
+                  {t('addAsset.compositionTotal', { total: customCompTotal })}
+                </p>
+              )}
             </div>
-            {customCompTotal > 0 && customCompTotal !== 100 && (
-              <p className="field__hint" style={{ marginTop: 8 }}>
-                {t('addAsset.compositionTotal', { total: customCompTotal })}
-              </p>
-            )}
           </div>
 
           {customDrawable ? (

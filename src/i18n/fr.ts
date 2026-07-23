@@ -939,7 +939,7 @@ export const fr: Resources = {
   },
   addAsset: {
     title: 'Ajouter un actif',
-    add: 'Ajouter l’actif',
+    add: 'Enregistrer et ajouter un autre',
     account: 'Compte',
     accountAria: 'Compte dans lequel placer cet actif',
     newAccount: '＋ Nouveau compte…',
