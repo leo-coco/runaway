@@ -6070,6 +6070,51 @@ th[title] {
 .addasset-fields--2 {
   grid-template-columns: 1fr 1fr;
 }
+/* Floating result list for the asset search, so it overlays the detail block
+   below instead of pushing it down (mirrors .acct-preset-combo__results). */
+.addasset-search__results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 6px;
+  background: var(--bg-card);
+}
+.addasset-add-button {
+  width: 100%;
+  margin-top: 16px;
+}
+.addasset-session {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.addasset-session__title {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.addasset-session__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.addasset-session__row:last-child {
+  border-bottom: none;
+}
+.addasset-session__sym {
+  font-weight: 700;
+  color: var(--text);
+}
+.addasset-session__meta {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
 .adj {
   display: flex;
   flex-direction: column;

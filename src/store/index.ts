@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useSyncExternalStore } from 'react';
-import { createPlansSlice, type PlansSlice } from './plansSlice';
+import { createPlansSlice, normalizeAccounts, type PlansSlice } from './plansSlice';
 import { createUiSlice, type UiSlice } from './uiSlice';
 import type { Plan } from '@/domain/plan';
 import { sanitizeAccountTaxFields } from '@/domain/account';
@@ -99,7 +99,7 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
           }))
         : [];
     const residenceCountry = plan.residenceCountry ?? 'US';
-    return {
+    return normalizeAccounts({
       ...plan,
       // v7: tax residence added — default to US (only affects auto-mode accounts).
       residenceCountry,
@@ -132,7 +132,7 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
         monthlyContribution: h.monthlyContribution ?? 0,
         accountId: h.accountId ?? null,
       })),
-    };
+    });
   });
   return { plans };
 };

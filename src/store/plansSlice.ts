@@ -16,6 +16,8 @@ import {
   accountFromPreset,
   defaultFreeAccount,
   defaultTaxableAccount,
+  illiquidAccount,
+  isIlliquidAccount,
   sanitizeAccountTaxFields,
 } from '@/domain/account';
 import { DEFAULT_PROVINCE, RESIDENCE_CURRENCY } from '@/domain/country';
@@ -148,6 +150,53 @@ const touch = (plan: Plan, mutate: (p: Plan) => Plan): Plan => ({
   updatedAt: new Date().toISOString(),
 });
 
+/**
+ * Enforce the account invariants after any holding/account mutation:
+ *  - every holding is assigned to an existing account (no `null` "unassigned");
+ *  - non-drawable holdings (a home, a car) live in the auto-managed illiquid
+ *    bucket, which is created lazily when the first one appears and pruned when
+ *    the last one leaves;
+ *  - the illiquid bucket never sits in the withdrawal order (it is never drawn).
+ * The bucket carries no tax weight — illiquid holdings are excluded from every
+ * withdrawal/RMD/reinvestment flow — so routing here is purely organizational.
+ */
+export const normalizeAccounts = (plan: Plan): Plan => {
+  const realAccountIds = new Set(
+    plan.accounts.filter((a) => !isIlliquidAccount(a)).map((a) => a.id),
+  );
+  const fallbackId = plan.accounts.find((a) => !isIlliquidAccount(a))?.id ?? null;
+  // A plan always keeps ≥1 real account; bail defensively if that ever breaks.
+  if (!fallbackId) return plan;
+
+  const needsBucket = plan.holdings.some((h) => h.drawable === false);
+  let bucket = plan.accounts.find(isIlliquidAccount) ?? null;
+  let accounts = plan.accounts;
+  if (needsBucket && !bucket) {
+    bucket = illiquidAccount();
+    accounts = [...accounts, bucket];
+  }
+  const bucketId = bucket?.id ?? null;
+
+  const holdings = plan.holdings.map((h) => {
+    if (h.drawable === false) {
+      return h.accountId === bucketId ? h : { ...h, accountId: bucketId };
+    }
+    // Drawable holdings must sit in a real envelope, never in the bucket.
+    if (h.accountId != null && realAccountIds.has(h.accountId)) return h;
+    return { ...h, accountId: fallbackId };
+  });
+
+  // Drop the bucket once nothing illiquid remains, so no empty envelope lingers.
+  if (!needsBucket && bucket) accounts = accounts.filter((a) => a.id !== bucket!.id);
+
+  return {
+    ...plan,
+    accounts,
+    holdings,
+    withdrawalOrder: plan.withdrawalOrder.filter((id) => id !== bucketId),
+  };
+};
+
 const emptyPlan = (name: string, freeDemo = false, preferredResidence?: Country): Plan => {
   const now = new Date().toISOString();
   const residenceCountry = preferredResidence ?? 'US';
@@ -180,7 +229,7 @@ export const createPlansSlice =
   (set, get) => ({
     plans: initialPlans,
 
-    hydratePlans: (plans) => set({ plans }),
+    hydratePlans: (plans) => set({ plans: plans.map(normalizeAccounts) }),
 
     createPlan: (name = 'Untitled plan', freeDemo = false, residenceCountry) => {
       const plan = emptyPlan(name, freeDemo, residenceCountry);
@@ -239,13 +288,9 @@ export const createPlansSlice =
       set((s) => ({
         plans: s.plans.map((p) =>
           p.id === planId
-            ? touch(p, (x) => {
-                // Auto-assign to the sole account so tax is modelled without manual steps.
-                const sole = x.accounts.length === 1 ? x.accounts[0]!.id : null;
-                const h =
-                  holding.accountId == null && sole ? { ...holding, accountId: sole } : holding;
-                return { ...x, holdings: [...x.holdings, h] };
-              })
+            ? // normalizeAccounts assigns the account (routing non-drawable assets
+              // to the illiquid bucket) — no manual account choice needed here.
+              touch(p, (x) => normalizeAccounts({ ...x, holdings: [...x.holdings, holding] }))
             : p,
         ),
       })),
@@ -254,10 +299,12 @@ export const createPlansSlice =
       set((s) => ({
         plans: s.plans.map((p) =>
           p.id === planId
-            ? touch(p, (x) => ({
-                ...x,
-                holdings: x.holdings.map((h) => (h.id === holdingId ? { ...h, ...patch } : h)),
-              }))
+            ? touch(p, (x) =>
+                normalizeAccounts({
+                  ...x,
+                  holdings: x.holdings.map((h) => (h.id === holdingId ? { ...h, ...patch } : h)),
+                }),
+              )
             : p,
         ),
       })),
@@ -266,7 +313,9 @@ export const createPlansSlice =
       set((s) => ({
         plans: s.plans.map((p) =>
           p.id === planId
-            ? touch(p, (x) => ({ ...x, holdings: x.holdings.filter((h) => h.id !== holdingId) }))
+            ? touch(p, (x) =>
+                normalizeAccounts({ ...x, holdings: x.holdings.filter((h) => h.id !== holdingId) }),
+              )
             : p,
         ),
       })),
@@ -312,15 +361,18 @@ export const createPlansSlice =
           // A plan always keeps at least one account, so holdings never end up
           // orphaned by deleting the last envelope.
           p.id === planId && p.accounts.length > 1
-            ? touch(p, (x) => ({
-                ...x,
-                accounts: x.accounts.filter((a) => a.id !== accountId),
-                withdrawalOrder: x.withdrawalOrder.filter((id) => id !== accountId),
-                // Unassign holdings that referenced the removed account.
-                holdings: x.holdings.map((h) =>
-                  h.accountId === accountId ? { ...h, accountId: null } : h,
-                ),
-              }))
+            ? touch(p, (x) =>
+                // normalizeAccounts re-homes the holdings that referenced the
+                // removed account onto the default envelope (never left unassigned).
+                normalizeAccounts({
+                  ...x,
+                  accounts: x.accounts.filter((a) => a.id !== accountId),
+                  withdrawalOrder: x.withdrawalOrder.filter((id) => id !== accountId),
+                  holdings: x.holdings.map((h) =>
+                    h.accountId === accountId ? { ...h, accountId: null } : h,
+                  ),
+                }),
+              )
             : p,
         ),
       })),
@@ -330,30 +382,37 @@ export const createPlansSlice =
         plans: s.plans.map((p) => {
           if (p.id !== planId || config.accounts.length === 0) return p;
 
-          const accounts = config.accounts.map((account) =>
+          const editable = config.accounts.map((account) =>
             sanitizeAccountTaxFields({ ...account }),
           );
+          // The accounts editor never sees the auto-managed illiquid bucket, so
+          // preserve it here instead of dropping it (which would orphan its holdings).
+          const bucket = p.accounts.find(isIlliquidAccount);
+          const accounts = bucket ? [...editable, bucket] : editable;
           const accountIds = new Set(accounts.map((account) => account.id));
           const retainedOrder = p.withdrawalOrder.filter((id) => accountIds.has(id));
           const orderedIds = new Set(retainedOrder);
           const withdrawalOrder = [
             ...retainedOrder,
-            ...accounts.map((account) => account.id).filter((id) => !orderedIds.has(id)),
+            // The bucket is never drawn, so it stays out of the draw-down order.
+            ...editable.map((account) => account.id).filter((id) => !orderedIds.has(id)),
           ];
 
-          return touch(p, (x) => ({
-            ...x,
-            accounts,
-            withdrawalOrder,
-            residenceCountry: config.residenceCountry,
-            residenceProvince:
-              config.residenceCountry === 'CA' ? config.residenceProvince : x.residenceProvince,
-            holdings: x.holdings.map((holding) =>
-              holding.accountId && !accountIds.has(holding.accountId)
-                ? { ...holding, accountId: null }
-                : holding,
-            ),
-          }));
+          return touch(p, (x) =>
+            normalizeAccounts({
+              ...x,
+              accounts,
+              withdrawalOrder,
+              residenceCountry: config.residenceCountry,
+              residenceProvince:
+                config.residenceCountry === 'CA' ? config.residenceProvince : x.residenceProvince,
+              holdings: x.holdings.map((holding) =>
+                holding.accountId && !accountIds.has(holding.accountId)
+                  ? { ...holding, accountId: null }
+                  : holding,
+              ),
+            }),
+          );
         }),
       })),
 

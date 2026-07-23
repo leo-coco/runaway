@@ -912,6 +912,17 @@ export const en = {
   addAsset: {
     title: 'Add New Asset',
     add: 'Add Asset',
+    account: 'Account',
+    accountAria: 'Account to hold this asset in',
+    newAccount: '＋ New account…',
+    createAccountTitle: 'Create an account',
+    createAccountHint:
+      'Pick a preset envelope for your country, or add a blank custom account. You can fine-tune its tax settings later in Accounts.',
+    illiquidBucketName: 'Illiquid assets',
+    illiquidBucketNote: 'Filed under “{{name}}” — kept separate from your tax accounts.',
+    addedListTitle_one: 'Added ({{count}})',
+    addedListTitle_other: 'Added ({{count}})',
+    removeAddedAria: 'Remove {{symbol}} from the added list',
     tabSearch: 'Search',
     tabCustom: 'Custom asset',
     customHint:

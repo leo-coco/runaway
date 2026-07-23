@@ -180,24 +180,56 @@ describe('addHolding', () => {
     expect(after.holdings[0]!.accountId).toBe(plan.accounts[0]!.id);
   });
 
-  it('keeps an explicit account assignment', () => {
+  it('keeps an explicit (valid) account assignment', () => {
     const store = makeStore();
-    const id = store.getState().createPlan();
+    const plan = store.getState().plans[0]!; // seed: 3 accounts
+    const target = plan.accounts[1]!.id;
 
-    store.getState().addHolding(id, mkHolding('explicit-account'));
+    store.getState().addHolding(plan.id, mkHolding(target));
 
-    const after = store.getState().plans.find((p) => p.id === id)!;
-    expect(after.holdings[0]!.accountId).toBe('explicit-account');
+    const after = store.getState().plans.find((p) => p.id === plan.id)!;
+    expect(after.holdings.at(-1)!.accountId).toBe(target);
   });
 
-  it('does not auto-assign when the plan has several accounts', () => {
+  it('assigns to the first envelope when no account is given (multi-account)', () => {
     const store = makeStore();
-    const plan = store.getState().plans[0]!; // seed plan: 3 accounts
+    const plan = store.getState().plans[0]!; // seed: 3 accounts
 
     store.getState().addHolding(plan.id, mkHolding(null));
 
     const after = store.getState().plans.find((p) => p.id === plan.id)!;
-    expect(after.holdings.at(-1)!.accountId).toBeNull();
+    // Never left unassigned: it falls back to the first account.
+    expect(after.holdings.at(-1)!.accountId).toBe(plan.accounts[0]!.id);
+  });
+
+  it('routes a non-drawable asset to a lazily-created illiquid bucket', () => {
+    const store = makeStore();
+    const plan = store.getState().plans[0]!;
+    expect(plan.accounts.some((a) => a.illiquid)).toBe(false);
+
+    store.getState().addHolding(plan.id, { ...mkHolding(null), drawable: false });
+
+    const after = store.getState().plans.find((p) => p.id === plan.id)!;
+    const bucket = after.accounts.find((a) => a.illiquid);
+    expect(bucket).toBeDefined();
+    expect(after.holdings.at(-1)!.accountId).toBe(bucket!.id);
+    // The bucket is never drawn, so it stays out of the withdrawal order.
+    expect(after.withdrawalOrder).not.toContain(bucket!.id);
+  });
+
+  it('prunes the illiquid bucket when its last holding is removed', () => {
+    const store = makeStore();
+    const plan = store.getState().plans[0]!;
+    const holding = { ...mkHolding(null), drawable: false as const };
+    store.getState().addHolding(plan.id, holding);
+
+    const withBucket = store.getState().plans.find((p) => p.id === plan.id)!;
+    expect(withBucket.accounts.some((a) => a.illiquid)).toBe(true);
+
+    store.getState().removeHolding(plan.id, holding.id);
+
+    const after = store.getState().plans.find((p) => p.id === plan.id)!;
+    expect(after.accounts.some((a) => a.illiquid)).toBe(false);
   });
 });
 
@@ -224,7 +256,7 @@ describe('addAccount / removeAccount', () => {
     expect(after.accounts).toHaveLength(1);
   });
 
-  it('unassigns holdings and purges the withdrawal order on removal', () => {
+  it('re-homes holdings and purges the withdrawal order on removal', () => {
     const store = makeStore();
     const plan = store.getState().plans[0]!; // seed: 3 accounts, holdings assigned
     const removed = plan.accounts[0]!.id;
@@ -236,8 +268,10 @@ describe('addAccount / removeAccount', () => {
     const after = store.getState().plans.find((p) => p.id === plan.id)!;
     expect(after.accounts.map((a) => a.id)).not.toContain(removed);
     expect(after.withdrawalOrder).not.toContain(removed);
+    // Holdings are never left unassigned: they fall back to the first envelope.
+    const fallbackId = after.accounts[0]!.id;
     for (const h of affected) {
-      expect(after.holdings.find((x) => x.id === h.id)!.accountId).toBeNull();
+      expect(after.holdings.find((x) => x.id === h.id)!.accountId).toBe(fallbackId);
     }
   });
 });
@@ -265,8 +299,12 @@ describe('saveAccountsTaxConfig', () => {
     expect(after.residenceCountry).toBe('CA');
     expect(after.residenceProvince).toBe('QC');
     expect(after.withdrawalOrder).toEqual([retained.id, added.id]);
+    // Holdings whose account was dropped are re-homed to the first remaining
+    // envelope, never left unassigned.
     for (const holdingId of affectedHoldingIds) {
-      expect(after.holdings.find((holding) => holding.id === holdingId)!.accountId).toBeNull();
+      expect(after.holdings.find((holding) => holding.id === holdingId)!.accountId).toBe(
+        retained.id,
+      );
     }
   });
 });

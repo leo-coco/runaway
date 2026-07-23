@@ -6,7 +6,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Toggle } from '@/components/ui/Toggle';
 import { Spinner } from '@/components/ui/Spinner';
 import { InlineError } from '@/components/InlineError';
-import { InfoIcon, SearchIcon } from '@/components/icons';
+import { InfoIcon, PlusIcon, SearchIcon, TrashIcon } from '@/components/icons';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAssetSearch } from '@/hooks/useAssetSearch';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -16,11 +16,16 @@ import { parseInstrumentId } from '@/services/instrumentRef';
 import { matchPseudoAssets } from '@/domain/pseudoAssets';
 import { colorForSymbol } from '@/lib/assetColors';
 import { newId } from '@/lib/id';
+import { useAppStore } from '@/store';
+import { useLimit } from '@/hooks/useEntitlements';
+import { atLimit } from '@/domain/entitlements';
+import { isIlliquidAccount, type AccountPreset } from '@/domain/account';
 import { MASTER_CURRENCIES, type CurrencyCode } from '@/domain/money';
 import type { Instrument, Holding, AssetAllocation } from '@/domain/asset';
 import type { Plan } from '@/domain/plan';
 import type { AppError } from '@/domain/errors';
 import { cn } from '@/lib/cn';
+import { AccountPresetCombobox, cryptoPreset } from './AccountPresetCombobox';
 
 interface Props {
   plan: Plan;
@@ -101,9 +106,17 @@ const SearchResultRow = ({
   );
 };
 
+/** Sentinel option value in the account dropdown that opens the create-account flow. */
+const NEW_ACCOUNT = '__new__';
+
 export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const { t } = useTranslation();
   const services = useServices();
+  const removeHolding = useAppStore((s) => s.removeHolding);
+  const addAccount = useAppStore((s) => s.addAccount);
+  const openPaywall = useAppStore((s) => s.openPaywall);
+  const maxAssets = useLimit('maxAssets');
+  const maxAccounts = useLimit('maxAccounts');
   const [mode, setMode] = useState<Mode>('search');
   const [query, setQuery] = useState('');
   const debounced = useDebouncedValue(query, 500);
@@ -149,6 +162,21 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   // Shared fields (quantity + CAGR are used by both modes).
   const [quantity, setQuantity] = useState(1);
   const [cagr, setCagr] = useState(8);
+
+  // Selectable tax envelopes (the auto-managed illiquid bucket is never offered).
+  const envelopes = useMemo(
+    () => plan.accounts.filter((a) => !isIlliquidAccount(a)),
+    [plan.accounts],
+  );
+  // Chosen account for the next add. Kept across adds so it doubles as the
+  // "last used account" memory; falls back to the first envelope.
+  const [accountId, setAccountId] = useState<string>(() => envelopes[0]?.id ?? '');
+  const targetAccountId = envelopes.some((a) => a.id === accountId)
+    ? accountId
+    : (envelopes[0]?.id ?? '');
+  // Ids of the holdings added during this session, shown in the running recap.
+  const [addedIds, setAddedIds] = useState<string[]>([]);
+  const [creatingAccount, setCreatingAccount] = useState(false);
 
   // Search-selection state.
   const [selected, setSelected] = useState<Instrument | null>(null);
@@ -260,16 +288,29 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
 
   const handleAdd = () => {
     if (!selected) return;
+    if (atLimit(plan.holdings.length, maxAssets)) {
+      openPaywall('assets');
+      return;
+    }
+    const id = newId();
     onAdd({
-      id: newId(),
+      id,
       instrument: allocation ? { ...selected, assetAllocation: allocation } : selected,
       quantity,
       pricePerUnit: price ?? 0,
       expectedCagrPct: cagr,
       monthlyContribution: 0,
-      accountId: null,
+      accountId: targetAccountId || null,
     });
-    onClose();
+    setAddedIds((ids) => [...ids, id]);
+    // Reset the search input for the next add; keep the account + CAGR as sticky
+    // defaults so a run of similar assets stays fast.
+    setSelected(null);
+    setPrice(null);
+    setPriceError(null);
+    setAllocation(null);
+    setQuery('');
+    setQuantity(1);
   };
 
   const customCompTotal = useMemo(
@@ -297,8 +338,13 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
 
   const handleAddCustom = () => {
     if (!canAddCustom) return;
+    if (atLimit(plan.holdings.length, maxAssets)) {
+      openPaywall('assets');
+      return;
+    }
+    const id = newId();
     onAdd({
-      id: newId(),
+      id,
       instrument: {
         id: `custom:${newId()}`,
         symbol: customSymbol(customName),
@@ -312,11 +358,103 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
       pricePerUnit: customPrice,
       expectedCagrPct: cagr,
       monthlyContribution: 0,
-      accountId: null,
+      // A non-drawable asset is routed to the illiquid bucket by the store; a
+      // drawable one lands in the chosen envelope.
+      accountId: customDrawable ? targetAccountId || null : null,
       drawable: customDrawable ? undefined : false,
     });
-    onClose();
+    setAddedIds((ids) => [...ids, id]);
+    setCustomName('');
+    setCustomPrice(0);
+    setCustomComp({ stocks: 0, bonds: 0, cash: 0, crypto: 0, other: 0 });
+    setQuantity(1);
   };
+
+  // Create-account flow (nested modal): add the checked presets (or a blank
+  // custom account), then preselect the first one for the pending asset.
+  const handleAddAccountPresets = (presets: AccountPreset[]) => {
+    let firstId = '';
+    for (const preset of presets) {
+      const created = addAccount(plan.id, preset);
+      if (!firstId) firstId = created;
+    }
+    if (firstId) setAccountId(firstId);
+    setCreatingAccount(false);
+  };
+  const handleAddCustomAccount = () => {
+    if (atLimit(envelopes.length, maxAccounts)) {
+      openPaywall('accounts');
+      return;
+    }
+    setAccountId(addAccount(plan.id));
+    setCreatingAccount(false);
+  };
+
+  // The running recap resolves ids to their live store holdings so account names
+  // (including the illiquid bucket) and values stay in sync with any store change.
+  const addedHoldings = addedIds
+    .map((id) => plan.holdings.find((h) => h.id === id))
+    .filter((h): h is Holding => h !== undefined);
+  const accountLabel = (id: string | null): string => {
+    const account = plan.accounts.find((a) => a.id === id);
+    if (!account) return '';
+    return isIlliquidAccount(account) ? t('addAsset.illiquidBucketName') : account.name;
+  };
+  const removeAdded = (id: string) => {
+    removeHolding(plan.id, id);
+    setAddedIds((ids) => ids.filter((x) => x !== id));
+  };
+
+  // Shared account dropdown (both tabs): existing envelopes + a "new account" entry.
+  const accountPicker = (
+    <div className="field">
+      <span className="field__label">{t('addAsset.account')}</span>
+      <select
+        className="select"
+        aria-label={t('addAsset.accountAria')}
+        value={targetAccountId}
+        onChange={(e) => {
+          if (e.target.value === NEW_ACCOUNT) setCreatingAccount(true);
+          else setAccountId(e.target.value);
+        }}
+      >
+        {envelopes.map((account) => (
+          <option key={account.id} value={account.id}>
+            {account.kind ? `${account.name} · ${t(`accountKind.${account.kind}`)}` : account.name}
+          </option>
+        ))}
+        <option value={NEW_ACCOUNT}>{t('addAsset.newAccount')}</option>
+      </select>
+    </div>
+  );
+
+  // Session recap of assets added so far, with a per-row remove control.
+  const addedList = addedHoldings.length > 0 && (
+    <div className="addasset-session">
+      <div className="addasset-session__title">
+        {t('addAsset.addedListTitle', { count: addedHoldings.length })}
+      </div>
+      {addedHoldings.map((h) => (
+        <div key={h.id} className="addasset-session__row">
+          <span className="addasset-session__sym">
+            {h.instrument.symbol.replace(/\.[A-Za-z]+$/, '')}
+          </span>
+          <span className="addasset-session__meta">
+            {h.quantity} · {accountLabel(h.accountId)}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="icon-action"
+            aria-label={t('addAsset.removeAddedAria', { symbol: h.instrument.symbol })}
+            onClick={() => removeAdded(h.id)}
+          >
+            <TrashIcon size={14} />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
 
   const renderRow = (inst: Instrument, index: number) => (
     <SearchResultRow
@@ -332,21 +470,18 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   return (
     <Modal
       title={t('addAsset.title')}
-      onClose={infoTopic ? () => setInfoTopic(null) : onClose}
+      onClose={
+        infoTopic
+          ? () => setInfoTopic(null)
+          : creatingAccount
+            ? () => setCreatingAccount(false)
+            : onClose
+      }
       wide
       footer={
-        <>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-          {mode === 'custom' ? (
-            <Button variant="primary" onClick={handleAddCustom} disabled={!canAddCustom}>
-              {t('addAsset.add')}
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={handleAdd} disabled={!selected}>
-              {t('addAsset.add')}
-            </Button>
-          )}
-        </>
+        <Button variant="primary" onClick={onClose}>
+          {t('common.done')}
+        </Button>
       }
     >
       <div
@@ -519,6 +654,28 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
               </p>
             )}
           </div>
+
+          {customDrawable ? (
+            accountPicker
+          ) : (
+            <div className="field">
+              <span className="field__label">{t('addAsset.account')}</span>
+              <p className="field__hint" style={{ marginTop: 0 }}>
+                {t('addAsset.illiquidBucketNote', { name: t('addAsset.illiquidBucketName') })}
+              </p>
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            className="addasset-add-button"
+            onClick={handleAddCustom}
+            disabled={!canAddCustom}
+          >
+            <PlusIcon size={16} /> {t('addAsset.add')}
+          </Button>
+
+          {addedList}
         </>
       ) : (
         <>
@@ -540,7 +697,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
             {search.isError && <InlineError error={search.error} />}
 
             {debounced.trim().length >= 2 && (
-              <div className="search-results">
+              <div className="search-results addasset-search__results">
                 {pseudoMatches.length > 0 && (
                   <>
                     <div className="search-group">{t('addAsset.groupOther')}</div>
@@ -648,9 +805,55 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                   />
                 </div>
               </div>
+
+              {accountPicker}
+
+              <Button
+                variant="primary"
+                className="addasset-add-button"
+                onClick={handleAdd}
+                disabled={!selected}
+              >
+                <PlusIcon size={16} /> {t('addAsset.add')}
+              </Button>
             </>
           )}
+
+          {addedList}
         </>
+      )}
+
+      {creatingAccount && (
+        <Modal
+          title={t('addAsset.createAccountTitle')}
+          onClose={() => setCreatingAccount(false)}
+          footer={<Button onClick={() => setCreatingAccount(false)}>{t('common.cancel')}</Button>}
+        >
+          <p className="field__hint" style={{ marginTop: 0, marginBottom: 12 }}>
+            {t('addAsset.createAccountHint')}
+          </p>
+          <div className="acct-add">
+            <AccountPresetCombobox
+              residence={plan.residenceCountry ?? 'US'}
+              currentAccountCount={envelopes.length}
+              maxAccounts={maxAccounts}
+              onAdd={handleAddAccountPresets}
+              onLimitReached={() => openPaywall('accounts')}
+            />
+            <Button variant="accent" className="acct-add__button" onClick={handleAddCustomAccount}>
+              <PlusIcon size={16} /> {t('accounts.customAccount')}
+            </Button>
+            {cryptoPreset && (
+              <Button
+                variant="accent"
+                className="acct-add__button"
+                onClick={() => cryptoPreset && handleAddAccountPresets([cryptoPreset])}
+              >
+                <PlusIcon size={16} /> {cryptoPreset.name}
+              </Button>
+            )}
+          </div>
+        </Modal>
       )}
 
       {infoTopic === 'type' && (

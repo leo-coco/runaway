@@ -54,6 +54,14 @@ export interface Account {
    * PEA, 401k…) are `false` — their type is known and locked.
    */
   readonly custom?: boolean;
+  /**
+   * `true` for the auto-managed "Illiquid assets" bucket that holds non-drawable
+   * custom assets (a home, a car). It is NOT a tax envelope: illiquid holdings are
+   * excluded from every withdrawal/RMD/reinvestment flow, so its tax fields never
+   * bite. It is created and pruned automatically and must be kept out of the
+   * withdrawal order, the accounts editor, and the account-count quota.
+   */
+  readonly illiquid?: boolean;
 }
 
 /** Legacy manual effective tax rate on a withdrawal, as a fraction in [0, 1). */
@@ -385,6 +393,34 @@ export const defaultFreeAccount = (): Account => ({
   kind: 'tax_free',
   custom: true,
 });
+
+/**
+ * Fallback English name of the auto-managed illiquid bucket. UI surfaces render
+ * `t('addAsset.illiquidBucketName')` instead of this stored value (localized);
+ * it is only the raw name persisted on the account.
+ */
+export const ILLIQUID_ACCOUNT_NAME = 'Illiquid assets';
+
+/**
+ * The auto-managed bucket for non-drawable custom assets (home, car). Tax fields
+ * are inert (zero manual rate; 100% cost basis ⇒ zero displayed gain). Never
+ * editable, never in the withdrawal order, never counted toward the quota.
+ */
+export const illiquidAccount = (): Account => ({
+  id: newId(),
+  name: ILLIQUID_ACCOUNT_NAME,
+  taxRatePct: 0,
+  taxableBasePct: 100,
+  taxMode: 'manual',
+  kind: 'taxable',
+  costBasisPct: 100,
+  custom: false,
+  illiquid: true,
+});
+
+/** The auto-managed illiquid bucket, excluded from tax-envelope treatment. */
+export const isIlliquidAccount = (account: Pick<Account, 'illiquid'>): boolean =>
+  account.illiquid === true;
 
 /** Build a new account from a preset (locked) or blank defaults (custom, editable). */
 export const accountFromPreset = (
