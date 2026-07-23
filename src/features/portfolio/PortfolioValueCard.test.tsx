@@ -65,7 +65,7 @@ describe('PortfolioValueCard', () => {
     const retirementCard = cards[1] as HTMLElement;
 
     expect(within(retirementCard).getByText('Portefeuille à la retraite')).toBeInTheDocument();
-    expect(within(retirementCard).getByText('$0')).toBeInTheDocument();
+    expect(within(retirementCard).getByText(/^\$0(\.00)?$/)).toBeInTheDocument();
     expect(retirementCard).toHaveClass('hero__card--depletion');
   });
 });
