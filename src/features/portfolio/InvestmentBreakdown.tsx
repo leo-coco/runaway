@@ -71,7 +71,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const onZoneLeave = (e: DragEvent) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOverKey(null);
   };
-  const onZoneDrop = (accountId: string | null) => (e: DragEvent) => {
+  const onZoneDrop = (accountId: string) => (e: DragEvent) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('text/plain') || draggingId;
     if (id) updateHolding(plan.id, id, { accountId });
@@ -256,6 +256,8 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           </div>
         )}
       </Card>
+
+      <p className="portfolio-cost-basis-info">{t('portfolio.costBasisInfo')}</p>
     </div>
   );
 };

@@ -62,6 +62,7 @@ export const BillingCard = () => {
         ) : (
           <Button
             variant="primary"
+            className="premium-cta"
             disabled={busy || unavailable}
             onClick={() => void run(startCheckout)}
           >

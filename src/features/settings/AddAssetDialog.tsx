@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
@@ -121,6 +121,11 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
   const [query, setQuery] = useState('');
   const debounced = useDebouncedValue(query, 500);
   const search = useAssetSearch(debounced);
+  const cagrInfo = (
+    <div className="addasset-cagr-info">
+      <Trans i18nKey="addAsset.cagrInfo" components={{ strong: <strong /> }} />
+    </div>
+  );
 
   const results = useMemo(() => search.data ?? [], [search.data]);
   const prices = useSearchPrices(results);
@@ -603,7 +608,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
               </p>
             )}
           </div>
-          <div className="addasset-fields">
+          <div className="addasset-fields addasset-fields--price-quantity">
             <div className="field">
               <span className="field__label">{t('addAsset.price')}</span>
               <div className="price-cell">
@@ -640,17 +645,18 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 onChange={setQuantity}
               />
             </div>
-            <div className="field">
-              <span className="field__label">{t('addAsset.expectedCagr')}</span>
-              <Stepper
-                ariaLabel={t('addAsset.ariaCagr')}
-                step={1}
-                suffix="%"
-                hideButtons
-                value={cagr}
-                onChange={setCagr}
-              />
-            </div>
+          </div>
+          <div className="field addasset-cagr">
+            <span className="field__label">{t('addAsset.expectedCagr')}</span>
+            <Stepper
+              ariaLabel={t('addAsset.ariaCagr')}
+              step={1}
+              suffix="%"
+              hideButtons
+              value={cagr}
+              onChange={setCagr}
+            />
+            {cagrInfo}
           </div>
           <div className={cn('addasset-comp-drawer', compositionOpen && 'is-open')}>
             <button
@@ -841,7 +847,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                     onChange={setQuantity}
                   />
                 </div>
-                <div className="field">
+                <div className="field addasset-cagr">
                   <span className="field__label">{t('addAsset.expectedCagr')}</span>
                   <Stepper
                     ariaLabel={t('addAsset.ariaCagr')}
@@ -850,6 +856,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                     value={cagr}
                     onChange={setCagr}
                   />
+                  {cagrInfo}
                 </div>
               </div>
 

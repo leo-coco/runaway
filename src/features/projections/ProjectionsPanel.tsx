@@ -90,6 +90,8 @@ const C_PORTFOLIO = '#38bdf8';
 const C_HOME_EQUITY = '#f7931a';
 const C_RENTAL_EQUITY = '#a855f7';
 const C_TOTAL = '#22c55e';
+const C_RETIREMENT = '#818cf8';
+const MARKER_STROKE_WIDTH = 2;
 
 const PIE_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#f7931a', '#f43f5e'];
 
@@ -170,10 +172,10 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
       : null;
   const depletionLabelPosition =
     depletionFraction !== null && depletionFraction > 0.85
-      ? 'insideTopRight'
+      ? 'insideBottomRight'
       : depletionFraction !== null && depletionFraction < 0.15
-        ? 'insideTopLeft'
-        : 'top';
+        ? 'insideBottomLeft'
+        : 'insideBottom';
 
   // Whether the year/age switch on the X axis is shown at all: it's meaningless
   // without a valid current age to convert from.
@@ -186,49 +188,46 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
   };
 
   // Vertical markers shared by every time-axis chart: retirement, plan-end
-  // (death) and, if the money runs out, the depletion year.
-  const yearMarkers = (labels: boolean) => {
+  // (death) and, if the money runs out, the depletion year. Always labelled —
+  // every chart view needs the same landmarks, not just the default one.
+  const yearMarkers = () => {
     const els = [
       <ReferenceLine
         key="ret"
         x={plan.settings.retirementYear}
-        stroke="var(--text-dim)"
+        stroke={C_RETIREMENT}
+        strokeWidth={MARKER_STROKE_WIDTH}
         strokeDasharray="4 4"
-        label={
-          labels
-            ? {
-                value:
-                  retirementAge !== null
-                    ? t('projChart.retirementAge', {
-                        year: plan.settings.retirementYear,
-                        age: retirementAge,
-                      })
-                    : t('projChart.retirement', { year: plan.settings.retirementYear }),
-                fill: 'var(--text-dim)',
-                fontSize: 10,
-                position: 'insideTopLeft',
-              }
-            : undefined
-        }
+        label={{
+          value:
+            retirementAge !== null
+              ? t('projChart.retirementAge', {
+                  year: plan.settings.retirementYear,
+                  age: retirementAge,
+                })
+              : t('projChart.retirement', { year: plan.settings.retirementYear }),
+          fill: C_RETIREMENT,
+          fontSize: 11,
+          fontWeight: 600,
+          position: 'insideBottomLeft',
+        }}
       />,
       <ReferenceLine
         key="hor"
         x={horizonYear}
         stroke={C_HORIZON}
+        strokeWidth={MARKER_STROKE_WIDTH}
         strokeDasharray="4 4"
-        label={
-          labels
-            ? {
-                value:
-                  horizonAge !== null
-                    ? t('projChart.planEndsAge', { year: horizonYear, age: horizonAge })
-                    : t('projChart.planEnds', { year: horizonYear }),
-                fill: C_HORIZON,
-                fontSize: 10,
-                position: 'insideTopRight',
-              }
-            : undefined
-        }
+        label={{
+          value:
+            horizonAge !== null
+              ? t('projChart.planEndsAge', { year: horizonYear, age: horizonAge })
+              : t('projChart.planEnds', { year: horizonYear }),
+          fill: C_HORIZON,
+          fontSize: 11,
+          fontWeight: 600,
+          position: 'insideBottomRight',
+        }}
       />,
     ];
     if (depletion !== null) {
@@ -237,21 +236,18 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
           key="dep"
           x={depletion}
           stroke="var(--danger)"
+          strokeWidth={MARKER_STROKE_WIDTH}
           strokeDasharray="6 4"
-          label={
-            labels
-              ? {
-                  value:
-                    depletionAge !== null
-                      ? t('projChart.depletionAge', { year: depletion, age: depletionAge })
-                      : t('projChart.depletion', { year: depletion }),
-                  fill: 'var(--danger)',
-                  fontSize: 11,
-                  position: depletionLabelPosition,
-                  dy: 28,
-                }
-              : undefined
-          }
+          label={{
+            value:
+              depletionAge !== null
+                ? t('projChart.depletionAge', { year: depletion, age: depletionAge })
+                : t('projChart.depletion', { year: depletion }),
+            fill: 'var(--danger)',
+            fontSize: 11,
+            fontWeight: 600,
+            position: depletionLabelPosition,
+          }}
         />,
       );
     }
@@ -310,7 +306,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 />
               }
             />
-            {yearMarkers(true)}
+            {yearMarkers()}
             {symbols.map((s) => (
               <Area
                 key={s.symbol}
@@ -351,7 +347,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 />
               }
             />
-            {yearMarkers(false)}
+            {yearMarkers()}
             <Area
               type="monotone"
               dataKey="total"
@@ -389,7 +385,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 />
               }
             />
-            {yearMarkers(false)}
+            {yearMarkers()}
             <Line type="monotone" dataKey="opening" stroke="#38bdf8" dot={false} strokeWidth={2} />
             <Line type="monotone" dataKey="closing" stroke="#22c55e" dot={false} strokeWidth={2} />
           </LineChart>
@@ -421,7 +417,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
               }
             />
             <ReferenceLine y={0} stroke="var(--border-strong)" strokeDasharray="3 3" />
-            {yearMarkers(true)}
+            {yearMarkers()}
             <Line
               type="monotone"
               dataKey="net"
@@ -460,7 +456,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 />
               }
             />
-            {yearMarkers(false)}
+            {yearMarkers()}
             <Bar dataKey="appreciation" fill={C_APPRECIATION} radius={[2, 2, 0, 0]} />
             <Bar dataKey="expenses" fill={C_EXPENSES} radius={[2, 2, 0, 0]} />
           </BarChart>
@@ -497,7 +493,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 />
               }
             />
-            {yearMarkers(false)}
+            {yearMarkers()}
             <Line
               type="monotone"
               dataKey="portfolio"
@@ -554,7 +550,7 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
                 />
               }
             />
-            {yearMarkers(false)}
+            {yearMarkers()}
             <Line
               type="monotone"
               dataKey="optimistic"

@@ -303,7 +303,7 @@ export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose
           {mode === 'phased' ? t('spending.initialBudget') : t('spending.lifestyleSpending')}
         </span>
         {budgetEntry}
-        <p className="field__hint">{t('spending.netMonthlyHint')}</p>
+        <p className="field__hint">{t('spending.netMonthlyHint', { currency: plan.currency })}</p>
         {errors.annualSpending && <p className="field-error">{errors.annualSpending.message}</p>}
       </div>
 
@@ -484,11 +484,6 @@ export const RetirementSettingsModal = ({ plan, retirementValue, onSave, onClose
                 onChange={field.onChange}
                 invalid={Boolean(errors.inflationPct)}
               />
-              <p className="field__hint">
-                {t('spending.inflationNote', {
-                  pct: field.value,
-                })}
-              </p>
             </>
           )}
         />

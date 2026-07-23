@@ -186,7 +186,9 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
       </Card>
 
       <Card
-        className={`ov${realEstateCount === 0 ? ' ov--realestate-empty' : ''}`}
+        className={`ov${homeLocked ? ' ov--premium' : ''}${
+          realEstateCount === 0 ? ' ov--realestate-empty' : ''
+        }`}
         data-tour="realestate-card"
       >
         <div className="ov__head">
@@ -247,7 +249,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         </select>
       </Card>
 
-      <Card className="ov" data-tour="accounts-card">
+      <Card className={`ov${accountsLocked ? ' ov--premium' : ''}`} data-tour="accounts-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.accountsTax')}</span>
           {accountsLocked ? (
@@ -272,7 +274,7 @@ export const OverviewCards = ({ plan, rates }: OverviewCardsProps) => {
         </div>
       </Card>
 
-      <Card className="ov" data-tour="withdrawal-card">
+      <Card className={`ov${withdrawalLocked ? ' ov--premium' : ''}`} data-tour="withdrawal-card">
         <div className="ov__head">
           <span className="ov__title">{t('overview.withdrawalStrategy')}</span>
           {withdrawalLocked ? (

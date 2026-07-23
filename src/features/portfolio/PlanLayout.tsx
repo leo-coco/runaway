@@ -14,6 +14,7 @@ import { useMonteCarlo, type UseMonteCarloResult } from '@/hooks/useMonteCarlo';
 import { useFeature } from '@/hooks/useEntitlements';
 import { convert, missingRates, type RatesTable } from '@/services/currencyService';
 import { PlanModals } from '@/features/settings/PlanModals';
+import { PremiumBanner } from '@/features/billing/PremiumBanner';
 import { planCurrencies, type Plan } from '@/domain/plan';
 
 export interface PlanContext {
@@ -116,44 +117,47 @@ export const PlanLayout = () => {
   const ctx: PlanContext = { plan, rates, totalValue, projection, monteCarlo };
 
   return (
-    <div className="container plan-main">
-      <div className="plan-topbar">
-        <div className="plan-title">
-          <div className="plan-title__copy">
-            <div className="plan-title__heading">
-              <h1>{plan.name}</h1>
-              <span className="currency-control" data-tour="currency-selector">
-                <label htmlFor="master-currency">{t('plan.currency')}</label>
-                <select
-                  id="master-currency"
-                  className="select"
-                  value={plan.currency}
-                  disabled={!rates}
-                  title={rates ? undefined : t('plan.currencyRatesUnavailable')}
-                  onChange={(e) => changeCurrency(e.target.value as CurrencyCode)}
-                >
-                  {MASTER_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </span>
+    <>
+      <PremiumBanner />
+      <div className="container plan-main">
+        <div className="plan-topbar">
+          <div className="plan-title">
+            <div className="plan-title__copy">
+              <div className="plan-title__heading">
+                <h1>{plan.name}</h1>
+                <span className="currency-control" data-tour="currency-selector">
+                  <label htmlFor="master-currency">{t('plan.currency')}</label>
+                  <select
+                    id="master-currency"
+                    className="select"
+                    value={plan.currency}
+                    disabled={!rates}
+                    title={rates ? undefined : t('plan.currencyRatesUnavailable')}
+                    onChange={(e) => changeCurrency(e.target.value as CurrencyCode)}
+                  >
+                    {MASTER_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              </div>
+              {plan.description.trim() && (
+                <p className="plan-title__description">{plan.description}</p>
+              )}
             </div>
-            {plan.description.trim() && (
-              <p className="plan-title__description">{plan.description}</p>
-            )}
           </div>
         </div>
+
+        {fx.isError && <InlineError error={fx.error} />}
+
+        <ErrorBoundary feature="plan page">
+          <Outlet context={ctx} />
+        </ErrorBoundary>
+
+        <PlanModals plan={plan} retirementValue={retirementValue} rates={rates} />
       </div>
-
-      {fx.isError && <InlineError error={fx.error} />}
-
-      <ErrorBoundary feature="plan page">
-        <Outlet context={ctx} />
-      </ErrorBoundary>
-
-      <PlanModals plan={plan} retirementValue={retirementValue} rates={rates} />
-    </div>
+    </>
   );
 };

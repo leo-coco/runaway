@@ -9,6 +9,7 @@ import { useSession } from '@/lib/authClient';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { effectivePrice } from '@/domain/entitlements';
 import { startCheckout, BillingUnavailableError } from './billingApi';
+import { ProBadge } from './ProBadge';
 
 /**
  * Global upgrade paywall. Opened via `openPaywall(reason)` from any gated surface;
@@ -29,6 +30,31 @@ export const PaywallDialog = () => {
 
   if (!reason) return null;
   const price = effectivePrice(pricing);
+  const comparisonRows = [
+    { feature: 'projection', free: '✓', premium: '✓', freeStatus: 'yes' },
+    { feature: 'monteCarlo', free: '—', premium: '✓', freeStatus: 'no' },
+    {
+      feature: 'accountTax',
+      free: t('billing.comparison.limit', { count: limits.maxAccounts }),
+      premium: t('billing.comparison.unlimited'),
+      freeStatus: 'limit',
+    },
+    { feature: 'withdrawal', free: '—', premium: '✓', freeStatus: 'no' },
+    { feature: 'realEstate', free: '—', premium: '✓', freeStatus: 'no' },
+    { feature: 'phased', free: '—', premium: '✓', freeStatus: 'no' },
+    {
+      feature: 'plans',
+      free: t('billing.comparison.limit', { count: limits.maxPlans }),
+      premium: t('billing.comparison.unlimited'),
+      freeStatus: 'limit',
+    },
+    {
+      feature: 'assets',
+      free: t('billing.comparison.limit', { count: limits.maxAssets }),
+      premium: t('billing.comparison.unlimited'),
+      freeStatus: 'limit',
+    },
+  ] as const;
 
   const upgrade = async () => {
     if (!session?.user) {
@@ -49,15 +75,21 @@ export const PaywallDialog = () => {
 
   return (
     <Modal
-      title={t('billing.premium')}
+      title={t('billing.compareTitle')}
       onClose={close}
       className="modal--paywall"
+      wide
       footer={
         <>
           <Button variant="ghost" onClick={close} disabled={busy}>
             {t('billing.notNow')}
           </Button>
-          <Button variant="primary" onClick={() => void upgrade()} disabled={busy || unavailable}>
+          <Button
+            variant="primary"
+            className="premium-cta"
+            onClick={() => void upgrade()}
+            disabled={busy || unavailable}
+          >
             {busy
               ? t('billing.redirecting')
               : t('billing.priceCta', { price, currency: pricing.currency })}
@@ -74,17 +106,27 @@ export const PaywallDialog = () => {
         />
       </div>
       <div className="paywall__content">
-        <p className="paywall__eyebrow">{t('billing.unlock')}</p>
-        <h3 className="paywall__heading">{t('billing.paywallTitle')}</h3>
-        <p className="paywall__reason">
-          {t(`billing.reason.${reason}`, { max: limits.maxAccounts })}
+        <p className="paywall__eyebrow">
+          {t('billing.unlock')} <ProBadge />
         </p>
-        <ul className="paywall__benefits">
-          <li>{t('billing.benefit.monteCarlo')}</li>
-          <li>{t('billing.benefit.accounts')}</li>
-          <li>{t('billing.benefit.withdrawal')}</li>
-          <li>{t('billing.benefit.plans')}</li>
-        </ul>
+        <div className="paywall__comparison" role="table" aria-label={t('billing.compareTitle')}>
+          <div className="paywall__comparison-row paywall__comparison-row--head" role="row">
+            <span role="columnheader">{t('billing.compareFeature')}</span>
+            <span role="columnheader">{t('billing.free')}</span>
+            <span role="columnheader">{t('billing.premium')}</span>
+          </div>
+          {comparisonRows.map((row) => (
+            <div className="paywall__comparison-row" role="row" key={row.feature}>
+              <span role="cell">{t(`billing.comparison.${row.feature}`)}</span>
+              <span role="cell" className={`paywall__comparison-${row.freeStatus}`}>
+                {row.free}
+              </span>
+              <span role="cell" className="paywall__comparison-yes">
+                {row.premium}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
       {error && <p className="paywall__note field-error">{error}</p>}
       {unavailable && <p className="paywall__note">{t('billing.comingSoon')}</p>}
