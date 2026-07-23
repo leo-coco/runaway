@@ -939,7 +939,18 @@ export const fr: Resources = {
   },
   addAsset: {
     title: 'Ajouter un actif',
-    add: 'Ajouter l’actif',
+    add: 'Enregistrer et ajouter un autre',
+    account: 'Compte',
+    accountAria: 'Compte dans lequel placer cet actif',
+    newAccount: '＋ Nouveau compte…',
+    createAccountTitle: 'Créer un compte',
+    createAccountHint:
+      'Choisissez une enveloppe prédéfinie pour votre pays, ou ajoutez un compte personnalisé vierge. Vous pourrez ajuster sa fiscalité plus tard dans Comptes.',
+    illiquidBucketName: 'Actifs non liquides',
+    illiquidBucketNote: 'Rangé dans « {{name}} » — séparé de vos comptes fiscaux.',
+    addedListTitle_one: 'Ajouté ({{count}})',
+    addedListTitle_other: 'Ajoutés ({{count}})',
+    removeAddedAria: 'Retirer {{symbol}} de la liste des ajouts',
     tabSearch: 'Rechercher',
     tabCustom: 'Actif personnalisé',
     customHint:

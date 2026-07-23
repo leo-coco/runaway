@@ -6070,6 +6070,70 @@ th[title] {
 .addasset-fields--2 {
   grid-template-columns: 1fr 1fr;
 }
+/* Floating result list for the asset search, so it overlays the detail block
+   below instead of pushing it down (mirrors .acct-preset-combo__results). */
+.addasset-search__results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 6px;
+  background: var(--bg-card);
+}
+/* While searching, reserve vertical room so the absolutely-positioned results
+   dropdown isn't clipped by the scrollable modal body. */
+.addasset-modal--searching .modal__body {
+  min-height: 440px;
+}
+/* The nested create-account modal is narrow (560px), so the preset combobox and
+   the two dedicated buttons can't share one row without collapsing the search
+   input to nothing (the Accounts modal fits them only because it's 920px wide).
+   Stack them, and reserve body height so the combobox dropdown isn't clipped. */
+.addasset-create-account .acct-add {
+  flex-direction: column;
+  align-items: stretch;
+}
+.addasset-create-account .acct-preset-combo {
+  flex: none;
+}
+.addasset-create-account .modal__body {
+  min-height: 420px;
+}
+.addasset-add-button {
+  width: 100%;
+  margin-top: 16px;
+}
+.addasset-session {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.addasset-session__title {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.addasset-session__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.addasset-session__row:last-child {
+  border-bottom: none;
+}
+.addasset-session__sym {
+  font-weight: 700;
+  color: var(--text);
+}
+.addasset-session__meta {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
 .adj {
   display: flex;
   flex-direction: column;
@@ -6431,6 +6495,58 @@ th[title] {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.addasset-comp-drawer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.addasset-comp-drawer__trigger {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.addasset-comp-drawer__trigger:hover {
+  background: var(--bg-card-hover);
+}
+.addasset-comp-drawer__trigger:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.addasset-comp-drawer__meta {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+.addasset-comp-drawer__chevron {
+  transition: transform 160ms ease;
+}
+.addasset-comp-drawer.is-open .addasset-comp-drawer__chevron {
+  transform: rotate(180deg);
+}
+.addasset-comp-drawer__body {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border);
+}
+.addasset-comp-drawer__body > .field__hint:first-child {
+  margin: 10px 0;
+}
+.addasset-comp-drawer__total {
+  margin: 8px 0 0;
 }
 .addasset-comp__row {
   display: grid;

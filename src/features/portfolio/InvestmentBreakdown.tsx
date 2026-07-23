@@ -12,7 +12,7 @@ import { useSession } from '@/lib/authClient';
 import { atLimit } from '@/domain/entitlements';
 import { languageFromPathname } from '@/i18n';
 import { useAppMode } from '@/providers/AppModeContext';
-import { accountEffectiveRate, type Account } from '@/domain/account';
+import { accountEffectiveRate, isIlliquidAccount, type Account } from '@/domain/account';
 import { gainForHoldings, valueHoldings, type GainSummary } from '@/services/portfolioService';
 import type { HoldingValue } from '@/services/portfolioService';
 import { cn } from '@/lib/cn';
@@ -30,7 +30,7 @@ interface InvestmentBreakdownProps {
 
 interface Group {
   key: string;
-  account: Account | null; // null = unassigned
+  account: Account;
   holdings: readonly Holding[];
   subtotal: number;
   gain: GainSummary;
@@ -85,12 +85,12 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
     [plan.holdings, plan.currency, rates],
   );
 
-  // Group holdings into account sections (accounts in order, then Unassigned),
-  // each carrying its own value subtotal and unrealised gain/loss.
+  // Group holdings into account sections (accounts in order), each carrying its
+  // own value subtotal and unrealised gain/loss. Every holding is assigned to an
+  // account (store-guaranteed), so there is no "unassigned" section.
   const groups = useMemo<Group[]>(() => {
     const valueById = new Map(allValues.map((v) => [v.holdingId, v]));
-    const isKnown = (id: string | null): boolean => plan.accounts.some((a) => a.id === id);
-    const build = (key: string, account: Account | null, holdings: readonly Holding[]): Group => {
+    const build = (key: string, account: Account, holdings: readonly Holding[]): Group => {
       const vals = holdings
         .map((h) => valueById.get(h.id))
         .filter((v): v is HoldingValue => v !== undefined);
@@ -98,19 +98,15 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
       return { key, account, holdings, subtotal: gain.value, gain };
     };
 
-    const accountGroups = plan.accounts.map((account) =>
-      build(
-        account.id,
-        account,
-        plan.holdings.filter((h) => h.accountId === account.id),
-      ),
-    );
-    const unassignedHoldings = plan.holdings.filter((h) => !isKnown(h.accountId));
-    const result = accountGroups.filter((g) => g.holdings.length > 0);
-    if (unassignedHoldings.length > 0) {
-      result.push(build('__unassigned__', null, unassignedHoldings));
-    }
-    return result;
+    return plan.accounts
+      .map((account) =>
+        build(
+          account.id,
+          account,
+          plan.holdings.filter((h) => h.accountId === account.id),
+        ),
+      )
+      .filter((g) => g.holdings.length > 0);
   }, [allValues, plan.holdings, plan.accounts]);
 
   const totalGain = useMemo(
@@ -169,16 +165,23 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           <div className="state-box">{t('portfolio.empty')}</div>
         ) : (
           groups.map((g) => {
-            const targetId = g.account ? g.account.id : null;
-            const name = g.account ? g.account.name : t('portfolio.unassigned');
+            // The illiquid bucket is not a tax envelope and not a drop target:
+            // its non-drawable holdings belong to no account, so a drop would only
+            // snap back. Show it as a labelled, read-only group.
+            const illiquid = isIlliquidAccount(g.account);
+            const name = illiquid ? t('addAsset.illiquidBucketName') : g.account.name;
             const isOver = dragOverKey === g.key;
             return (
               <div
-                className={cn('acct-group', draggingId && 'is-droppable', isOver && 'is-drop-over')}
+                className={cn(
+                  'acct-group',
+                  !illiquid && draggingId && 'is-droppable',
+                  isOver && 'is-drop-over',
+                )}
                 key={g.key}
-                onDragOver={onZoneOver(g.key)}
-                onDragLeave={onZoneLeave}
-                onDrop={onZoneDrop(targetId)}
+                onDragOver={illiquid ? undefined : onZoneOver(g.key)}
+                onDragLeave={illiquid ? undefined : onZoneLeave}
+                onDrop={illiquid ? undefined : onZoneDrop(g.account.id)}
               >
                 {isOver && <div className="acct-group__hint">{t('common.addTo', { name })}</div>}
                 <div className="acct-section">
@@ -186,13 +189,13 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                     <span className="acct-section__name">{name}</span>
                     <span className="acct-section__meta">
                       {t('portfolio.assets', { count: g.holdings.length })}
-                      {g.account
-                        ? t('portfolio.taxSuffix', {
+                      {illiquid
+                        ? ''
+                        : t('portfolio.taxSuffix', {
                             rate: (
                               accountEffectiveRate(g.account, plan.residenceCountry ?? 'US') * 100
                             ).toFixed(1),
-                          })
-                        : ''}
+                          })}
                     </span>
                   </div>
                   <span className="acct-section__total">{fmt.format(g.subtotal)}</span>
@@ -211,6 +214,7 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
                     fetchState={statuses[h.id]}
                     onUpdate={updateHolding.bind(null, plan.id)}
                     onRemove={removeHolding.bind(null, plan.id)}
+                    draggable={!illiquid}
                     onDragStart={() => setDraggingId(h.id)}
                     onDragEnd={() => {
                       setDraggingId(null);
@@ -223,18 +227,14 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
           })
         )}
 
-        {/* While dragging, expose empty accounts (and Unassigned) as drop targets. */}
+        {/* While dragging, expose empty accounts as drop targets (never the
+            illiquid bucket — it is not a drop destination). */}
         {draggingId &&
           (() => {
             const shown = new Set(groups.map((g) => g.key));
-            const extras: { key: string; accountId: string | null; name: string }[] = [
-              ...plan.accounts
-                .filter((a) => !shown.has(a.id))
-                .map((a) => ({ key: a.id, accountId: a.id, name: a.name })),
-              ...(shown.has('__unassigned__')
-                ? []
-                : [{ key: '__unassigned__', accountId: null, name: t('portfolio.unassigned') }]),
-            ];
+            const extras: { key: string; accountId: string; name: string }[] = plan.accounts
+              .filter((a) => !shown.has(a.id) && !isIlliquidAccount(a))
+              .map((a) => ({ key: a.id, accountId: a.id, name: a.name }));
             return extras.map((zone) => (
               <div
                 key={zone.key}
