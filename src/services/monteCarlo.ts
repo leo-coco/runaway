@@ -161,6 +161,15 @@ export interface MonteCarloResult {
   readonly withdrawalRatePercentiles: readonly MonteCarloPercentile[];
   readonly medianEndBalance: number;
   readonly outcomeBreakdown: MonteCarloOutcomeBreakdown;
+  /** Per-iteration seed + outcome category, in run order — lets the trial explorer
+   *  reproduce (via `sampleMonteCarloPath`) the exact iterations behind this
+   *  result's breakdown, instead of resampling a fresh, unrelated set. */
+  readonly trialSeeds: readonly TrialSeed[];
+}
+
+export interface TrialSeed {
+  readonly seed: number;
+  readonly category: TrialOutcomeCategory;
 }
 
 export interface MonteCarloOptions {
@@ -922,7 +931,6 @@ export const runMonteCarlo = (
   const basisInit = makeBasisInit(input);
   const accountsForYear = makeAccountsForYear(input);
   const L = cholesky(input.correlation);
-  const rng = mulberry32(options.seed);
 
   // Per-asset lognormal parameters: factor = exp(mu + sigma·z).
   const sigma = assets.map((a) => Math.max(0, a.sigmaPct) / 100);
@@ -983,8 +991,16 @@ export const runMonteCarlo = (
   // the plan end, per iteration — used to deflate end wealth into today's money.
   const inflAtRefByIter = new Array<number>(options.iterations);
   const inflAtEndByIter = new Array<number>(options.iterations);
+  // Each iteration draws from its own independently-seeded stream (same derivation
+  // as `sampleTrials`/`trialsFromSeeds`), so any individual iteration can be
+  // reproduced later via `sampleMonteCarloPath` with its recorded seed — the trial
+  // explorer shows the actual runs behind the aggregate, not a fresh resample.
+  const seedByIter = new Array<number>(options.iterations);
 
   for (let iter = 0; iter < options.iterations; iter += 1) {
+    const seed = (options.seed + iter * 0x9e3779b1) >>> 0;
+    seedByIter[iter] = seed;
+    const rng = mulberry32(seed);
     const state: WithdrawableAsset[] = assets.map((a) => ({
       value: a.startValue,
       accountId: a.accountId,
@@ -1201,21 +1217,22 @@ export const runMonteCarlo = (
     failedInMiddle: 0,
   };
   const breakdown: { -readonly [K in keyof MonteCarloOutcomeBreakdown]: number } = outcomeBreakdown;
+  const trialSeeds: TrialSeed[] = new Array(options.iterations);
   for (let iter = 0; iter < options.iterations; iter += 1) {
     const refNominal =
       refIdx >= 0 && refIdx < balancesByYear.length ? balancesByYear[refIdx]![iter]! : initialTotal;
     const realEnd = endBalanceByIter[iter]! / (inflAtEndByIter[iter] || 1);
     const realRef = refNominal / (inflAtRefByIter[iter] || 1);
     const realRatio = realRef > 0 ? realEnd / realRef : 0;
-    breakdown[
-      classifyOutcome({
-        funded: fundedByIter[iter]!,
-        realRatio,
-        dryYear: firstFailYearByIter[iter] ?? null,
-        retirementYear,
-        retirementHorizon: options.retirementHorizon,
-      })
-    ] += 1;
+    const category = classifyOutcome({
+      funded: fundedByIter[iter]!,
+      realRatio,
+      dryYear: firstFailYearByIter[iter] ?? null,
+      retirementYear,
+      retirementHorizon: options.retirementHorizon,
+    });
+    breakdown[category] += 1;
+    trialSeeds[iter] = { seed: seedByIter[iter]!, category };
   }
 
   return {
@@ -1226,6 +1243,7 @@ export const runMonteCarlo = (
     retirementHorizon: options.retirementHorizon,
     percentiles,
     withdrawalRatePercentiles,
+    trialSeeds,
     medianEndBalance: percentileOf(endSorted, 0.5),
     outcomeBreakdown,
   };
@@ -1646,6 +1664,45 @@ export interface Trial {
   readonly histStartYear?: number;
 }
 
+// Funding shortfall, not a zero balance, and over the whole horizon rather than
+// retirement alone — `runMonteCarlo`'s definition exactly, so a trial built here
+// as funded is one the aggregate also counted as a success.
+const buildTrial = (
+  input: MonteCarloInput,
+  options: MonteCarloOptions,
+  seed: number,
+  index: number,
+  category?: TrialOutcomeCategory,
+): Trial => {
+  const lastRetirementYear = input.retirementYear + options.retirementHorizon - 1;
+  const initialTotal = input.assets.reduce((sum, a) => sum + a.startValue, 0);
+  const path = sampleMonteCarloPath(input, { ...options, seed });
+  const dryYear = path.years.find((y) => y.shortfall && y.year <= lastRetirementYear)?.year ?? null;
+  const end = path.years.find((y) => y.year === lastRetirementYear) ?? path.years.at(-1);
+  const realEnd = (end?.closingTotal ?? 0) / (end?.inflationFactor || 1);
+  const ref = path.years.find((y) => y.year === input.retirementYear - 1);
+  const realRef = ref ? ref.closingTotal / (ref.inflationFactor || 1) : initialTotal;
+  const realRatio = realRef > 0 ? realEnd / realRef : 0;
+  return {
+    index,
+    seed,
+    funded: dryYear === null,
+    terminalBalance: end?.closingTotal ?? 0,
+    dryYear,
+    category:
+      category ??
+      classifyOutcome({
+        funded: dryYear === null,
+        realRatio,
+        dryYear,
+        retirementYear: input.retirementYear,
+        retirementHorizon: options.retirementHorizon,
+      }),
+    path,
+    histStartYear: path.histStartYear,
+  };
+};
+
 /**
  * Draw `count` independent simulated futures (same resampling technique as
  * `sampleScenarioPaths`) and classify each into one of the five outcome
@@ -1658,49 +1715,22 @@ export const sampleTrials = (
   input: MonteCarloInput,
   options: MonteCarloOptions = DEFAULT_MC_OPTIONS,
   count = 100,
-): Trial[] => {
-  const lastRetirementYear = input.retirementYear + options.retirementHorizon - 1;
-  const initialTotal = input.assets.reduce((sum, a) => sum + a.startValue, 0);
-  const endEntryOf = (path: SamplePath): SamplePathYear | undefined =>
-    path.years.find((y) => y.year === lastRetirementYear) ?? path.years.at(-1);
-  // Wealth entering retirement (real): close of the last accumulation year, deflated
-  // to today's money. If the plan starts already retired, use the initial total.
-  const realRefOf = (path: SamplePath): number => {
-    const ref = path.years.find((y) => y.year === input.retirementYear - 1);
-    return ref ? ref.closingTotal / (ref.inflationFactor || 1) : initialTotal;
-  };
-  // Funding shortfall, not a zero balance, and over the whole horizon rather than
-  // retirement alone — `runMonteCarlo`'s definition exactly, so a trial listed
-  // here as funded is one the aggregate also counted as a success.
-  const dryYearOf = (path: SamplePath): number | null =>
-    path.years.find((y) => y.shortfall && y.year <= lastRetirementYear)?.year ?? null;
+): Trial[] =>
+  Array.from({ length: count }, (_, s) =>
+    buildTrial(input, options, (options.seed + s * 0x9e3779b1) >>> 0, s + 1),
+  );
 
-  return Array.from({ length: count }, (_, s): Trial => {
-    const seed = (options.seed + s * 0x9e3779b1) >>> 0;
-    const path = sampleMonteCarloPath(input, { ...options, seed });
-    const dryYear = dryYearOf(path);
-    const end = endEntryOf(path);
-    const realEnd = (end?.closingTotal ?? 0) / (end?.inflationFactor || 1);
-    const realRef = realRefOf(path);
-    const realRatio = realRef > 0 ? realEnd / realRef : 0;
-    return {
-      index: s + 1,
-      seed,
-      funded: dryYear === null,
-      terminalBalance: end?.closingTotal ?? 0,
-      dryYear,
-      category: classifyOutcome({
-        funded: dryYear === null,
-        realRatio,
-        dryYear,
-        retirementYear: input.retirementYear,
-        retirementHorizon: options.retirementHorizon,
-      }),
-      path,
-      histStartYear: path.histStartYear,
-    };
-  });
-};
+/**
+ * Reproduce the exact trials behind a `runMonteCarlo` result from its recorded
+ * per-iteration `trialSeeds` — the trial explorer then shows the actual runs
+ * that made up the aggregate breakdown, not a fresh, independently-sampled set.
+ */
+export const trialsFromSeeds = (
+  input: MonteCarloInput,
+  options: MonteCarloOptions,
+  trialSeeds: readonly TrialSeed[],
+): Trial[] =>
+  trialSeeds.map(({ seed, category }, i) => buildTrial(input, options, seed, i + 1, category));
 
 /** Stable key for a holding-pair correlation override (order-independent). */
 export const correlationKey = (a: string | undefined, b: string | undefined): string =>

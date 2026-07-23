@@ -13,11 +13,12 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import {
-  sampleTrials,
+  trialsFromSeeds,
   type MonteCarloInput,
   type MonteCarloOptions,
   type Trial,
   type TrialOutcomeCategory,
+  type TrialSeed,
 } from '@/services/monteCarlo';
 import { SampleScenarioTable } from './SampleScenarioTable';
 import type { Plan } from '@/domain/plan';
@@ -32,6 +33,9 @@ interface Props {
   plan: Plan;
   input: MonteCarloInput;
   options: MonteCarloOptions;
+  /** Per-iteration seed + outcome category from the actual run being inspected —
+   *  the explorer reproduces these exact trials rather than resampling new ones. */
+  trialSeeds: readonly TrialSeed[];
   startYear: number;
   retirementYear: number;
   endYear: number;
@@ -39,8 +43,6 @@ interface Props {
   /** When set, the trial list opens pre-filtered to just this outcome category. */
   initialCategoryFilter?: TrialOutcomeCategory | null;
 }
-
-const TRIAL_COUNT = 100;
 
 const CATEGORY_ORDER: readonly TrialOutcomeCategory[] = [
   'largeSurplus',
@@ -71,6 +73,7 @@ export const TrialExplorerModal = ({
   plan,
   input,
   options,
+  trialSeeds,
   startYear,
   retirementYear,
   onClose,
@@ -80,7 +83,10 @@ export const TrialExplorerModal = ({
   const fmt = useCurrencyFormatter(plan.currency);
   const { currentAge } = plan.settings;
 
-  const trials = useMemo(() => sampleTrials(input, options, TRIAL_COUNT), [input, options]);
+  const trials = useMemo(
+    () => trialsFromSeeds(input, options, trialSeeds),
+    [input, options, trialSeeds],
+  );
   // Grouping by start year is only meaningful when each trial draws its own
   // cohort. A fixed histStartYear pins every trial to the same historical
   // replay, so every tile would show the same year.
@@ -146,7 +152,7 @@ export const TrialExplorerModal = ({
   return (
     <Modal
       title={t('mc.trialExplorerTitle')}
-      description={t('mc.trialExplorerDesc', { count: TRIAL_COUNT })}
+      description={t('mc.trialExplorerDesc', { count: options.iterations })}
       onClose={onClose}
       fullscreen
     >

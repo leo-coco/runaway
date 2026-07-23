@@ -1056,15 +1056,16 @@ export const en = {
     target: 'Target',
     ariaTarget: 'Target success rate',
     noChange: 'no change',
-    cutValue: '−{{amount}}/yr',
-    cutValueMonthly: '−{{amount}}/mo',
+    cutValue: '−{{amount}}/yr ({{total}}/yr total)',
+    cutValueMonthly: '−{{amount}}/mo ({{total}}/mo total)',
     perYear: 'Yr',
     perMonth: 'Mo',
     ariaUnitYear: 'Show the cut per year',
     ariaUnitMonth: 'Show the cut per month',
-    savingsValue: '+{{amount}}/mo',
-    yearsValue: '+{{years}} yr',
-    capitalValue: '+{{amount}}',
+    savingsValue: '+{{amount}}/mo ({{total}}/mo total)',
+    yearsValue: '+{{years}} yr (retiring {{year}})',
+    yearsValueWithAge: '+{{years}} yr (retiring {{year}}, age {{age}})',
+    capitalValue: '+{{amount}} ({{total}} total)',
     points: '+{{n}} pts',
     lock: 'Lock {{name}}',
     unlock: 'Unlock {{name}}',
@@ -1507,7 +1508,7 @@ export const en = {
     steps: {
       dashboardIntro: {
         title: 'Welcome to Runaway',
-        body: 'This guide walks your whole plan in two parts: first what you own (timeline, accounts, assets, real estate), then how you fund and spend it (savings, spending, one-off flows, withdrawals). Use Next and Back to move through it (the ← and → arrow keys work too), and close anytime with Esc.',
+        body: 'This guide walks the dashboard card by card: first your projections (Monte Carlo, runway, timeline), then your income & spending plan (savings, target retirement income, one-off flows, real estate, scenario, accounts, withdrawal strategy), and finally your portfolio (value over time, assets). Use Next and Back to move through it (the ← and → arrow keys work too), and close anytime with Esc.',
       },
       mcSummary: {
         title: 'Your odds of success',
@@ -1529,17 +1530,13 @@ export const en = {
         title: 'Target retirement income',
         body: 'Click Edit on this card to set how much you plan to spend each year in retirement.',
       },
-      spending: {
-        title: 'Linear or by phase',
-        body: 'This is the net amount you want to have per month in retirement. Choose Linear — one steady, inflation-adjusted budget — or By phase, with higher Go-Go years easing into lower No-Go years.',
-      },
       expensesIncomesButton: {
         title: 'One-off expenses & income',
         body: 'Beyond steady saving and spending, model one-time or recurring events: an inheritance, tuition, a windfall. Click Edit on this card to add them.',
       },
-      expensesIncomes: {
-        title: 'Add a cash flow',
-        body: 'Set an amount, a year (or a range for recurring flows), and whether the money comes in or goes out. Each event lands on your projection and runway at the right time.',
+      realEstateButton: {
+        title: 'Real estate',
+        body: 'Property sits alongside your investments in your net worth. Click Edit on this card to model your home and any rentals.',
       },
       scenario: {
         title: 'Projection scenario',
@@ -1549,29 +1546,21 @@ export const en = {
         title: 'Accounts & tax',
         body: 'Assets live inside accounts — tax envelopes like a TFSA or a taxable account. Click Edit on this card to manage them.',
       },
-      accounts: {
-        title: 'Set your tax residence',
-        body: 'Every asset belongs to an account, so withdrawals are taxed realistically. Set your tax residence here — it drives the default rates for every account you add.',
-      },
-      accountsPresets: {
-        title: 'Add an account',
-        body: 'Pick a preset (TFSA, RRSP, taxable…) to pre-fill the type and rate for your country and save time. Next to it, there is a button to add a crypto account, and another for a fully custom account if none of the presets fit.',
-      },
       withdrawalButton: {
         title: 'Withdrawal strategy',
         body: 'Click Edit on this card to set the order your accounts get drawn down.',
       },
-      withdrawal: {
-        title: 'Order your accounts',
-        body: 'Set the order your accounts are drawn down. A tax-smart order can make your money last longer.',
+      portfolioGraph: {
+        title: 'Portfolio chart',
+        body: 'Your total projected portfolio value, year by year.',
+      },
+      assetsTable: {
+        title: 'Your assets at a glance',
+        body: 'A compact table of every asset — value, return, and share of the portfolio — grouped by account.',
       },
       addAssetButton: {
         title: 'Add an asset',
         body: 'Click here to add a new asset to your portfolio — stocks, crypto, cash or anything custom.',
-      },
-      addAsset: {
-        title: 'Search or go custom',
-        body: 'Search adds stocks and crypto with a live price. The Custom tab is for anything else — a house, a car, cash… If it is cash, pick the Cash type so it is treated correctly in the projection.',
       },
       fetchPrices: {
         title: 'Fetch live prices',
@@ -1585,37 +1574,9 @@ export const en = {
         title: 'Organize by drag & drop',
         body: 'Grab an asset by this handle and drop it lower onto one of your existing accounts to move it between envelopes.',
       },
-      quantity: {
-        title: 'Change quantity',
-        body: 'Adjust how many units you hold. Values and projections update instantly.',
-      },
-      cagr: {
-        title: 'Expected growth (CAGR)',
-        body: "Set each asset's expected annual growth rate. The active scenario nudges this up or down.<br><br>CAGR (Compound Annual Growth Rate) is the steady yearly rate that would take a starting value to its ending value over a period, as if it grew smoothly every year — smoothing out the real ups and downs into one average annual return.",
-      },
-      realEstateButton: {
-        title: 'Real estate',
-        body: 'Property sits alongside your investments in your net worth. Click Edit on this card to model your home and any rentals.',
-      },
-      realEstate: {
-        title: 'Home & rentals',
-        body: 'Add your primary residence and rental properties: value, mortgage, appreciation, and for rentals the rent and running costs. Equity is tracked year by year and feeds both your net worth and the projection.',
-      },
-      portfolioGraph: {
-        title: 'Portfolio chart',
-        body: 'Your total projected portfolio value, year by year.',
-      },
-      assetsTable: {
-        title: 'Your assets at a glance',
-        body: 'A compact table of every asset — value, return, and share of the portfolio — grouped by account.',
-      },
-      currency: {
-        title: 'Plan currency',
-        body: 'Switch the plan currency here. Every price and total is converted on the fly, while each asset keeps its native market price.',
-      },
       dashboardOutro: {
         title: 'Dashboard set up',
-        body: 'That\'s the full loop: everything you own, and how you fund and spend it. Next, take the Projection guide or the Monte Carlo guide from "Take the tour" to see your plan in action.',
+        body: 'That\'s the full loop: your projections, your income & spending plan, and your portfolio. Next, take the Projection guide or the Monte Carlo guide from "Take the tour" to see your plan in action.',
       },
       projectionIntro: {
         title: 'The projection guide',

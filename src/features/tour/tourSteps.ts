@@ -39,20 +39,20 @@ const step = (id: string, extra: Omit<TourStep, 'id' | 'titleKey' | 'bodyKey'>):
 });
 
 /**
- * Dashboard guide, told in two acts so it reads like the order you'd actually
- * build a plan.
- *
- * Act 1 — what you own: headline runway → timeline → accounts & tax → adding
- * assets → per-asset values → organizing by account → real estate → net-worth
- * composition.
- * Act 2 — how you fund & spend: savings capacity → retirement spending →
- * one-off expenses & income → scenario → withdrawal strategy → currency.
+ * Dashboard guide, walked card by card in on-screen reading order: outlook
+ * (Monte Carlo, runway, retirement horizon) → funding & spending (savings,
+ * spending target, one-off flows, real estate, scenario, accounts & tax,
+ * withdrawal strategy) → portfolio (value over time, assets table, and —
+ * once the guide reaches the portfolio page — adding an asset, refreshing
+ * prices, editing an asset, and dragging it between accounts).
  *
  * Every step anchors on a `data-tour` key (or an existing class/id) so it
  * survives design changes; the controller skips any step whose anchor is absent
- * (e.g. the asset-row and allocation anchors, which only exist once the plan has
- * a holding). Premium-only steps declare `requires` and are dropped for a viewer
- * whose tier lacks the feature, so a free user never lands on a locked surface.
+ * (e.g. the asset-row anchors, which only exist once the plan has a holding).
+ * Premium-only steps declare `requires` and are dropped for a viewer whose tier
+ * lacks the feature, so a free user never lands on a locked surface. Steps that
+ * open an illustrative modal are intentionally kept out of this guide — it stays
+ * a card-level overview, not a walkthrough of each modal's contents.
  */
 export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
   step('dashboardIntro', {}),
@@ -74,6 +74,32 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     align: 'start',
   }),
   step('timeline', { page: 'dashboard', tourKey: 'timeline-card', side: 'bottom', align: 'start' }),
+  step('savings', { page: 'dashboard', tourKey: 'savings-card', side: 'bottom', align: 'start' }),
+  step('spendingButton', {
+    page: 'dashboard',
+    tourKey: 'spending-card',
+    side: 'bottom',
+    align: 'start',
+  }),
+  step('expensesIncomesButton', {
+    page: 'dashboard',
+    tourKey: 'expenses-card',
+    side: 'bottom',
+    align: 'start',
+  }),
+  step('realEstateButton', {
+    page: 'dashboard',
+    tourKey: 'realestate-card',
+    side: 'bottom',
+    align: 'start',
+    requires: 'realEstate',
+  }),
+  step('scenario', {
+    page: 'dashboard',
+    tourKey: 'scenario-pills',
+    side: 'bottom',
+    align: 'start',
+  }),
   step('accountsButton', {
     page: 'dashboard',
     tourKey: 'accounts-card',
@@ -81,35 +107,31 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     align: 'start',
     requires: 'accountsTax',
   }),
-  step('accounts', {
+  step('withdrawalButton', {
     page: 'dashboard',
-    openModal: 'accounts',
-    tourKey: 'tax-residence-select',
+    tourKey: 'withdrawal-card',
     side: 'bottom',
     align: 'start',
-    requires: 'accountsTax',
+    requires: 'withdrawalOrdering',
   }),
-  step('accountsPresets', {
+  step('portfolioGraph', {
+    // Only mounts once the plan has holdings, so it's skipped for an empty plan.
     page: 'dashboard',
-    openModal: 'accounts',
-    tourKey: 'account-preset-add',
-    side: 'bottom',
-    align: 'start',
-    requires: 'accountsTax',
+    tourKey: 'portfolio-trend-card',
+    side: 'top',
+    align: 'center',
+  }),
+  step('assetsTable', {
+    page: 'dashboard',
+    tourKey: 'dash-assets-card',
+    side: 'top',
+    align: 'center',
   }),
   step('addAssetButton', {
     page: 'portfolio',
     tourKey: 'addasset-btn',
     side: 'bottom',
     align: 'end',
-    unavailableInSandbox: true,
-  }),
-  step('addAsset', {
-    page: 'portfolio',
-    openModal: 'addAsset',
-    tourKey: 'addasset-tabs',
-    side: 'bottom',
-    align: 'start',
     unavailableInSandbox: true,
   }),
   step('fetchPrices', {
@@ -125,95 +147,7 @@ export const DASHBOARD_GUIDE_STEPS: readonly TourStep[] = [
     side: 'top',
     align: 'end',
   }),
-  step('quantity', { page: 'portfolio', tourKey: 'quantity-input', side: 'top', align: 'center' }),
-  step('cagr', { page: 'portfolio', tourKey: 'cagr-input', side: 'top', align: 'center' }),
   step('drag', { page: 'portfolio', tourKey: 'drag-handle', side: 'right', align: 'start' }),
-  step('realEstateButton', {
-    page: 'dashboard',
-    tourKey: 'realestate-card',
-    side: 'bottom',
-    align: 'start',
-    requires: 'realEstate',
-  }),
-  step('realEstate', {
-    page: 'dashboard',
-    openModal: 'realEstate',
-    tourKey: 'plan-modal',
-    side: 'left',
-    align: 'start',
-    requires: 'realEstate',
-  }),
-  step('savings', { page: 'dashboard', tourKey: 'savings-card', side: 'bottom', align: 'start' }),
-  step('spendingButton', {
-    page: 'dashboard',
-    tourKey: 'spending-card',
-    side: 'bottom',
-    align: 'start',
-  }),
-  step('spending', {
-    page: 'dashboard',
-    openModal: 'retirementSettings',
-    tourKey: 'plan-modal',
-    side: 'left',
-    align: 'start',
-    // Showcases the Linear/By-phase choice; "By phase" is premium, so this deep
-    // dive is only offered when the viewer can actually use phased spending. Free
-    // users still get the `spendingButton` step for setting their target income.
-    requires: 'phasedSpending',
-  }),
-  step('expensesIncomesButton', {
-    page: 'dashboard',
-    tourKey: 'expenses-card',
-    side: 'bottom',
-    align: 'start',
-  }),
-  step('expensesIncomes', {
-    page: 'dashboard',
-    openModal: 'expensesIncomes',
-    tourKey: 'plan-modal',
-    side: 'left',
-    align: 'start',
-  }),
-  step('scenario', {
-    page: 'dashboard',
-    tourKey: 'scenario-pills',
-    side: 'bottom',
-    align: 'start',
-  }),
-  step('withdrawalButton', {
-    page: 'dashboard',
-    tourKey: 'withdrawal-card',
-    side: 'bottom',
-    align: 'start',
-    requires: 'withdrawalOrdering',
-  }),
-  step('withdrawal', {
-    page: 'dashboard',
-    openModal: 'withdrawalOrder',
-    tourKey: 'plan-modal',
-    side: 'left',
-    align: 'start',
-    requires: 'withdrawalOrdering',
-  }),
-  step('currency', {
-    page: 'dashboard',
-    tourKey: 'currency-selector',
-    side: 'bottom',
-    align: 'end',
-  }),
-  step('portfolioGraph', {
-    // Only mounts once the plan has holdings, so it's skipped for an empty plan.
-    page: 'dashboard',
-    tourKey: 'portfolio-trend-card',
-    side: 'top',
-    align: 'center',
-  }),
-  step('assetsTable', {
-    page: 'dashboard',
-    tourKey: 'dash-assets-card',
-    side: 'top',
-    align: 'center',
-  }),
   step('dashboardOutro', {}),
 ];
 

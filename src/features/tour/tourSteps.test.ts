@@ -18,19 +18,8 @@ const ids = (features: TierFeatures) =>
 describe('dashboard guide is filtered to the viewer tier', () => {
   it('drops every premium-gated step for a free viewer', () => {
     const free = ids(FREE);
-    // Accounts & tax, withdrawal ordering, phased spending, and real estate are
-    // premium-only.
-    for (const gated of [
-      'mcSummary',
-      'accountsButton',
-      'accounts',
-      'accountsPresets',
-      'withdrawalButton',
-      'withdrawal',
-      'spending',
-      'realEstateButton',
-      'realEstate',
-    ]) {
+    // Accounts & tax, withdrawal ordering, and real estate are premium-only.
+    for (const gated of ['mcSummary', 'accountsButton', 'withdrawalButton', 'realEstateButton']) {
       expect(free, `${gated} should be hidden from free`).not.toContain(gated);
     }
   });
@@ -49,9 +38,7 @@ describe('dashboard guide is filtered to the viewer tier', () => {
       'savings',
       'spendingButton',
       'expensesIncomesButton',
-      'expensesIncomes',
       'scenario',
-      'currency',
       'portfolioGraph',
       'assetsTable',
       'dashboardOutro',
@@ -67,7 +54,6 @@ describe('dashboard guide is filtered to the viewer tier', () => {
   it('omits account-editing steps that the sandbox replaces with a sign-up prompt', () => {
     const sandbox = accessibleSteps(DASHBOARD_GUIDE_STEPS, PREMIUM, true).map((s) => s.id);
     expect(sandbox).not.toContain('addAssetButton');
-    expect(sandbox).not.toContain('addAsset');
     expect(sandbox).not.toContain('fetchPrices');
   });
 
