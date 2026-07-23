@@ -831,6 +831,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
         <Modal
           title={t('addAsset.createAccountTitle')}
           onClose={() => setCreatingAccount(false)}
+          className="addasset-create-account"
           footer={<Button onClick={() => setCreatingAccount(false)}>{t('common.cancel')}</Button>}
         >
           <p className="field__hint" style={{ marginTop: 0, marginBottom: 12 }}>
