@@ -97,6 +97,14 @@ export default defineConfig({
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    build: {
+      // Below this size, Vite inlines small chunks (including hoisted .astro
+      // component scripts, e.g. MarketingHeader's theme toggle) directly as
+      // `<script type="module">` in the HTML instead of an external file.
+      // That violates our `script-src 'self'` CSP (no 'unsafe-inline'), so
+      // force every script to stay external.
+      assetsInlineLimit: 0,
+    },
     server: {
       proxy: {
         '/api': {
