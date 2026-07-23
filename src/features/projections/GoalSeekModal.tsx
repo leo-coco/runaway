@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { SUCCESS_BAND_COLOR } from '@/components/ui/SuccessRateDonut';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
-import { lifeExpectancyYear } from '@/domain/retirementSettings';
+import { ageInYear, lifeExpectancyYear } from '@/domain/retirementSettings';
 import { successStatus } from '@/domain/successRate';
 import { DEFAULT_MC_OPTIONS, buildMonteCarloInput } from '@/services/monteCarlo';
 import { neutralLevers, type ActiveLeverKey, type Levers } from '@/services/goalSeek';
@@ -92,6 +92,8 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
   }, [plan, rates]);
 
   const totalStart = base.input.assets.reduce((s, a) => s + a.startValue, 0);
+  const baseMonthlySavings = base.input.assets.reduce((s, a) => s + a.annualContribution, 0) / 12;
+  const startYear = new Date().getFullYear();
   const bounds = {
     baseSpending: base.input.annualSpending,
     maxSavings: 6000,
@@ -272,19 +274,32 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
       const cut = bounds.baseSpending - levers.spending;
       if (cut <= 0) return t('goalSeek.noChange');
       return spendingUnit === 'month'
-        ? t('goalSeek.cutValueMonthly', { amount: fmt.format(cut / 12) })
-        : t('goalSeek.cutValue', { amount: fmt.format(cut) });
+        ? t('goalSeek.cutValueMonthly', {
+            amount: fmt.format(cut / 12),
+            total: fmt.format(levers.spending / 12),
+          })
+        : t('goalSeek.cutValue', { amount: fmt.format(cut), total: fmt.format(levers.spending) });
     }
     if (key === 'extraMonthlySavings')
       return levers.extraMonthlySavings > 0
-        ? t('goalSeek.savingsValue', { amount: fmt.format(levers.extraMonthlySavings) })
+        ? t('goalSeek.savingsValue', {
+            amount: fmt.format(levers.extraMonthlySavings),
+            total: fmt.format(baseMonthlySavings + levers.extraMonthlySavings),
+          })
         : t('goalSeek.noChange');
-    if (key === 'retireDelayYears')
-      return levers.retireDelayYears > 0
-        ? t('goalSeek.yearsValue', { years: levers.retireDelayYears })
-        : t('goalSeek.noChange');
+    if (key === 'retireDelayYears') {
+      if (levers.retireDelayYears <= 0) return t('goalSeek.noChange');
+      const year = plan.settings.retirementYear + Math.round(levers.retireDelayYears);
+      const age = ageInYear(plan.settings.currentAge, startYear, year);
+      return age === null
+        ? t('goalSeek.yearsValue', { years: levers.retireDelayYears, year })
+        : t('goalSeek.yearsValueWithAge', { years: levers.retireDelayYears, year, age });
+    }
     return levers.extraCapital > 0
-      ? t('goalSeek.capitalValue', { amount: fmt.format(levers.extraCapital) })
+      ? t('goalSeek.capitalValue', {
+          amount: fmt.format(levers.extraCapital),
+          total: fmt.format(totalStart + levers.extraCapital),
+        })
       : t('goalSeek.noChange');
   };
 

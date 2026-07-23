@@ -1088,15 +1088,16 @@ export const fr: Resources = {
     target: 'Cible',
     ariaTarget: 'Taux de réussite cible',
     noChange: 'aucun changement',
-    cutValue: '−{{amount}}/an',
-    cutValueMonthly: '−{{amount}}/mois',
+    cutValue: '−{{amount}}/an ({{total}}/an au total)',
+    cutValueMonthly: '−{{amount}}/mois ({{total}}/mois au total)',
     perYear: 'An',
     perMonth: 'Mois',
     ariaUnitYear: 'Afficher la réduction par an',
     ariaUnitMonth: 'Afficher la réduction par mois',
-    savingsValue: '+{{amount}}/mois',
-    yearsValue: '+{{years}} an(s)',
-    capitalValue: '+{{amount}}',
+    savingsValue: '+{{amount}}/mois ({{total}}/mois au total)',
+    yearsValue: '+{{years}} an(s) (retraite en {{year}})',
+    yearsValueWithAge: '+{{years}} an(s) (retraite en {{year}}, à {{age}} ans)',
+    capitalValue: '+{{amount}} ({{total}} au total)',
     points: '+{{n}} pts',
     lock: 'Verrouiller {{name}}',
     unlock: 'Déverrouiller {{name}}',
@@ -1547,7 +1548,7 @@ export const fr: Resources = {
     steps: {
       dashboardIntro: {
         title: 'Bienvenue sur Runaway',
-        body: 'Cette visite parcourt votre plan en deux temps : d’abord ce que vous possédez (horizon, comptes, actifs, immobilier), puis comment vous le financez et le dépensez (épargne, dépenses, flux ponctuels, retraits). Utilisez Suivant et Retour pour avancer (les flèches ← et → du clavier fonctionnent aussi), et fermez à tout moment avec Échap.',
+        body: 'Cette visite parcourt le tableau de bord carte par carte : d’abord vos projections (Monte Carlo, trajectoire, horizon), puis votre plan de revenus et dépenses (épargne, cible de retraite, flux ponctuels, immobilier, scénario, comptes, stratégie de retrait), et enfin votre portefeuille (évolution de la valeur, actifs). Utilisez Suivant et Retour pour avancer (les flèches ← et → du clavier fonctionnent aussi), et fermez à tout moment avec Échap.',
       },
       mcSummary: {
         title: 'Vos chances de réussite',
@@ -1569,17 +1570,13 @@ export const fr: Resources = {
         title: 'Revenu de retraite cible',
         body: 'Cliquez sur Modifier sur cette carte pour définir combien vous prévoyez de dépenser chaque année à la retraite.',
       },
-      spending: {
-        title: 'Linéaire ou par phase',
-        body: 'C’est le montant net que vous souhaitez avoir par mois à votre retraite. Choisissez Linéaire — un budget stable ajusté à l’inflation — ou Par phase, avec des années « Go-Go » plus élevées qui s’atténuent vers des années « No-Go ».',
-      },
       expensesIncomesButton: {
         title: 'Dépenses & revenus ponctuels',
         body: 'Au-delà de l’épargne et des dépenses régulières, modélisez des événements ponctuels ou récurrents : héritage, études, rentrée d’argent. Cliquez sur Modifier sur cette carte pour les ajouter.',
       },
-      expensesIncomes: {
-        title: 'Ajouter un flux',
-        body: 'Indiquez un montant, une année (ou une plage pour les flux récurrents) et si l’argent entre ou sort. Chaque événement se place au bon moment sur votre projection et votre trajectoire.',
+      realEstateButton: {
+        title: 'Immobilier',
+        body: 'Vos biens comptent dans votre patrimoine au même titre que vos placements. Cliquez sur Modifier sur cette carte pour modéliser votre résidence et vos locatifs.',
       },
       scenario: {
         title: 'Scénario de projection',
@@ -1589,29 +1586,21 @@ export const fr: Resources = {
         title: 'Comptes & fiscalité',
         body: 'Les actifs vivent dans des comptes — des enveloppes fiscales comme un CELI ou un compte imposable. Cliquez sur Modifier sur cette carte pour les gérer.',
       },
-      accounts: {
-        title: 'Indiquez votre résidence fiscale',
-        body: 'Chaque actif appartient à un compte, pour que les retraits soient imposés de façon réaliste. Indiquez ici votre résidence fiscale : elle détermine les taux par défaut de chaque compte que vous ajoutez.',
-      },
-      accountsPresets: {
-        title: 'Ajouter un compte',
-        body: 'Choisissez un modèle prérempli (CELI, REER, imposable…) pour gagner du temps : le type et le taux sont déjà réglés pour votre pays. À côté, un bouton permet de créer un compte crypto, et un autre un compte entièrement personnalisé si aucun modèle ne convient.',
-      },
       withdrawalButton: {
         title: 'Stratégie de retrait',
         body: 'Cliquez sur Modifier sur cette carte pour définir l’ordre dans lequel vos comptes sont décaissés.',
       },
-      withdrawal: {
-        title: 'Ordonnez vos comptes',
-        body: 'Définissez l’ordre dans lequel vos comptes sont décaissés. Un ordre fiscalement avisé peut faire durer votre argent plus longtemps.',
+      portfolioGraph: {
+        title: 'Graphique du portefeuille',
+        body: 'La valeur totale projetée de votre portefeuille, année après année.',
+      },
+      assetsTable: {
+        title: 'Vos actifs en un coup d’œil',
+        body: 'Une mini table qui récapitule chaque actif — valeur, rendement et part du portefeuille — regroupé par compte.',
       },
       addAssetButton: {
         title: 'Ajouter un actif',
         body: 'Cliquez ici pour ajouter un nouvel actif à votre portefeuille — actions, cryptos, cash ou tout autre actif personnalisé.',
-      },
-      addAsset: {
-        title: 'Rechercher ou personnaliser',
-        body: 'La recherche ajoute des actions et des cryptos avec un prix en direct. L’onglet Personnalisé sert pour tout le reste. S’il s’agit de cash, tapez simplement « cash » dans la barre de recherche et l’actif sera visible.',
       },
       fetchPrices: {
         title: 'Récupérer les prix',
@@ -1625,37 +1614,9 @@ export const fr: Resources = {
         title: 'Organiser par glisser-déposer',
         body: 'Saisissez un actif par cette poignée et déposez-le plus bas sur un de vos comptes existants pour le déplacer entre enveloppes.',
       },
-      quantity: {
-        title: 'Modifier la quantité',
-        body: 'Ajustez le nombre d’unités détenues. Les valeurs et projections se mettent à jour instantanément.',
-      },
-      cagr: {
-        title: 'Croissance attendue (TCAC)',
-        body: 'Fixez le taux de croissance annuel attendu de chaque actif. Le scénario actif l’ajuste à la hausse ou à la baisse.<br><br>Le TCAC (Taux de Croissance Annuel Composé) est le taux annuel constant qui mènerait une valeur de départ à sa valeur d’arrivée sur une période donnée, comme si elle progressait régulièrement chaque année — il lisse les hausses et baisses réelles en un seul rendement annuel moyen.',
-      },
-      realEstateButton: {
-        title: 'Immobilier',
-        body: 'Vos biens comptent dans votre patrimoine au même titre que vos placements. Cliquez sur Modifier sur cette carte pour modéliser votre résidence et vos locatifs.',
-      },
-      realEstate: {
-        title: 'Résidence & locatifs',
-        body: 'Ajoutez votre résidence principale et vos biens locatifs : valeur, crédit, appréciation, et pour les locatifs le loyer et les charges. La valeur nette est suivie année après année et alimente votre patrimoine comme la projection.',
-      },
-      currency: {
-        title: 'Devise du plan',
-        body: 'Changez ici la devise du plan. Chaque prix et total est converti à la volée, tandis que chaque actif conserve son prix de marché d’origine.',
-      },
-      portfolioGraph: {
-        title: 'Graphique du portefeuille',
-        body: 'La valeur totale projetée de votre portefeuille, année après année.',
-      },
-      assetsTable: {
-        title: 'Vos actifs en un coup d’œil',
-        body: 'Une mini table qui récapitule chaque actif — valeur, rendement et part du portefeuille — regroupé par compte.',
-      },
       dashboardOutro: {
         title: 'Tableau de bord configuré',
-        body: 'Voilà la boucle complète : tout ce que vous possédez, et la façon dont vous le financez et le dépensez. Ensuite, suivez la visite de la projection ou la visite Monte Carlo depuis « Suivre la visite » pour voir votre plan à l’œuvre.',
+        body: 'Voilà la boucle complète : vos projections, votre plan de revenus et dépenses, et votre portefeuille. Ensuite, suivez la visite de la projection ou la visite Monte Carlo depuis « Suivre la visite » pour voir votre plan à l’œuvre.',
       },
       projectionIntro: {
         title: 'La visite de la projection',

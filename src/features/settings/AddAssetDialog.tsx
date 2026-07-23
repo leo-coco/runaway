@@ -793,27 +793,39 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 </span>
               </div>
 
-              <div className="field">
-                <span className="field__label">
-                  {t('addAsset.latestPrice', { currency: selected.nativeCurrency })}
-                </span>
-                {priceLoading ? (
-                  <span className="fetch-link">
-                    <Spinner /> {t('addAsset.fetching')}
+              <div className="addasset-fields addasset-fields--price-quantity">
+                <div className="field">
+                  <span className="field__label">
+                    {t('addAsset.latestPrice', { currency: selected.nativeCurrency })}
                   </span>
-                ) : priceError ? (
-                  <InlineError error={priceError} />
-                ) : price !== null ? (
-                  <div className="stepper" aria-readonly>
-                    <input
-                      value={nativeFmt.price(price)}
-                      readOnly
-                      aria-label={t('addAsset.ariaLatestPrice')}
-                    />
-                  </div>
-                ) : (
-                  <p className="field__hint">{t('addAsset.priceUnavailable')}</p>
-                )}
+                  {priceLoading ? (
+                    <span className="fetch-link">
+                      <Spinner /> {t('addAsset.fetching')}
+                    </span>
+                  ) : priceError ? (
+                    <InlineError error={priceError} />
+                  ) : price !== null ? (
+                    <div className="stepper" aria-readonly>
+                      <input
+                        value={nativeFmt.price(price)}
+                        readOnly
+                        aria-label={t('addAsset.ariaLatestPrice')}
+                      />
+                    </div>
+                  ) : (
+                    <p className="field__hint">{t('addAsset.priceUnavailable')}</p>
+                  )}
+                </div>
+                <div className="field">
+                  <span className="field__label">{t('addAsset.quantityHeld')}</span>
+                  <Stepper
+                    ariaLabel={t('addAsset.quantity')}
+                    min={0}
+                    step={1}
+                    value={quantity}
+                    onChange={setQuantity}
+                  />
+                </div>
               </div>
 
               <div className="field">
@@ -836,28 +848,16 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
                 )}
               </div>
 
-              <div className="addasset-fields addasset-fields--2">
-                <div className="field">
-                  <span className="field__label">{t('addAsset.quantityHeld')}</span>
-                  <Stepper
-                    ariaLabel={t('addAsset.quantity')}
-                    min={0}
-                    step={1}
-                    value={quantity}
-                    onChange={setQuantity}
-                  />
-                </div>
-                <div className="field addasset-cagr">
-                  <span className="field__label">{t('addAsset.expectedCagr')}</span>
-                  <Stepper
-                    ariaLabel={t('addAsset.ariaCagr')}
-                    step={1}
-                    suffix="%"
-                    value={cagr}
-                    onChange={setCagr}
-                  />
-                  {cagrInfo}
-                </div>
+              <div className="field addasset-cagr">
+                <span className="field__label">{t('addAsset.expectedCagr')}</span>
+                <Stepper
+                  ariaLabel={t('addAsset.ariaCagr')}
+                  step={1}
+                  suffix="%"
+                  value={cagr}
+                  onChange={setCagr}
+                />
+                {cagrInfo}
               </div>
 
               {accountPicker}

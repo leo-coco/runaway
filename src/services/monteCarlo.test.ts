@@ -19,6 +19,7 @@ import {
   sampleRandomScenario,
   sampleScenarioPaths,
   sampleTrials,
+  trialsFromSeeds,
   type MonteCarloInput,
 } from './monteCarlo';
 
@@ -1402,6 +1403,35 @@ describe('outcome classification (absolute thresholds)', () => {
       expect(t.funded).toBe(true);
       expect(t.category).toBe('tightSuccess');
     }
+  });
+
+  it('trialsFromSeeds reproduces the exact iterations behind a result, not a fresh resample', () => {
+    // Small iteration count and a dispersed input so the run mixes categories —
+    // the explorer must show precisely those runs, matching the aggregate 1:1.
+    const opts = {
+      ...DEFAULT_MC_OPTIONS,
+      retirementHorizon: 30,
+      model: 'normal' as const,
+      iterations: 4,
+    };
+    const input = baseInput({ annualSpending: 55_000 });
+    const result = runMonteCarlo(input, opts);
+    const trials = trialsFromSeeds(input, opts, result.trialSeeds);
+
+    expect(trials).toHaveLength(4);
+    const tally: Record<string, number> = {};
+    for (const t of trials) tally[t.category] = (tally[t.category] ?? 0) + 1;
+    for (const category of Object.keys(
+      result.outcomeBreakdown,
+    ) as (keyof typeof result.outcomeBreakdown)[]) {
+      expect(tally[category] ?? 0).toBe(result.outcomeBreakdown[category]);
+    }
+
+    // Re-deriving the seeds/categories independently must land on the same set —
+    // re-running the modal shouldn't reshuffle which trials appear.
+    const again = trialsFromSeeds(input, opts, result.trialSeeds);
+    expect(again.map((t) => t.seed)).toEqual(trials.map((t) => t.seed));
+    expect(again.map((t) => t.category)).toEqual(trials.map((t) => t.category));
   });
 });
 

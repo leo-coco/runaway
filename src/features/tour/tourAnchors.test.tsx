@@ -116,15 +116,7 @@ describe('dashboard guide anchors resolve on their declared page', () => {
   });
 
   it('every asset step now declares page: portfolio', () => {
-    const assetIds = new Set([
-      'addAssetButton',
-      'addAsset',
-      'fetchPrices',
-      'editAssetButton',
-      'quantity',
-      'cagr',
-      'drag',
-    ]);
+    const assetIds = new Set(['addAssetButton', 'fetchPrices', 'editAssetButton', 'drag']);
     const offenders = DASHBOARD_GUIDE_STEPS.filter(
       (s) => assetIds.has(s.id) && s.page !== 'portfolio',
     ).map((s) => s.id);
