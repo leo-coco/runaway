@@ -6080,6 +6080,11 @@ th[title] {
   margin-top: 6px;
   background: var(--bg-card);
 }
+/* While searching, reserve vertical room so the absolutely-positioned results
+   dropdown isn't clipped by the scrollable modal body. */
+.addasset-modal--searching .modal__body {
+  min-height: 440px;
+}
 .addasset-add-button {
   width: 100%;
   margin-top: 16px;

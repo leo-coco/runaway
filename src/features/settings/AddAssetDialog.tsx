@@ -478,6 +478,10 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
             : onClose
       }
       wide
+      className={cn(
+        'addasset-modal',
+        mode === 'search' && !selected && 'addasset-modal--searching',
+      )}
       footer={
         <Button variant="primary" onClick={onClose}>
           {t('common.done')}
@@ -696,7 +700,7 @@ export const AddAssetDialog = ({ plan, onAdd, onClose }: Props) => {
 
             {search.isError && <InlineError error={search.error} />}
 
-            {debounced.trim().length >= 2 && (
+            {debounced.trim().length >= 2 && !selected && (
               <div className="search-results addasset-search__results">
                 {pseudoMatches.length > 0 && (
                   <>
