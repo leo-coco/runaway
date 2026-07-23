@@ -14,6 +14,7 @@ import { MonteCarloPage } from '@/features/portfolio/MonteCarloPage';
 import { useAppStore } from '@/store';
 import { ok } from '@/domain/result';
 import type { Services } from '@/services/container';
+import { AppModeProvider } from '@/providers/AppModeContext';
 
 // ResponsiveContainer needs a non-zero size in jsdom.
 vi.mock('recharts', async (importOriginal) => {
@@ -50,22 +51,27 @@ const mockServices: Services = {
   search: { search: vi.fn(async () => ok([])) },
 };
 
-const renderAt = async (section: 'dashboard' | 'portfolio' | 'projection' | 'monte-carlo') => {
+const renderAt = async (
+  section: 'dashboard' | 'portfolio' | 'projection' | 'monte-carlo',
+  sandbox = false,
+) => {
   const planId = useAppStore.getState().plans[0]!.id;
   const client = createQueryClient();
   const result = render(
     <QueryClientProvider client={client}>
       <ServicesProvider services={mockServices}>
-        <MemoryRouter initialEntries={[`/plan/${planId}/${section}`]}>
-          <Routes>
-            <Route path="/plan/:id" element={<PlanLayout />}>
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="portfolio" element={<PortfolioPage />} />
-              <Route path="projection" element={<ProjectionPage />} />
-              <Route path="monte-carlo" element={<MonteCarloPage />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
+        <AppModeProvider sandbox={sandbox}>
+          <MemoryRouter initialEntries={[`/plan/${planId}/${section}`]}>
+            <Routes>
+              <Route path="/plan/:id" element={<PlanLayout />}>
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="portfolio" element={<PortfolioPage />} />
+                <Route path="projection" element={<ProjectionPage />} />
+                <Route path="monte-carlo" element={<MonteCarloPage />} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </AppModeProvider>
       </ServicesProvider>
     </QueryClientProvider>,
   );
@@ -83,6 +89,15 @@ describe('plan pages (smoke)', () => {
     expect(screen.getByRole('heading', { name: /My plan/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Currency')).toBeInTheDocument();
     expect(screen.getByText('Savings Capacity')).toBeInTheDocument();
+  });
+
+  it('shows the last-saved badge for account plans but not in the sandbox', async () => {
+    const account = await renderAt('portfolio');
+    expect(screen.getByText('Last saved')).toBeInTheDocument();
+    account.unmount();
+
+    await renderAt('portfolio', true);
+    expect(screen.queryByText('Last saved')).not.toBeInTheDocument();
   });
 
   it('portfolio page shows the multi-currency breakdown and investment rows for seeded assets', async () => {
@@ -103,6 +118,10 @@ describe('plan pages (smoke)', () => {
   it('projection page shows the projections panel and savings flow row', async () => {
     await renderAt('projection');
     expect(screen.getByText('Portfolio Projections')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide row labels' }));
+    expect(screen.getByRole('button', { name: 'Show row labels' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show row labels' }));
+    expect(screen.getByRole('button', { name: 'Hide row labels' })).toBeInTheDocument();
     // The "Savings Contributions" detail row is nested inside the "Total
     // Income" row's expand-to-detail section, which is collapsed by default.
     fireEvent.click(screen.getByRole('button', { name: /Total Income/i }));

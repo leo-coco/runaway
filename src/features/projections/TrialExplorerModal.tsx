@@ -26,6 +26,7 @@ import { cn } from '@/lib/cn';
 import { GridIcon, InfoIcon, ListIcon } from '@/components/icons';
 import { ChartTooltip } from './ChartTooltip';
 import { AxisModeSwitch, type AxisMode } from './AxisModeSwitch';
+import { OUTCOME_CATEGORY_COLOR } from './outcomeColors';
 
 interface Props {
   plan: Plan;
@@ -44,20 +45,15 @@ const TRIAL_COUNT = 100;
 const CATEGORY_ORDER: readonly TrialOutcomeCategory[] = [
   'largeSurplus',
   'comfortable',
+  'tightSuccess',
   'almostMadeIt',
   'failedInMiddle',
 ];
 
-const CATEGORY_COLOR: Record<TrialOutcomeCategory, string> = {
-  largeSurplus: 'var(--success)',
-  comfortable: 'var(--accent)',
-  almostMadeIt: 'var(--amber)',
-  failedInMiddle: 'var(--danger)',
-};
-
 const CATEGORY_LABEL_KEY: Record<TrialOutcomeCategory, string> = {
   largeSurplus: 'mc.outcomeLargeSurplus',
   comfortable: 'mc.outcomeComfortable',
+  tightSuccess: 'mc.outcomeTightSuccess',
   almostMadeIt: 'mc.outcomeAlmostMadeIt',
   failedInMiddle: 'mc.outcomeFailedMiddle',
 };
@@ -201,12 +197,12 @@ export const TrialExplorerModal = ({
                     type="button"
                     className={cn('trial-explorer__filter', categoryFilter.has(cat) && 'is-active')}
                     style={{
-                      borderColor: CATEGORY_COLOR[cat],
-                      color: categoryFilter.has(cat) ? CATEGORY_COLOR[cat] : undefined,
+                      borderColor: OUTCOME_CATEGORY_COLOR[cat],
+                      color: categoryFilter.has(cat) ? OUTCOME_CATEGORY_COLOR[cat] : undefined,
                     }}
                     onClick={() => toggleCategory(cat)}
                   >
-                    <i style={{ background: CATEGORY_COLOR[cat] }} />
+                    <i style={{ background: OUTCOME_CATEGORY_COLOR[cat] }} />
                     {t(CATEGORY_LABEL_KEY[cat])}
                   </button>
                 ))}
@@ -232,7 +228,7 @@ export const TrialExplorerModal = ({
                         'trial-explorer__tile',
                         selected?.seed === tr.seed && 'is-selected',
                       )}
-                      style={{ background: CATEGORY_COLOR[tr.category] }}
+                      style={{ background: OUTCOME_CATEGORY_COLOR[tr.category] }}
                       title={`${t(CATEGORY_LABEL_KEY[tr.category])} · ${fmt.compact(tr.terminalBalance)}`}
                       onClick={() => setSelectedSeed(tr.seed)}
                     >
@@ -266,7 +262,7 @@ export const TrialExplorerModal = ({
                         <td>
                           <i
                             className="trial-explorer__dot"
-                            style={{ background: CATEGORY_COLOR[tr.category] }}
+                            style={{ background: OUTCOME_CATEGORY_COLOR[tr.category] }}
                           />
                           {t(CATEGORY_LABEL_KEY[tr.category])}
                         </td>

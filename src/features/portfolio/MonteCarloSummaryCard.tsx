@@ -1,24 +1,30 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { successStatus, type SuccessZone } from '@/domain/successRate';
+import { successStatus, type SuccessBand } from '@/domain/successRate';
 import { useFeature } from '@/hooks/useEntitlements';
 import { useAppStore } from '@/store';
 import { ProBadge } from '@/features/billing/ProBadge';
 import { StarIcon } from '@/components/icons';
-import { SuccessRateDonut } from '@/components/ui/SuccessRateDonut';
+import { SUCCESS_BAND_COLOR, SuccessRateDonut } from '@/components/ui/SuccessRateDonut';
 import { cn } from '@/lib/cn';
 import { usePlanContext } from './PlanLayout';
 
-const TITLE_KEY: Record<SuccessZone, string> = {
-  strong: 'dashboard.mc.titleStrong',
-  borderline: 'dashboard.mc.titleBorderline',
-  weak: 'dashboard.mc.titleWeak',
+const TITLE_KEY: Record<SuccessBand, string> = {
+  excellent: 'dashboard.mc.titleExcellent',
+  good: 'dashboard.mc.titleGood',
+  fair: 'dashboard.mc.titleFair',
+  risky: 'dashboard.mc.titleRisky',
+  concerning: 'dashboard.mc.titleConcerning',
+  nonViable: 'dashboard.mc.titleNonViable',
 };
 
-const DESC_KEY: Record<SuccessZone, string> = {
-  strong: 'dashboard.mc.descStrong',
-  borderline: 'dashboard.mc.descBorderline',
-  weak: 'dashboard.mc.descWeak',
+const DESC_KEY: Record<SuccessBand, string> = {
+  excellent: 'dashboard.mc.descExcellent',
+  good: 'dashboard.mc.descGood',
+  fair: 'dashboard.mc.descFair',
+  risky: 'dashboard.mc.descRisky',
+  concerning: 'dashboard.mc.descConcerning',
+  nonViable: 'dashboard.mc.descNonViable',
 };
 
 /**
@@ -34,6 +40,7 @@ export const MonteCarloSummaryCard = () => {
 
   const hasAssets = plan.holdings.length > 0;
   const sx = monteCarlo.result ? successStatus(monteCarlo.result.successRate) : null;
+  const isCalculating = monteCarlo.status === 'running';
 
   if (!mcEnabled) {
     return (
@@ -58,16 +65,32 @@ export const MonteCarloSummaryCard = () => {
 
   return (
     <div
-      className={cn('hero__card', 'mc-card', sx?.zone === 'weak' && 'hero__card--risk')}
+      className={cn(
+        'hero__card',
+        'mc-card',
+        isCalculating && 'mc-card--calculating',
+        (sx?.band === 'concerning' || sx?.band === 'nonViable') && 'hero__card--risk',
+      )}
+      style={
+        sx
+          ? {
+              borderColor: SUCCESS_BAND_COLOR[sx.band],
+              ['--mc-color' as string]: SUCCESS_BAND_COLOR[sx.band],
+            }
+          : undefined
+      }
       data-tour="mc-summary-card"
+      aria-busy={isCalculating}
     >
       <div className="mc-card__text">
         {!hasAssets ? (
           <span className="mc-card__note">{t('dashboard.mc.noData')}</span>
         ) : sx ? (
           <>
-            <h2 className="mc-card__title">{t(TITLE_KEY[sx.zone])}</h2>
-            <p className="mc-card__desc">{t(DESC_KEY[sx.zone], { pct: sx.pct.toFixed(0) })}</p>
+            <h2 className="mc-card__title" style={{ color: SUCCESS_BAND_COLOR[sx.band] }}>
+              {t(TITLE_KEY[sx.band])}
+            </h2>
+            <p className="mc-card__desc">{t(DESC_KEY[sx.band], { pct: sx.pct.toFixed(0) })}</p>
             <Link to={`/plan/${plan.id}/monte-carlo`} className="runway__more mc-card__cta">
               {t('dashboard.mc.cta')} →
             </Link>
@@ -78,7 +101,13 @@ export const MonteCarloSummaryCard = () => {
       </div>
 
       {hasAssets && sx ? (
-        <SuccessRateDonut percent={sx.pct} zone={sx.zone} label={t('dashboard.mc.ringLabel')} />
+        <SuccessRateDonut
+          percent={sx.pct}
+          band={sx.band}
+          label={t('dashboard.mc.ringLabel')}
+          isCalculating={isCalculating}
+          calculatingLabel={t('dashboard.mc.simulating')}
+        />
       ) : null}
     </div>
   );

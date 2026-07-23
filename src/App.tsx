@@ -176,23 +176,49 @@ const AppShell = ({ sandbox }: { sandbox: boolean }) => {
   );
 };
 
-const AppSplash = ({ reason }: { reason: 'session' | 'store' | 'entitlements' | 'plans' }) => (
-  <main className="app-splash" role="status" aria-live="polite" data-loading-reason={reason}>
-    <img
-      className="app-splash__mark"
-      src={runawayLogo.src}
-      width={runawayLogo.width}
-      height={runawayLogo.height}
-      alt=""
-    />
-    {import.meta.env.DEV && <span>Loading: {reason}</span>}
-  </main>
-);
+let hasAnimatedSplashBrand = false;
+const SPLASH_ANIMATION_DURATION_MS = 850;
+
+const AppSplash = ({ reason }: { reason: 'session' | 'store' | 'entitlements' | 'plans' }) => {
+  const { t } = useTranslation();
+  const [animateBrand] = useState(() => !hasAnimatedSplashBrand);
+
+  useEffect(() => {
+    hasAnimatedSplashBrand = true;
+  }, []);
+
+  return (
+    <main className="app-splash" role="status" aria-live="polite" data-loading-reason={reason}>
+      <div className="app-splash__brand">
+        <img
+          className={`app-splash__mark${animateBrand ? ' is-animated' : ''}`}
+          src={runawayLogo.src}
+          width={runawayLogo.width}
+          height={runawayLogo.height}
+          alt=""
+        />
+        <span className={`app-splash__title${animateBrand ? ' is-animated' : ''}`}>
+          {t('splash.tagline')}
+        </span>
+        {import.meta.env.DEV && <span className="app-splash__reason">Loading: {reason}</span>}
+      </div>
+    </main>
+  );
+};
 
 const ProtectedApp = () => {
   const { data: sessionData, isPending } = useSession();
   const hydrated = useStoreHydrated();
   const entitlementsReady = useEntitlementsReady();
+  const [splashAnimationComplete, setSplashAnimationComplete] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setSplashAnimationComplete(true),
+      SPLASH_ANIMATION_DURATION_MS,
+    );
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   // Do not render a persisted plan while the session is being checked. This
   // prevents a brief data flash after sign-out or a direct plan URL visit.
@@ -204,6 +230,10 @@ const ProtectedApp = () => {
   // to the real state once both land.
   if (!hydrated) return <AppSplash reason="store" />;
   if (!entitlementsReady) return <AppSplash reason="entitlements" />;
+  // Keep the first splash mounted until its entrance sequence has completed.
+  // Plan syncing may show another splash afterward, but it remains visually
+  // stable instead of interrupting and restarting the brand animation.
+  if (!splashAnimationComplete) return <AppSplash reason="plans" />;
 
   return <ProductShell syncPlans />;
 };

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { SUCCESS_BAND_COLOR } from '@/components/ui/SuccessRateDonut';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
@@ -51,12 +52,6 @@ const SECTIONS: { titleKey: string; hintKey: string; keys: ActiveLeverKey[] }[] 
     keys: ['extraMonthlySavings', 'extraCapital'],
   },
 ];
-
-const ZONE_COLOR = {
-  strong: 'var(--success)',
-  borderline: 'var(--amber)',
-  weak: 'var(--danger, #f43f5e)',
-};
 
 const LockIcon = ({ closed }: { closed: boolean }) => (
   <svg
@@ -339,7 +334,7 @@ export const GoalSeekModal = ({ plan, rates, onClose }: Props) => {
           <span>{t('goalSeek.targetTick', { pct: targetPct })}</span>
         </div>
         <div className="gs-progress__big">
-          <b style={{ color: ZONE_COLOR[sx.zone] }}>
+          <b className="gs-progress__rate" style={{ color: SUCCESS_BAND_COLOR[sx.band] }}>
             {success === null ? '…' : `${sx.pct.toFixed(0)}%`}
           </b>{' '}
           {t('goalSeek.projectedSuccess')}

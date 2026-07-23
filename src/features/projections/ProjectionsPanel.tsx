@@ -51,14 +51,14 @@ type ChartView =
   | 'postRetirement';
 
 const VIEW_ORDER: ChartView[] = [
-  'composition',
   'growth',
+  'scenarios',
+  'composition',
   'openingClosing',
   'netChange',
   'appreciationExpenses',
   'realEstate',
   'postRetirement',
-  'scenarios',
 ];
 
 const VIEW_LABEL_KEY: Record<ChartView, string> = {
@@ -106,7 +106,7 @@ interface ProjectionsPanelProps {
 
 export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) => {
   const { t } = useTranslation();
-  const [rawView, setView] = useState<ChartView>('composition');
+  const [rawView, setView] = useState<ChartView>('growth');
   const [xAxisMode, setXAxisMode] = useState<'year' | 'age'>('year');
   const fmt = useCurrencyFormatter(plan.currency);
 
@@ -152,8 +152,8 @@ export const ProjectionsPanel = ({ plan, projection }: ProjectionsPanelProps) =>
     () => (hasRealEstate ? VIEW_ORDER : VIEW_ORDER.filter((v) => v !== 'realEstate')),
     [hasRealEstate],
   );
-  // Falls back to 'composition' if the real estate is removed while 'realEstate' is selected.
-  const view = viewOrder.includes(rawView) ? rawView : 'composition';
+  // Falls back to the primary total-portfolio view if a selected view becomes unavailable.
+  const view = viewOrder.includes(rawView) ? rawView : 'growth';
 
   const depletion = projection.active.depletionYear;
   const axisTick = { fill: 'var(--text-dim)', fontSize: 11 };

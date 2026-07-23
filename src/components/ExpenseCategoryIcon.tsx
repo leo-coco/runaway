@@ -4,6 +4,7 @@ import type { ExpenseCategory } from '@/domain/expenseIncome';
 /** Shared mapping so a category keeps the same icon in forms, tables and the runway. */
 export const EXPENSE_CATEGORY_ICONS: Record<ExpenseCategory, RunwayIconName> = {
   general: 'wallet',
+  other: 'dot',
   vehicle: 'car',
   travel: 'plane',
   education: 'graduation',

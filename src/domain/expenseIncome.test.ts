@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
   expenseIncomeAmountsForYear,
   saleReinvestModeForYear,
   type ExpenseCategory,
@@ -28,6 +29,27 @@ describe('ExpenseIncome.category', () => {
     expect(category).toBe('general');
     expect(EXPENSE_CATEGORIES).toContain('general');
     expect(EXPENSE_CATEGORIES).toContain('vehicle');
+  });
+
+  it('keeps type-specific categories out of the opposite flow kind', () => {
+    expect(EXPENSE_CATEGORIES).toContain('travel');
+    expect(EXPENSE_CATEGORIES).not.toContain('pension');
+    expect(EXPENSE_CATEGORIES).not.toContain('salary');
+    expect(EXPENSE_CATEGORIES).not.toContain('rentalIncome');
+    expect(EXPENSE_CATEGORIES).not.toContain('taxLegal');
+
+    expect(INCOME_CATEGORIES).toContain('pension');
+    expect(INCOME_CATEGORIES).toContain('salary');
+    expect(INCOME_CATEGORIES).not.toContain('rentalIncome');
+    expect(INCOME_CATEGORIES).not.toContain('travel');
+    expect(INCOME_CATEGORIES).not.toContain('debt');
+  });
+
+  it('offers shared categories for both flow kinds', () => {
+    for (const category of ['general', 'other', 'gift', 'insurance', 'business'] as const) {
+      expect(EXPENSE_CATEGORIES).toContain(category);
+      expect(INCOME_CATEGORIES).toContain(category);
+    }
   });
 });
 

@@ -68,4 +68,22 @@ describe('QuickStart account limit', () => {
     expect(locked).toHaveClass('is-locked');
     expect(storeState.openPaywall).not.toHaveBeenCalled();
   });
+
+  it('uses the shared depletion gradient when the projected balance runs out', () => {
+    (
+      planContext.value as {
+        projection: { active: { depletionYear: number | null } };
+      }
+    ).projection.active.depletionYear = 2070;
+
+    const { container } = render(<QuickStart onExit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'See my projection' }));
+
+    const depletionTitle = screen.getByText('Savings depletion');
+    const depletionCard = depletionTitle.closest('.ov');
+
+    expect(depletionCard).toHaveClass('hero__card--depletion');
+    expect(container.querySelector('.ov.hero__card--depletion')).not.toBeNull();
+  });
 });

@@ -113,6 +113,11 @@ export const ChevronRightIcon = ({ size = 16, ...p }: IconProps) => (
     <polyline points="9 6 15 12 9 18" />
   </svg>
 );
+export const ChevronLeftIcon = ({ size = 16, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <polyline points="15 6 9 12 15 18" />
+  </svg>
+);
 export const MonitorIcon = ({ size = 16, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <rect x="2" y="3" width="20" height="14" rx="2" />

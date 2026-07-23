@@ -1,7 +1,12 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+} from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { lifeExpectancyYear } from '@/domain/retirementSettings';
 import { expenseIncomeItemAmountForYear } from '@/domain/expenseIncome';
@@ -27,6 +32,7 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
     totalExpense: false,
     totalIncome: false,
   });
+  const [labelsVisible, setLabelsVisible] = useState(true);
   const toggle = (key: RowKey) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Show years through the plan's horizon (the year you reach your life-expectancy
@@ -127,12 +133,37 @@ export const YearlyJourneyTable = ({ plan, projection }: YearlyJourneyTableProps
   );
 
   return (
-    <Card className="journey card--pad" data-tour="journey-table">
+    <Card
+      className={`journey card--pad${labelsVisible ? '' : ' journey--labels-hidden'}`}
+      data-tour="journey-table"
+    >
+      {!labelsVisible && (
+        <button
+          type="button"
+          className="journey__labels-open"
+          aria-label={t('jtable.showLabels')}
+          aria-controls="yearly-journey-table"
+          onClick={() => setLabelsVisible(true)}
+        >
+          <ChevronRightIcon size={14} aria-hidden="true" />
+        </button>
+      )}
       <div className="journey__scroll">
-        <table className="jtable">
+        <table className="jtable" id="yearly-journey-table">
           <thead>
             <tr>
-              <th className="rowlabel">{t('jtable.retirementYear')}</th>
+              <th className="rowlabel">
+                <span>{t('jtable.retirementYear')}</span>
+                <button
+                  type="button"
+                  className="journey__labels-close"
+                  aria-label={t('jtable.hideLabels')}
+                  aria-controls="yearly-journey-table"
+                  onClick={() => setLabelsVisible(false)}
+                >
+                  <ChevronLeftIcon size={14} aria-hidden="true" />
+                </button>
+              </th>
               {years.map((y) => (
                 <th key={y.year} className="num">
                   {y.year}
