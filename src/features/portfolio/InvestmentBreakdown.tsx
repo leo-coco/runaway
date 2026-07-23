@@ -8,7 +8,9 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { usePriceFetcher } from '@/hooks/usePriceFetcher';
 import { useAppStore } from '@/store';
 import { useLimit } from '@/hooks/useEntitlements';
+import { useSession } from '@/lib/authClient';
 import { atLimit } from '@/domain/entitlements';
+import { languageFromPathname } from '@/i18n';
 import { useAppMode } from '@/providers/AppModeContext';
 import { accountEffectiveRate, isIlliquidAccount, type Account } from '@/domain/account';
 import { gainForHoldings, valueHoldings, type GainSummary } from '@/services/portfolioService';
@@ -38,12 +40,15 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter(plan.currency);
   const { sandbox } = useAppMode();
+  const { data: sessionData } = useSession();
   const updateHolding = useAppStore((s) => s.updateHolding);
   const removeHolding = useAppStore((s) => s.removeHolding);
   const openModal = useAppStore((s) => s.openModal);
   const openPaywall = useAppStore((s) => s.openPaywall);
   const maxAssets = useLimit('maxAssets');
   const { statuses, isFetchingAll, fetchAll } = usePriceFetcher(plan.id);
+  const lang = languageFromPathname(window.location.pathname) ?? 'en';
+  const sandboxAccountHref = sessionData?.user ? `/${lang}/app` : `/${lang}/app/signup`;
 
   // Free tier caps assets; adding past the cap opens the paywall instead.
   const onAddAsset = () =>
@@ -129,9 +134,18 @@ export const InvestmentBreakdown = ({ plan, totalValue, rates }: InvestmentBreak
             {isFetchingAll ? <Spinner /> : <RefreshIcon size={15} />} {t('portfolio.fetchPrices')}
           </Button>
         )}
-        <Button variant="accent" data-tour="addasset-btn" onClick={onAddAsset}>
-          <PlusIcon /> {t('portfolio.addAsset')}
-        </Button>
+        {sandbox ? (
+          <a className="btn btn--accent action-banner__push-right" href={sandboxAccountHref}>
+            <PlusIcon />
+            {sessionData?.user
+              ? t('portfolio.customizeInAccount')
+              : t('portfolio.createAccountToCustomize')}
+          </a>
+        ) : (
+          <Button variant="accent" data-tour="addasset-btn" onClick={onAddAsset}>
+            <PlusIcon /> {t('portfolio.addAsset')}
+          </Button>
+        )}
       </div>
 
       <Card className="breakdown">
