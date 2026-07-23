@@ -105,19 +105,14 @@ export const SimulationMethodology = ({ assets, model, btcCycle }: Props) => {
           <p className="field__hint">{t('method.crashNote')}</p>
         </div>
       )}
-      {(model === 'bootstrap' || model === 'bootstrap-uncentered') && (
+      {model === 'bootstrap' && (
         <>
           <p className="field__hint" style={{ marginTop: 0 }}>
-            {t(
-              model === 'bootstrap-uncentered'
-                ? 'method.bootstrapUncenteredIntro'
-                : 'method.bootstrapIntro',
-              {
-                block: MODEL_PARAMS.bootstrapBlock,
-                from: MODEL_PARAMS.historyStartYear,
-                to: years[years.length - 1],
-              },
-            )}
+            {t('method.bootstrapIntro', {
+              block: MODEL_PARAMS.bootstrapBlock,
+              from: MODEL_PARAMS.historyStartYear,
+              to: years[years.length - 1],
+            })}
           </p>
           <div className="mc-table-wrap mc-table-wrap--tall">
             <table className="mc-table">
@@ -149,17 +144,14 @@ export const SimulationMethodology = ({ assets, model, btcCycle }: Props) => {
           <p className="field__hint">{t('method.bootstrapNote')}</p>
         </>
       )}
-      {(model === 'historical-real' || model === 'historical-real-centered') && (
+      {model === 'historical-real-centered' && (
         <>
           <p className="field__hint" style={{ marginTop: 0 }}>
-            {t(
-              model === 'historical-real-centered' ? 'method.realCenteredIntro' : 'method.realIntro',
-              {
-                from: HIST_REAL_START_YEAR,
-                to: HIST_REAL_END_YEAR,
-                len: HIST_REAL_LEN,
-              },
-            )}
+            {t('method.realCenteredIntro', {
+              from: HIST_REAL_START_YEAR,
+              to: HIST_REAL_END_YEAR,
+              len: HIST_REAL_LEN,
+            })}
           </p>
           <div className="mc-table-wrap">
             <table className="mc-table">

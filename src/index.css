@@ -1142,6 +1142,93 @@ h4 {
     color-mix(in srgb, var(--bg-card) 94%, var(--text) 6%)
   );
 }
+.plan-save-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, white 22%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-elev) 58%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 24%, transparent),
+    0 8px 24px color-mix(in srgb, black 10%, transparent);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  animation: plan-save-badge-flash 1.15s ease-out both;
+}
+.plan-save-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--success) 65%, transparent);
+  animation: plan-save-dot-pulse 0.9s ease-out both;
+}
+.plan-save-badge__label {
+  color: var(--text);
+  font-weight: 600;
+}
+.plan-save-badge time {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+@keyframes plan-save-badge-flash {
+  0% {
+    border-color: color-mix(in srgb, var(--success) 78%, white 22%);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 36%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--success) 42%, transparent),
+      0 0 22px color-mix(in srgb, var(--success) 30%, transparent);
+  }
+  45% {
+    border-color: color-mix(in srgb, var(--success) 48%, var(--border));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 28%, transparent),
+      0 0 12px color-mix(in srgb, var(--success) 18%, transparent);
+  }
+  100% {
+    border-color: color-mix(in srgb, white 22%, var(--border));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 24%, transparent),
+      0 8px 24px color-mix(in srgb, black 10%, transparent);
+  }
+}
+@keyframes plan-save-dot-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.65);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.55);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--success) 88%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-save-badge,
+  .plan-save-badge__dot {
+    animation: none;
+  }
+}
+@media (max-width: 640px) {
+  .plan-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .plan-save-badge {
+    align-self: flex-end;
+    white-space: normal;
+  }
+}
 @media (max-width: 900px) and (min-width: 821px) {
   .sidebar {
     width: 220px;
@@ -2146,6 +2233,17 @@ h4 {
   font-weight: 800;
   color: var(--text);
 }
+.mc-donut--compact {
+  width: 112px;
+  height: 112px;
+}
+.mc-donut--compact .mc-donut__hole {
+  width: 82px;
+  height: 82px;
+}
+.mc-donut--compact .mc-donut__pct {
+  font-size: 1.35rem;
+}
 .mc-card__donut-label {
   color: var(--text-muted);
   font-size: var(--fs-xs);
@@ -2250,14 +2348,22 @@ h4 {
 .prob-success-card {
   border-width: 2px;
 }
-.prob-success-card__value {
+.prob-success-card__body {
+  display: flex;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.prob-success-card__copy {
+  display: flex;
+  flex: 1 1 110px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 .prob-success-card__note {
-  flex: 1 1 auto;
-  min-width: 0;
   font-size: 12.5px;
 }
 .mc-chart-title {
@@ -5225,21 +5331,30 @@ th[title] {
 .mc-vol-reset:hover {
   color: var(--accent-strong);
 }
-.mc-drift-cell {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.2;
-  cursor: help;
-}
-.mc-drift-cell__effective {
-  color: var(--amber);
-  font-weight: 500;
-}
-.mc-drift-cell__user {
+.mc-vol-reset:disabled {
   color: var(--text-dim);
-  font-size: var(--fs-2xs);
-  text-decoration: line-through;
+  cursor: default;
+  opacity: 0.55;
+}
+.mc-data-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mc-data-section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.mc-editable-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mc-editable-table__toolbar {
+  display: flex;
+  justify-content: flex-end;
 }
 /* While a re-run is in flight, keep the previous result visible (stable height)
    and just dim it slightly so the layout never collapses to a loading box. */
@@ -5628,6 +5743,34 @@ th[title] {
 }
 
 /* "Select model" row: label · dropdown · info icon. */
+.mc-iterations-setting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.mc-iterations-setting__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.mc-iterations-setting .stepper {
+  flex: 1;
+  min-width: 0;
+  height: 35px;
+  border-radius: 9px;
+}
+.mc-iterations-setting .stepper input {
+  padding: 8px 10px;
+  font-size: var(--fs-sm);
+}
+.mc-iterations-setting .stepper__btn {
+  width: 30px;
+  height: 35px;
+}
 .model-picker {
   display: flex;
   align-items: center;

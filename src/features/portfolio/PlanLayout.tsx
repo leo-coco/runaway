@@ -30,7 +30,7 @@ export const usePlanContext = () => useOutletContext<PlanContext>();
 
 export const PlanLayout = () => {
   const { id } = useParams<{ id: string }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const plansSynced = useAppStore((s) => s.plansSynced);
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
@@ -115,6 +115,13 @@ export const PlanLayout = () => {
   };
 
   const ctx: PlanContext = { plan, rates, totalValue, projection, monteCarlo };
+  const lastSaved = new Date(plan.updatedAt);
+  const lastSavedLabel = Number.isNaN(lastSaved.getTime())
+    ? null
+    : new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(lastSaved);
 
   return (
     <>
@@ -148,6 +155,18 @@ export const PlanLayout = () => {
               )}
             </div>
           </div>
+          {lastSavedLabel && (
+            <div
+              key={plan.updatedAt}
+              className="plan-save-badge"
+              role="status"
+              aria-label={`${t('plan.lastSaved')} ${lastSavedLabel}`}
+            >
+              <span className="plan-save-badge__dot" aria-hidden="true" />
+              <span className="plan-save-badge__label">{t('plan.lastSaved')}</span>
+              <time dateTime={plan.updatedAt}>{lastSavedLabel}</time>
+            </div>
+          )}
         </div>
 
         {fx.isError && <InlineError error={fx.error} />}

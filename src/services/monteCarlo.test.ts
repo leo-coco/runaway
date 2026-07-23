@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createSeedPlan } from '@/store/seed';
 import { accountFromPreset, BASE_TAXABLE_PRESET } from '@/domain/account';
 import { rescalePlanAmounts, type Plan } from '@/domain/plan';
-import { HIST_REAL_LOG_DRIFT } from '@/domain/historicalReturns';
 import {
   BTC_CYCLE_OFFSET,
   DEFAULT_MC_OPTIONS,
@@ -189,46 +188,6 @@ describe('runMonteCarlo', () => {
         // Within 1.5 pts of the stated CAGR; uncompensated this misses by 10+.
         expect(Math.abs(realisedPct - driftPct)).toBeLessThan(1.5);
       }
-    }
-  }, 30_000);
-
-  it('bootstrap-uncentered: σ moves dispersion, not the median (anchored on class drift)', () => {
-    // This model ignores the user's CAGR — its anchor is the asset class's own
-    // historical drift — so σ must only widen the spread, never shift the median.
-    // The per-year caps used to drag that median down as σ rose (≈35% → 18% for
-    // crypto at σ=110); the cap-bias compensation holds it on the class drift.
-    const start = 1_000_000;
-    const years = 20;
-    const medianFor = (sigmaPct: number): number =>
-      runMonteCarlo(
-        baseInput({
-          assets: [
-            {
-              startValue: start,
-              driftPct: 10,
-              sigmaPct,
-              annualContribution: 0,
-              accountId: 'a',
-              symbol: 'X',
-              assetClass: 'crypto',
-            },
-          ],
-          annualSpending: 0,
-          applyInflation: false,
-          horizonYears: years,
-        }),
-        {
-          iterations: 20_000,
-          seed: 12345,
-          retirementHorizon: 1,
-          model: 'bootstrap-uncentered',
-          meanReversion: 0.15,
-        },
-      ).percentiles.at(-1)!.p50;
-    const cagrOf = (v: number): number => (Math.pow(v / start, 1 / (years + 1)) - 1) * 100;
-    const base = cagrOf(medianFor(40));
-    for (const sigmaPct of [70, 110] as const) {
-      expect(Math.abs(cagrOf(medianFor(sigmaPct)) - base)).toBeLessThan(1.5);
     }
   }, 30_000);
 
@@ -876,66 +835,6 @@ describe('sampleMonteCarloPath', () => {
   });
 });
 
-describe('historical-real model', () => {
-  const opts = (over: Partial<typeof DEFAULT_MC_OPTIONS> = {}) => ({
-    ...DEFAULT_MC_OPTIONS,
-    iterations: 800,
-    seed: 7,
-    retirementHorizon: 30,
-    model: 'historical-real' as const,
-    ...over,
-  });
-
-  it('is reproducible for a given seed', () => {
-    const a = runMonteCarlo(baseInput(), opts());
-    const b = runMonteCarlo(baseInput(), opts());
-    expect(a.successRate).toBe(b.successRate);
-  });
-
-  it('returns a success rate in [0, 1] with per-year percentiles', () => {
-    const r = runMonteCarlo(baseInput(), opts());
-    expect(r.successRate).toBeGreaterThanOrEqual(0);
-    expect(r.successRate).toBeLessThanOrEqual(1);
-    expect(r.percentiles.length).toBeGreaterThan(0);
-  });
-
-  it('ignores the user CAGR — drift comes from history, not driftPct', () => {
-    const asset = (driftPct: number) => ({
-      startValue: 1_000_000,
-      driftPct,
-      sigmaPct: 15,
-      annualContribution: 0,
-      accountId: 'a',
-      assetClass: 'us_equity',
-    });
-    const lo = runMonteCarlo(baseInput({ assets: [asset(1)] }), opts());
-    const hi = runMonteCarlo(baseInput({ assets: [asset(30)] }), opts());
-    expect(lo.successRate).toBe(hi.successRate);
-    expect(lo.medianEndBalance).toBe(hi.medianEndBalance);
-  });
-
-  it('respects an explicit 0% volatility as riskless — grows at the stated CAGR, not history', () => {
-    const cash = {
-      startValue: 1_000_000,
-      driftPct: 8,
-      sigmaPct: 0,
-      annualContribution: 0,
-      accountId: 'a',
-      assetClass: 'other',
-    };
-    const p = sampleMonteCarloPath(baseInput({ assets: [cash], retirementYear: 2100 }), opts());
-    for (const y of p.years) {
-      expect(y.assets[0]!.returnPct).toBeCloseTo(8, 6);
-    }
-  });
-
-  it('sampleMonteCarloPath replays a full real cohort path', () => {
-    const p = sampleMonteCarloPath(baseInput(), opts({ iterations: 1 }));
-    expect(p.years.length).toBeGreaterThan(0);
-    expect(p.years.every((y) => Number.isFinite(y.closingTotal))).toBe(true);
-  });
-});
-
 describe('historical-real-centered model', () => {
   const opts = (over: Partial<typeof DEFAULT_MC_OPTIONS> = {}) => ({
     ...DEFAULT_MC_OPTIONS,
@@ -960,20 +859,10 @@ describe('historical-real-centered model', () => {
     expect(a.successRate).toBe(b.successRate);
   });
 
-  it('tracks the user CAGR — unlike historical-real, a higher driftPct improves outcomes', () => {
+  it('tracks the user CAGR — a higher driftPct improves outcomes', () => {
     const lo = runMonteCarlo(baseInput({ assets: [asset(1)] }), opts());
     const hi = runMonteCarlo(baseInput({ assets: [asset(30)] }), opts());
     expect(hi.medianEndBalance).toBeGreaterThan(lo.medianEndBalance);
-  });
-
-  it('matches historical-real exactly when driftPct equals history’s own average', () => {
-    const histDriftPct = (Math.exp(HIST_REAL_LOG_DRIFT.us_equity) - 1) * 100;
-    const input = baseInput({ assets: [asset(histDriftPct)] });
-    const fixedYear = opts({ histStartYear: 1966 });
-    const centered = runMonteCarlo(input, fixedYear);
-    const real = runMonteCarlo(input, { ...fixedYear, model: 'historical-real' });
-    expect(centered.medianEndBalance).toBeCloseTo(real.medianEndBalance, 0);
-    expect(centered.successRate).toBe(real.successRate);
   });
 
   it('respects an explicit 0% volatility as riskless — grows at the stated CAGR, not history', () => {

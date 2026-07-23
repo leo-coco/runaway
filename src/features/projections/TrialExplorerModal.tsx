@@ -89,13 +89,12 @@ export const TrialExplorerModal = ({
   // cohort. A fixed histStartYear pins every trial to the same historical
   // replay, so every tile would show the same year.
   const supportsYearGrid =
-    (options.model === 'historical-real' || options.model === 'historical-real-centered') &&
-    options.histStartYear === undefined;
+    options.model === 'historical-real-centered' && options.histStartYear === undefined;
 
   const [sortMode, setSortMode] = useState<SortMode>('category');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(supportsYearGrid ? 'grid' : 'list');
-  const [categoryFilter, setCategoryFilter] = useState<Set<TrialOutcomeCategory>>(
-    () => (initialCategoryFilter ? new Set([initialCategoryFilter]) : new Set(CATEGORY_ORDER)),
+  const [categoryFilter, setCategoryFilter] = useState<Set<TrialOutcomeCategory>>(() =>
+    initialCategoryFilter ? new Set([initialCategoryFilter]) : new Set(CATEGORY_ORDER),
   );
   const [selectedSeed, setSelectedSeed] = useState<number | null>(null);
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({ closing: true });
@@ -157,208 +156,206 @@ export const TrialExplorerModal = ({
     >
       <div className="trial-explorer">
         <div className="trial-explorer__top">
-        <div className="trial-explorer__list">
-          <div className="trial-explorer__controls">
-            <div className="trial-explorer__controls-row">
-              <label className="trial-explorer__sort">
-                <span>{t('mc.trialSortBy')}</span>
-                <select
-                  className="select"
-                  value={sortMode}
-                  onChange={(e) => setSortMode(e.target.value as SortMode)}
-                >
-                  <option value="category">{t('mc.trialSortCategory')}</option>
-                  <option value="balanceDesc">{t('mc.trialSortBalanceDesc')}</option>
-                  <option value="balanceAsc">{t('mc.trialSortBalanceAsc')}</option>
-                </select>
-              </label>
-              {supportsYearGrid && (
-                <div className="trial-explorer__view-toggle" role="group">
-                  <button
-                    type="button"
-                    className={cn(
-                      'trial-explorer__view-btn',
-                      viewMode === 'grid' && 'is-active',
-                    )}
-                    aria-label={t('mc.trialViewGrid')}
-                    title={t('mc.trialViewGrid')}
-                    onClick={() => setViewMode('grid')}
+          <div className="trial-explorer__list">
+            <div className="trial-explorer__controls">
+              <div className="trial-explorer__controls-row">
+                <label className="trial-explorer__sort">
+                  <span>{t('mc.trialSortBy')}</span>
+                  <select
+                    className="select"
+                    value={sortMode}
+                    onChange={(e) => setSortMode(e.target.value as SortMode)}
                   >
-                    <GridIcon size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(
-                      'trial-explorer__view-btn',
-                      viewMode === 'list' && 'is-active',
-                    )}
-                    aria-label={t('mc.trialViewList')}
-                    title={t('mc.trialViewList')}
-                    onClick={() => setViewMode('list')}
-                  >
-                    <ListIcon size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="trial-explorer__filters">
-              {CATEGORY_ORDER.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  className={cn('trial-explorer__filter', categoryFilter.has(cat) && 'is-active')}
-                  style={{
-                    borderColor: CATEGORY_COLOR[cat],
-                    color: categoryFilter.has(cat) ? CATEGORY_COLOR[cat] : undefined,
-                  }}
-                  onClick={() => toggleCategory(cat)}
-                >
-                  <i style={{ background: CATEGORY_COLOR[cat] }} />
-                  {t(CATEGORY_LABEL_KEY[cat])}
-                </button>
-              ))}
-            </div>
-          </div>
-          {viewMode === 'grid' && supportsYearGrid ? (
-            <div className="trial-explorer__grid-wrap">
-              <div className="trial-explorer__grid-title">
-                {t('mc.trialsByStartYear')}
-                <span className="mc-info" role="img" aria-label={t('mc.trialsByStartYearInfo')}>
-                  <InfoIcon size={13} />
-                  <span className="mc-tip" role="tooltip">
-                    {t('mc.trialsByStartYearInfo')}
-                  </span>
-                </span>
+                    <option value="category">{t('mc.trialSortCategory')}</option>
+                    <option value="balanceDesc">{t('mc.trialSortBalanceDesc')}</option>
+                    <option value="balanceAsc">{t('mc.trialSortBalanceAsc')}</option>
+                  </select>
+                </label>
+                {supportsYearGrid && (
+                  <div className="trial-explorer__view-toggle" role="group">
+                    <button
+                      type="button"
+                      className={cn('trial-explorer__view-btn', viewMode === 'grid' && 'is-active')}
+                      aria-label={t('mc.trialViewGrid')}
+                      title={t('mc.trialViewGrid')}
+                      onClick={() => setViewMode('grid')}
+                    >
+                      <GridIcon size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={cn('trial-explorer__view-btn', viewMode === 'list' && 'is-active')}
+                      aria-label={t('mc.trialViewList')}
+                      title={t('mc.trialViewList')}
+                      onClick={() => setViewMode('list')}
+                    >
+                      <ListIcon size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="trial-explorer__grid">
-                {visibleTrials.map((tr) => (
+              <div className="trial-explorer__filters">
+                {CATEGORY_ORDER.map((cat) => (
                   <button
-                    key={tr.seed}
+                    key={cat}
                     type="button"
-                    className={cn(
-                      'trial-explorer__tile',
-                      selected?.seed === tr.seed && 'is-selected',
-                    )}
-                    style={{ background: CATEGORY_COLOR[tr.category] }}
-                    title={`${t(CATEGORY_LABEL_KEY[tr.category])} · ${fmt.compact(tr.terminalBalance)}`}
-                    onClick={() => setSelectedSeed(tr.seed)}
+                    className={cn('trial-explorer__filter', categoryFilter.has(cat) && 'is-active')}
+                    style={{
+                      borderColor: CATEGORY_COLOR[cat],
+                      color: categoryFilter.has(cat) ? CATEGORY_COLOR[cat] : undefined,
+                    }}
+                    onClick={() => toggleCategory(cat)}
                   >
-                    {tr.histStartYear ?? '—'}
+                    <i style={{ background: CATEGORY_COLOR[cat] }} />
+                    {t(CATEGORY_LABEL_KEY[cat])}
                   </button>
                 ))}
               </div>
             </div>
-          ) : (
-            <div className="trial-explorer__table-wrap">
-              <table className="trial-explorer__table">
-                <thead>
-                  <tr>
-                    <th>{t('mc.trialCol')}</th>
-                    <th>{t('mc.colCategory')}</th>
-                    <th className="num">{t('mc.colTerminalBalance')}</th>
-                    <th className="num">{t('mc.colDryYear')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+            {viewMode === 'grid' && supportsYearGrid ? (
+              <div className="trial-explorer__grid-wrap">
+                <div className="trial-explorer__grid-title">
+                  {t('mc.trialsByStartYear')}
+                  <span className="mc-info" role="img" aria-label={t('mc.trialsByStartYearInfo')}>
+                    <InfoIcon size={13} />
+                    <span className="mc-tip" role="tooltip">
+                      {t('mc.trialsByStartYearInfo')}
+                    </span>
+                  </span>
+                </div>
+                <div className="trial-explorer__grid">
                   {visibleTrials.map((tr) => (
-                    <tr
+                    <button
                       key={tr.seed}
+                      type="button"
                       className={cn(
-                        'trial-explorer__row',
+                        'trial-explorer__tile',
                         selected?.seed === tr.seed && 'is-selected',
                       )}
+                      style={{ background: CATEGORY_COLOR[tr.category] }}
+                      title={`${t(CATEGORY_LABEL_KEY[tr.category])} · ${fmt.compact(tr.terminalBalance)}`}
                       onClick={() => setSelectedSeed(tr.seed)}
                     >
-                      <td>#{tr.index}</td>
-                      <td>
-                        <i
-                          className="trial-explorer__dot"
-                          style={{ background: CATEGORY_COLOR[tr.category] }}
-                        />
-                        {t(CATEGORY_LABEL_KEY[tr.category])}
-                      </td>
-                      <td className="num">{fmt.compact(tr.terminalBalance)}</td>
-                      <td className="num">{tr.dryYear ?? t('mc.trialNever')}</td>
-                    </tr>
+                      {tr.histStartYear ?? '—'}
+                    </button>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            ) : (
+              <div className="trial-explorer__table-wrap">
+                <table className="trial-explorer__table">
+                  <thead>
+                    <tr>
+                      <th>{t('mc.trialCol')}</th>
+                      <th>{t('mc.colCategory')}</th>
+                      <th className="num">{t('mc.colTerminalBalance')}</th>
+                      <th className="num">{t('mc.colDryYear')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleTrials.map((tr) => (
+                      <tr
+                        key={tr.seed}
+                        className={cn(
+                          'trial-explorer__row',
+                          selected?.seed === tr.seed && 'is-selected',
+                        )}
+                        onClick={() => setSelectedSeed(tr.seed)}
+                      >
+                        <td>#{tr.index}</td>
+                        <td>
+                          <i
+                            className="trial-explorer__dot"
+                            style={{ background: CATEGORY_COLOR[tr.category] }}
+                          />
+                          {t(CATEGORY_LABEL_KEY[tr.category])}
+                        </td>
+                        <td className="num">{fmt.compact(tr.terminalBalance)}</td>
+                        <td className="num">{tr.dryYear ?? t('mc.trialNever')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {selected && (
+            <div className="trial-explorer__chart">
+              <div className="chart-view" style={{ marginBottom: 8 }}>
+                <select
+                  aria-label={t('projChart.chartView')}
+                  className="select"
+                  value={compView}
+                  onChange={(e) => setCompView(e.target.value as 'stacked' | 'total')}
+                >
+                  <option value="total">{t('projChart.optGrowth')}</option>
+                  <option value="stacked">{t('projChart.optComposition')}</option>
+                </select>
+              </div>
+
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
+                  <CartesianGrid stroke="var(--border)" vertical={false} />
+                  <XAxis
+                    dataKey="year"
+                    tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
+                    stroke="var(--border)"
+                    minTickGap={40}
+                    tickFormatter={xAxisTickFormatter}
+                  />
+                  <YAxis
+                    tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
+                    stroke="var(--border)"
+                    tickFormatter={(v) => fmt.compact(Number(v))}
+                    width={60}
+                  />
+                  <Tooltip
+                    content={
+                      <ChartTooltip
+                        labelFormatter={xAxisLabelFormatter}
+                        formatter={(value: unknown, name: unknown) => [
+                          fmt.format(Number(value)),
+                          String(name),
+                        ]}
+                      />
+                    }
+                  />
+                  <ReferenceLine
+                    x={retirementYear}
+                    stroke="var(--text-dim)"
+                    strokeDasharray="4 4"
+                  />
+                  {selected.dryYear !== null && (
+                    <ReferenceLine x={selected.dryYear} stroke={FAN_RED} strokeDasharray="6 4" />
+                  )}
+                  {compView === 'stacked' ? (
+                    syms.map((s) => (
+                      <Area
+                        key={s.symbol}
+                        type="monotone"
+                        dataKey={s.symbol}
+                        stackId="1"
+                        stroke={s.color}
+                        fill={s.color}
+                        fillOpacity={0.55}
+                      />
+                    ))
+                  ) : (
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      name="Portfolio"
+                      stroke="var(--accent)"
+                      fill="var(--accent)"
+                      fillOpacity={0.25}
+                    />
+                  )}
+                </AreaChart>
+              </ResponsiveContainer>
+              {canShowAge && <AxisModeSwitch mode={xAxisMode} onChange={setXAxisMode} />}
             </div>
           )}
-        </div>
-
-        {selected && (
-          <div className="trial-explorer__chart">
-            <div className="chart-view" style={{ marginBottom: 8 }}>
-              <select
-                aria-label={t('projChart.chartView')}
-                className="select"
-                value={compView}
-                onChange={(e) => setCompView(e.target.value as 'stacked' | 'total')}
-              >
-                <option value="total">{t('projChart.optGrowth')}</option>
-                <option value="stacked">{t('projChart.optComposition')}</option>
-              </select>
-            </div>
-
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis
-                  dataKey="year"
-                  tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
-                  stroke="var(--border)"
-                  minTickGap={40}
-                  tickFormatter={xAxisTickFormatter}
-                />
-                <YAxis
-                  tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
-                  stroke="var(--border)"
-                  tickFormatter={(v) => fmt.compact(Number(v))}
-                  width={60}
-                />
-                <Tooltip
-                  content={
-                    <ChartTooltip
-                      labelFormatter={xAxisLabelFormatter}
-                      formatter={(value: unknown, name: unknown) => [
-                        fmt.format(Number(value)),
-                        String(name),
-                      ]}
-                    />
-                  }
-                />
-                <ReferenceLine x={retirementYear} stroke="var(--text-dim)" strokeDasharray="4 4" />
-                {selected.dryYear !== null && (
-                  <ReferenceLine x={selected.dryYear} stroke={FAN_RED} strokeDasharray="6 4" />
-                )}
-                {compView === 'stacked' ? (
-                  syms.map((s) => (
-                    <Area
-                      key={s.symbol}
-                      type="monotone"
-                      dataKey={s.symbol}
-                      stackId="1"
-                      stroke={s.color}
-                      fill={s.color}
-                      fillOpacity={0.55}
-                    />
-                  ))
-                ) : (
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    name="Portfolio"
-                    stroke="var(--accent)"
-                    fill="var(--accent)"
-                    fillOpacity={0.25}
-                  />
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
-            {canShowAge && <AxisModeSwitch mode={xAxisMode} onChange={setXAxisMode} />}
-          </div>
-        )}
         </div>
 
         {selected && (

@@ -179,11 +179,10 @@ export interface MonteCarloOptions {
    */
   readonly btcCycle?: boolean;
   /**
-   * Fixed cohort start year for the `historical-real` / `historical-real-centered`
-   * models — every path replays the same real sequence from this calendar year
-   * (wrapping at the end of the window) instead of each path drawing its own
-   * random start. Ignored by other models. Undefined means each path picks a
-   * random start year.
+   * Fixed cohort start year for the `historical-real-centered` model — every path
+   * replays the same real sequence from this calendar year (wrapping at the end of
+   * the window) instead of each path drawing its own random start. Ignored by other
+   * models. Undefined means each path picks a random start year.
    */
   readonly histStartYear?: number;
 }
@@ -272,7 +271,7 @@ const calibShocksFor = (model: MonteCarloModel, assetClass: AssetClass): Float64
       for (let i = 0; i < out.length; i += 1) out[i] = studentT(rng, STUDENT_T_DF);
     });
   }
-  if (model === 'bootstrap' || model === 'bootstrap-uncentered') {
+  if (model === 'bootstrap') {
     return calibMatrix(`bootstrap:${assetClass}`, (rng, out) => {
       const hist = STANDARDIZED_HISTORY[assetClass];
       const sys = Math.sqrt(classCorrelation(assetClass, assetClass));
@@ -460,53 +459,25 @@ const STANDARDIZED_HISTORY: Record<AssetClass, number[]> = Object.fromEntries(
 ) as Record<AssetClass, number[]>;
 const HISTORY_LEN = STANDARDIZED_HISTORY.us_equity.length;
 
-/**
- * Geometric-mean log return of each class's embedded history (2001–2024) — the
- * drift the `bootstrap-uncentered` model uses INSTEAD of the user's CAGR. `bootstrap`
- * uses the same standardised shape but re-centers on the user's CAGR; this constant
- * is what makes the "uncentered" variant genuinely historical, not just shaped.
- */
-const CLASS_LOG_DRIFT: Record<AssetClass, number> = Object.fromEntries(
-  ASSET_CLASSES.map((c) => {
-    const xs = classReturnHistory(c);
-    return [c, xs.reduce((s, r) => s + Math.log(1 + r), 0) / (xs.length || 1)];
-  }),
-) as Record<AssetClass, number>;
-
 /** Resolve a Monte Carlo asset to a valid asset class (fallback: other). */
 const assetClassOf = (a: MonteCarloAsset): AssetClass => {
   const c = a.assetClass as AssetClass | undefined;
   return c && c in STANDARDIZED_HISTORY ? c : 'other';
 };
 
-/** Where an asset's effective mean return comes from under a given model. */
-export type DriftSource = 'user-cagr' | 'class-history-2001' | 'class-history-1928';
-
 /**
- * The mean annual return a model ACTUALLY applies to an asset — which, for
- * `bootstrap-uncentered` and `historical-real`, silently overrides the user's
- * stated CAGR with a hardcoded historical class average (see `driftBase` in
- * `runMonteCarlo`/`sampleMonteCarloPath`). Every other model honors the CAGR as
- * the mean (some only borrow historical *shape*, not the historical *mean*).
- * Zero-volatility ("riskless") assets always keep their stated CAGR.
+ * The asset class's long-run real historical average return (%/yr, 1928–2024).
+ * Seeds the UI's "fill with history" action: the user adopts it as their own
+ * expected-return assumption and can then edit it. Every model centers on that
+ * stated assumption, so this is a starting value, not a hidden override.
  */
-export const effectiveDriftPct = (
-  a: MonteCarloAsset,
-  model: MonteCarloModel,
-): { pct: number; source: DriftSource } => {
-  if (a.sigmaPct <= 0) return { pct: a.driftPct, source: 'user-cagr' };
-  const c = assetClassOf(a);
-  if (model === 'bootstrap-uncentered') {
-    return { pct: (Math.exp(CLASS_LOG_DRIFT[c]) - 1) * 100, source: 'class-history-2001' };
-  }
-  if (model === 'historical-real') {
-    return { pct: (Math.exp(HIST_REAL_LOG_DRIFT[c]) - 1) * 100, source: 'class-history-1928' };
-  }
-  return { pct: a.driftPct, source: 'user-cagr' };
+export const historicalDriftPct = (assetClass: string | undefined): number => {
+  const c = (assetClass && assetClass in HIST_REAL_LOG_DRIFT ? assetClass : 'other') as AssetClass;
+  return (Math.exp(HIST_REAL_LOG_DRIFT[c]) - 1) * 100;
 };
 
 export const DEFAULT_MC_OPTIONS: MonteCarloOptions = {
-  iterations: 5_000,
+  iterations: 500,
   seed: 0x9e3779b9,
   retirementHorizon: 30,
   meanReversion: 0.15,
@@ -918,44 +889,28 @@ export const runMonteCarlo = (
   // Per-asset lognormal parameters: factor = exp(mu + sigma·z).
   const sigma = assets.map((a) => Math.max(0, a.sigmaPct) / 100);
   // An explicit 0% volatility means "riskless": no shock, no crash hit, no BTC
-  // cycle, and (in historical-real) no historical replay — just the stated CAGR.
+  // cycle, and (in the historical cohort) no historical replay — just the stated CAGR.
   const hasVariance = sigma.map((s) => s > 0);
   const model = options.model ?? 'normal';
   const fatTails = model === 'fat-tails' || model === 'crash-aware';
   const crashAware = model === 'crash-aware';
   const isBootstrap = model === 'bootstrap';
-  const isBootstrapUncentered = model === 'bootstrap-uncentered';
-  const isBootstrapAny = isBootstrap || isBootstrapUncentered;
-  const isHistRealCentered = model === 'historical-real-centered';
-  const isHistReal = model === 'historical-real' || isHistRealCentered;
-  const kappa = isBootstrapAny || isHistReal ? 0 : reversionSpeed(options);
+  const isHistReal = model === 'historical-real-centered';
+  const kappa = isBootstrap || isHistReal ? 0 : reversionSpeed(options);
   // Geometric centering: the user's CAGR is the MEDIAN compound rate (exp(mu) = 1+g),
   // so volatility disperses outcomes symmetrically around it instead of dragging the
-  // median down by σ²/2. The optional growth fade lowers high CAGRs over time, so the
-  // log-drift is per-year: muByYear[offset][assetIndex]. σ-scaled models also carry
-  // the cap-bias compensation (see capCompensationDelta).
+  // median down by σ²/2. Every model centers on the user's stated return; the model
+  // only shapes the dispersion. The optional growth fade lowers high CAGRs over time,
+  // so the log-drift is per-year: muByYear[offset][assetIndex]. σ-scaled models also
+  // carry the cap-bias compensation (see capCompensationDelta).
   const muByYear = buildMuByYear(input, sigma, kappa, model);
   // Bootstrap support: each asset's class history (standardized) + systematic share.
   const classOf = assets.map(assetClassOf);
-  // Historical-real: each asset earns its asset-class index return, replayed for real.
+  // Historical cohort: each asset earns its asset-class index return, replayed for real.
   const histReturnByAsset = classOf.map((c) => HIST_REAL_RETURN[c]);
-  // Historical-real-centered: the class's mean log return over the same window, so
-  // each year's real return can be re-centred onto the user's CAGR.
+  // The class's mean log return over the same window, so each year's real return can
+  // be re-centred onto the user's CAGR.
   const histLogDriftByAsset = classOf.map((c) => HIST_REAL_LOG_DRIFT[c]);
-  // Bootstrap-uncentered: each asset's drift is its class's own historical average
-  // log return, instead of the user's CAGR (muY) — cap-compensated the same way.
-  const classDriftByAsset = classOf.map((c, i) =>
-    isBootstrapUncentered && hasVariance[i]
-      ? CLASS_LOG_DRIFT[c] +
-        capCompensationDelta(
-          new Array<number>(input.horizonYears + 1).fill(CLASS_LOG_DRIFT[c]),
-          sigma[i]!,
-          kappa,
-          model,
-          c,
-        )
-      : CLASS_LOG_DRIFT[c],
-  );
   const sysShare = assets.map((_, i) => Math.sqrt(classCorrelation(classOf[i]!, classOf[i]!)));
   // Crash sensitivity per asset (defensive classes barely move in a crash).
   const crashBeta = classOf.map((c) => CLASS_CRASH_BETA[c]);
@@ -1003,7 +958,7 @@ export const runMonteCarlo = (
       let isCrash = false;
       if (isHistReal) {
         // Factors come straight from history below — no shocks to draw.
-      } else if (isBootstrapAny) {
+      } else if (isBootstrap) {
         // Block bootstrap: read one historical calendar index for all classes
         // (preserves real co-movement + crashes), walking in blocks.
         if (bsBlockYear === 0) bsIdx = Math.floor(rng() * HISTORY_LEN);
@@ -1043,24 +998,19 @@ export const runMonteCarlo = (
       for (let i = 0; i < n; i += 1) {
         let factor: number;
         if (isHistReal) {
-          // Real cohort: the asset earns its asset-class index return this year —
+          // Real cohort: the asset replays its asset-class index return this year —
           // unless the user zeroed its volatility ("riskless"), in which case it
           // grows deterministically at the stated CAGR instead of replaying history.
           if (!hasVariance[i]) {
             factor = Math.exp(muY[i]!);
-          } else if (isHistRealCentered) {
-            // Same real year-by-year deviation as the plain cohort, but re-centred
-            // onto the user's CAGR instead of history's own average — mirrors how
-            // `bootstrap` relates to `bootstrap-uncentered`.
+          } else {
+            // Same real year-by-year deviation as the raw cohort, but re-centred onto
+            // the user's CAGR instead of history's own average — the model shapes the
+            // dispersion, the user's stated return sets the trend.
             const logReturn = capLogReturn(
               Math.log(1 + histReturnByAsset[i]![hidx]!) - histLogDriftByAsset[i]! + muY[i]!,
             );
             factor = Math.exp(logReturn);
-          } else {
-            factor = Math.min(
-              RETURN_FACTOR_MAX,
-              Math.max(RETURN_FACTOR_MIN, 1 + histReturnByAsset[i]![hidx]!),
-            );
           }
         } else {
           const cycVol = cyc && isBtc[i] ? cyc.volMult : 1;
@@ -1071,14 +1021,7 @@ export const runMonteCarlo = (
           const crashVol = isCrash ? 1 + (CRASH_VOL_MULT - 1) * cb : 1;
           const crashDrift = isCrash && hasVariance[i] ? CRASH_DRIFT * cb : 0;
           const shock = sigma[i]! * crashVol * cycVol * draws[i]!;
-          // Uncentered bootstrap: drift is the class's own historical average, not
-          // the user's CAGR — unless the user zeroed volatility ("riskless"), which
-          // still trusts the stated CAGR (see historical-real's identical rule).
-          const driftBase =
-            isBootstrapUncentered && hasVariance[i] ? classDriftByAsset[i]! : muY[i]!;
-          const logReturn = capLogReturn(
-            driftBase - kappaI * dev[i]! + shock + crashDrift + cycOff,
-          );
+          const logReturn = capLogReturn(muY[i]! - kappaI * dev[i]! + shock + crashDrift + cycOff);
           dev[i] = dev[i]! + (logReturn - muY[i]!);
           factor = Math.exp(logReturn);
         }
@@ -1324,34 +1267,19 @@ export const sampleMonteCarloPath = (
 
   const sigma = assets.map((a) => Math.max(0, a.sigmaPct) / 100);
   // An explicit 0% volatility means "riskless": no shock, no crash hit, no BTC
-  // cycle, and (in historical-real) no historical replay — just the stated CAGR.
+  // cycle, and (in the historical cohort) no historical replay — just the stated CAGR.
   const hasVariance = sigma.map((s) => s > 0);
   const model = options.model ?? 'normal';
   const fatTails = model === 'fat-tails' || model === 'crash-aware';
   const crashAware = model === 'crash-aware';
   const isBootstrap = model === 'bootstrap';
-  const isBootstrapUncentered = model === 'bootstrap-uncentered';
-  const isBootstrapAny = isBootstrap || isBootstrapUncentered;
-  const isHistRealCentered = model === 'historical-real-centered';
-  const isHistReal = model === 'historical-real' || isHistRealCentered;
-  const kappa = isBootstrapAny || isHistReal ? 0 : reversionSpeed(options);
+  const isHistReal = model === 'historical-real-centered';
+  const kappa = isBootstrap || isHistReal ? 0 : reversionSpeed(options);
   // Geometric centering + optional fade + cap-bias compensation — see runMonteCarlo.
   const muByYear = buildMuByYear(input, sigma, kappa, model);
   const classOf = assets.map(assetClassOf);
   const histReturnByAsset = classOf.map((c) => HIST_REAL_RETURN[c]);
   const histLogDriftByAsset = classOf.map((c) => HIST_REAL_LOG_DRIFT[c]);
-  const classDriftByAsset = classOf.map((c, i) =>
-    isBootstrapUncentered && hasVariance[i]
-      ? CLASS_LOG_DRIFT[c] +
-        capCompensationDelta(
-          new Array<number>(input.horizonYears + 1).fill(CLASS_LOG_DRIFT[c]),
-          sigma[i]!,
-          kappa,
-          model,
-          c,
-        )
-      : CLASS_LOG_DRIFT[c],
-  );
   const sysShare = assets.map((_, i) => Math.sqrt(classCorrelation(classOf[i]!, classOf[i]!)));
   const crashBeta = classOf.map((c) => CLASS_CRASH_BETA[c]);
   const Lcrash = crashAware ? cholesky(crashCorrelation(input.correlation, crashBeta)) : L;
@@ -1383,7 +1311,7 @@ export const sampleMonteCarloPath = (
     let isCrash = false;
     if (isHistReal) {
       // Factors come straight from history below — no shocks to draw.
-    } else if (isBootstrapAny) {
+    } else if (isBootstrap) {
       if (bsBlockYear === 0) bsIdx = Math.floor(rng() * HISTORY_LEN);
       const idx = bsIdx;
       for (let i = 0; i < n; i += 1) {
@@ -1425,16 +1353,11 @@ export const sampleMonteCarloPath = (
         // deterministically at the stated CAGR instead of replaying history.
         if (!hasVariance[i]) {
           factor = Math.exp(muY[i]!);
-        } else if (isHistRealCentered) {
+        } else {
           const logReturn = capLogReturn(
             Math.log(1 + histReturnByAsset[i]![hidx]!) - histLogDriftByAsset[i]! + muY[i]!,
           );
           factor = Math.exp(logReturn);
-        } else {
-          factor = Math.min(
-            RETURN_FACTOR_MAX,
-            Math.max(RETURN_FACTOR_MIN, 1 + histReturnByAsset[i]![hidx]!),
-          );
         }
       } else {
         const cycVol = cyc && isBtc[i] ? cyc.volMult : 1;
@@ -1443,9 +1366,8 @@ export const sampleMonteCarloPath = (
         const cb = crashBeta[i]!;
         const crashVol = isCrash ? 1 + (CRASH_VOL_MULT - 1) * cb : 1;
         const crashDrift = isCrash && hasVariance[i] ? CRASH_DRIFT * cb : 0;
-        const driftBase = isBootstrapUncentered && hasVariance[i] ? classDriftByAsset[i]! : muY[i]!;
         const logReturn = capLogReturn(
-          driftBase -
+          muY[i]! -
             kappaI * dev[i]! +
             sigma[i]! * crashVol * cycVol * draws[i]! +
             crashDrift +
@@ -1753,6 +1675,7 @@ export const buildMonteCarloInput = (
   const values = valueHoldings(plan.holdings, plan.currency, rates);
   const adj = scenarioAdjustmentPts(plan.scenario, plan.scenario.active);
   const volaById = new Map(plan.holdings.map((h) => [h.id, h.volatilityPct]));
+  const mcReturnById = new Map(plan.holdings.map((h) => [h.id, h.mcExpectedReturnPct]));
 
   const expensesIncomes: ExpenseIncome[] = [
     ...(plan.settings.expensesIncomes ?? []),
@@ -1763,7 +1686,8 @@ export const buildMonteCarloInput = (
   const enriched = values.map((v) => ({
     asset: {
       startValue: v.value,
-      driftPct: v.baseCagrPct + adj,
+      // Monte-Carlo-scoped expected-return override if set, otherwise the plan's CAGR.
+      driftPct: (mcReturnById.get(v.holdingId) ?? v.baseCagrPct) + adj,
       // Per-holding override if set, otherwise the asset-class/ticker default.
       sigmaPct: volaById.get(v.holdingId) ?? volatilityFor(v.assetClass, v.symbol),
       annualContribution: v.monthlyContribution * 12,
