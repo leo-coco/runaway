@@ -5,9 +5,13 @@ import { rescalePlanAmounts, type Plan } from '@/domain/plan';
 import {
   BTC_CYCLE_OFFSET,
   DEFAULT_MC_OPTIONS,
+  FAIL_LATE_FRACTION,
+  LARGE_SURPLUS_RATIO,
+  TIGHT_SUCCESS_RATIO,
   bitcoinCyclePhase,
   buildMonteCarloInput,
   choleskyFactor,
+  classifyOutcome,
   correlationKey,
   isBitcoinSymbol,
   runMonteCarlo,
@@ -1277,6 +1281,126 @@ describe('sampleTrials agrees with runMonteCarlo on what counts as funded', () =
     for (const t of trials) {
       expect(t.funded).toBe(true);
       expect(t.dryYear).toBeNull();
+    }
+  });
+});
+
+describe('outcome classification (absolute thresholds)', () => {
+  // Deterministic: sigma 0 (riskless) + no inflation means every iteration is the
+  // same path, so a whole run lands in a single category we can assert exactly.
+  const det = { ...DEFAULT_MC_OPTIONS, retirementHorizon: 30, model: 'normal' as const };
+  const flat = (overrides: Partial<MonteCarloInput> = {}): MonteCarloInput =>
+    baseInput({
+      assets: [
+        { startValue: 1_000_000, driftPct: 0, sigmaPct: 0, annualContribution: 0, accountId: 'a' },
+      ],
+      annualSpending: 0,
+      inflationPct: 0,
+      applyInflation: false,
+      ...overrides,
+    });
+
+  it('classifyOutcome maps ratios and fail timing to the five categories', () => {
+    const base = { retirementYear: 2026, retirementHorizon: 30 };
+    expect(classifyOutcome({ ...base, funded: true, realRatio: 2.5, dryYear: null })).toBe(
+      'largeSurplus',
+    );
+    expect(classifyOutcome({ ...base, funded: true, realRatio: 1, dryYear: null })).toBe(
+      'comfortable',
+    );
+    expect(classifyOutcome({ ...base, funded: true, realRatio: 0.3, dryYear: null })).toBe(
+      'tightSuccess',
+    );
+    // 80% of 30 = year 24 into retirement -> failing in 2050 (24y) is "almost".
+    expect(classifyOutcome({ ...base, funded: false, realRatio: 0, dryYear: 2050 })).toBe(
+      'almostMadeIt',
+    );
+    // Failing in 2049 (23y) is before the 80% mark.
+    expect(classifyOutcome({ ...base, funded: false, realRatio: 0, dryYear: 2049 })).toBe(
+      'failedInMiddle',
+    );
+  });
+
+  it('exposes the documented thresholds', () => {
+    expect(LARGE_SURPLUS_RATIO).toBe(2);
+    expect(TIGHT_SUCCESS_RATIO).toBe(0.5);
+    expect(FAIL_LATE_FRACTION).toBe(0.8);
+  });
+
+  it('counts a doubling portfolio as all large surplus', () => {
+    // 5%/yr for ~30 retired years far more than doubles the starting wealth.
+    const b = runMonteCarlo(
+      flat({
+        assets: [
+          {
+            startValue: 1_000_000,
+            driftPct: 5,
+            sigmaPct: 0,
+            annualContribution: 0,
+            accountId: 'a',
+          },
+        ],
+      }),
+      det,
+    ).outcomeBreakdown;
+    expect(b.largeSurplus).toBe(det.iterations);
+    expect(b.comfortable + b.tightSuccess + b.almostMadeIt + b.failedInMiddle).toBe(0);
+  });
+
+  it('counts a flat, unspent portfolio as all comfortable (ratio ~1)', () => {
+    const b = runMonteCarlo(flat(), det).outcomeBreakdown;
+    expect(b.comfortable).toBe(det.iterations);
+    expect(b.largeSurplus + b.tightSuccess).toBe(0);
+  });
+
+  it('counts a funded but heavily drawn-down portfolio as tight success (ratio <0.5)', () => {
+    // Draw 20k/yr from a flat 1M for 30 retired years -> ends at ~400k, never dry.
+    const r = runMonteCarlo(flat({ annualSpending: 20_000 }), det);
+    expect(r.successRate).toBe(1);
+    expect(r.outcomeBreakdown.tightSuccess).toBe(det.iterations);
+  });
+
+  it('splits failures by the 80% mark (almost vs early)', () => {
+    // Lasts 25 full years then fails in year 26 (2051) -> past the 80% mark.
+    const almost = runMonteCarlo(flat({ annualSpending: 40_000 }), det).outcomeBreakdown;
+    expect(almost.almostMadeIt).toBe(det.iterations);
+    expect(almost.failedInMiddle).toBe(0);
+    // A tiny portfolio drained at once fails immediately -> before the 80% mark.
+    const early = runMonteCarlo(
+      flat({
+        assets: [
+          { startValue: 100_000, driftPct: 0, sigmaPct: 0, annualContribution: 0, accountId: 'a' },
+        ],
+        annualSpending: 100_000,
+      }),
+      det,
+    ).outcomeBreakdown;
+    expect(early.failedInMiddle).toBe(det.iterations);
+    expect(early.almostMadeIt).toBe(0);
+  });
+
+  it('breakdown counts partition the runs and preserve the success rate', () => {
+    // A realistic, dispersed run: the five buckets must still sum to every trial,
+    // successes to the funded ones, and never perturb successRate.
+    const r = runMonteCarlo(baseInput({ annualSpending: 55_000 }), det);
+    const b = r.outcomeBreakdown;
+    const total =
+      b.largeSurplus + b.comfortable + b.tightSuccess + b.almostMadeIt + b.failedInMiddle;
+    expect(total).toBe(det.iterations);
+    expect(b.largeSurplus + b.comfortable + b.tightSuccess).toBe(
+      Math.round(r.successRate * det.iterations),
+    );
+  });
+
+  it('sampleTrials classifies consistently with the aggregate breakdown', () => {
+    // Deterministic input: every sampled trial is the same path, so all trials
+    // must carry the one category the aggregate assigns to the whole run.
+    const input = flat({ annualSpending: 20_000 });
+    const aggIsTight = runMonteCarlo(input, det).outcomeBreakdown.tightSuccess === det.iterations;
+    expect(aggIsTight).toBe(true);
+    for (const t of sampleTrials(input, det, 5)) {
+      expect(t.funded).toBe(true);
+      expect(t.category).toBe('tightSuccess');
     }
   });
 });

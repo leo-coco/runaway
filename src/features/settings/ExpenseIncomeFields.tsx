@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Stepper } from '@/components/ui/Stepper';
 import { Toggle } from '@/components/ui/Toggle';
-import { ChevronDownIcon } from '@/components/icons';
+import { ChevronDownIcon, InfoIcon } from '@/components/icons';
 import { ExpenseCategoryIcon } from '@/components/ExpenseCategoryIcon';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ageInYear } from '@/domain/retirementSettings';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 import type { CurrencyCode } from '@/domain/money';
 import {
   EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
   type ExpenseCategory,
   type ExpenseIncome,
   type FlowFrequency,
@@ -16,6 +17,21 @@ import {
 
 export const EXPENSE_COLOR = 'var(--danger, #f43f5e)';
 export const INCOME_COLOR = 'var(--success, #34d399)';
+
+const OFFICIAL_PENSION_SOURCES = [
+  {
+    countryKey: 'unitedStates',
+    href: 'https://www.ssa.gov/prepare/get-benefits-estimate',
+  },
+  {
+    countryKey: 'canada',
+    href: 'https://www.canada.ca/en/services/benefits/publicpensions/cpp/retirement-income-calculator.html',
+  },
+  {
+    countryKey: 'france',
+    href: 'https://www.info-retraite.fr/portail-info/sites/PortailInformationnel/home/mes-droits-a-la-retraite/age-et-montant-de-ma-retraite/en-synthese-1/quel-sera-le-montant-de-ma-ret-1.html',
+  },
+] as const;
 
 export const clamp = (n: number, lo: number, hi: number): number => Math.min(Math.max(n, lo), hi);
 
@@ -80,12 +96,20 @@ export const draftFromItem = (item: ExpenseIncome): ExpenseIncomeDraft => ({
   amount: item.amount,
   year: item.year,
   kind: item.kind,
-  category: item.category ?? 'general',
+  category: categoryForKind(item.kind, item.category),
   inflate: item.inflate ?? true,
   frequency: item.frequency ?? 'once',
   endYear: item.endYear ?? item.year,
   taxable: item.taxable ?? true,
 });
+
+const categoryForKind = (
+  kind: ExpenseIncomeDraft['kind'],
+  category: ExpenseCategory | undefined,
+): ExpenseCategory => {
+  const categories = kind === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  return category && categories.includes(category) ? category : 'general';
+};
 
 /**
  * The full set of controls for a single expense/income flow — type, frequency,
@@ -119,6 +143,7 @@ export const ExpenseIncomeFields = ({
   const isIncome = draft.kind === 'income';
   const isRecurring = draft.frequency === 'recurring';
   const endYr = draft.endYear;
+  const availableCategories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   const setStart = (y: number) => {
     const newStart = clamp(y, currentYear, maxYear);
@@ -142,7 +167,12 @@ export const ExpenseIncomeFields = ({
             role="tab"
             aria-selected={!isIncome}
             className={cn('seg-tab seg-tab--expense', !isIncome && 'is-active')}
-            onClick={() => onChange({ kind: 'expense' })}
+            onClick={() =>
+              onChange({
+                kind: 'expense',
+                category: categoryForKind('expense', draft.category),
+              })
+            }
           >
             ↓ {t('expensesIncomes.typeExpense')}
           </button>
@@ -151,7 +181,12 @@ export const ExpenseIncomeFields = ({
             role="tab"
             aria-selected={isIncome}
             className={cn('seg-tab seg-tab--income', isIncome && 'is-active')}
-            onClick={() => onChange({ kind: 'income' })}
+            onClick={() =>
+              onChange({
+                kind: 'income',
+                category: categoryForKind('income', draft.category),
+              })
+            }
           >
             ↑ {t('expensesIncomes.typeIncome')}
           </button>
@@ -216,7 +251,7 @@ export const ExpenseIncomeFields = ({
             aria-label={t('expensesIncomes.category')}
             onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
           >
-            {EXPENSE_CATEGORIES.map((c) => (
+            {availableCategories.map((c) => (
               <option key={c} value={c}>
                 {t(`expensesIncomes.categories.${c}`)}
               </option>
@@ -225,6 +260,26 @@ export const ExpenseIncomeFields = ({
           <ChevronDownIcon className="flow-category__chevron" size={16} aria-hidden="true" />
         </span>
       </label>
+
+      {isIncome && draft.category === 'pension' && (
+        <aside
+          className="flow-pension-info"
+          aria-label={t('expensesIncomes.pensionInfo.ariaLabel')}
+        >
+          <InfoIcon className="flow-pension-info__icon" size={18} aria-hidden="true" />
+          <div className="flow-pension-info__content">
+            <p>{t('expensesIncomes.pensionInfo.body')}</p>
+            <div className="flow-pension-info__links">
+              {OFFICIAL_PENSION_SOURCES.map(({ countryKey, href }) => (
+                <a key={countryKey} href={href} target="_blank" rel="noopener noreferrer">
+                  {t(`expensesIncomes.pensionInfo.countries.${countryKey}`)}
+                  <span aria-hidden="true"> ↗</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </aside>
+      )}
 
       <div className={cn('flow-card__grid', isRecurring && 'flow-card__grid--periodic')}>
         {isRecurring ? (

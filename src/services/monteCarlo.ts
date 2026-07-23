@@ -127,20 +127,23 @@ export interface MonteCarloPercentile {
 }
 
 /**
- * Four-way split of every simulated run, for a plain-language "how did the runs
- * break down" summary. Successes are split by ending balance around the median
- * of successful runs; failures are split by how far into the horizon they lasted
- * around the median failure point — both splits are relative to this plan's own
- * runs, not a fixed dollar/year constant, so they stay meaningful at any scale.
+ * Five-way split of every simulated run, for a plain-language "how did the runs
+ * break down" summary. Splits use fixed, absolute thresholds (not this plan's own
+ * medians) so the labels mean the same thing at any success rate: successes are
+ * ranked by their real (inflation-adjusted) ending wealth relative to the wealth
+ * entering retirement; failures by how far into the planned retirement they lasted.
+ * See CLASSIFY thresholds below.
  */
 export interface MonteCarloOutcomeBreakdown {
-  /** Successful runs ending above the median successful balance. */
+  /** Funded runs ending with ≥200% of the wealth they entered retirement with (real). */
   readonly largeSurplus: number;
-  /** Successful runs ending at or below the median successful balance. */
+  /** Funded runs ending with 50–200% of the wealth they entered retirement with (real). */
   readonly comfortable: number;
-  /** Failed runs that lasted longer than the median failure point. */
+  /** Funded runs ending with <50% of the wealth they entered retirement with (real). */
+  readonly tightSuccess: number;
+  /** Failed runs that ran out after ≥80% of the planned retirement had elapsed. */
   readonly almostMadeIt: number;
-  /** Failed runs that ran out earlier than the median failure point. */
+  /** Failed runs that ran out before 80% of the planned retirement had elapsed. */
   readonly failedInMiddle: number;
 }
 
@@ -871,6 +874,41 @@ const makeApplyFlows = (input: MonteCarloInput) => {
   };
 };
 
+// Absolute outcome thresholds — shared by the aggregate breakdown (`runMonteCarlo`)
+// and the per-trial classifier (`sampleTrials`) so both label a run identically.
+/** Funded runs at/above this real end/start wealth ratio are "large surplus". */
+export const LARGE_SURPLUS_RATIO = 2;
+/** Funded runs below this real end/start wealth ratio "barely made it". */
+export const TIGHT_SUCCESS_RATIO = 0.5;
+/** Failed runs lasting past this fraction of the planned retirement "almost made it". */
+export const FAIL_LATE_FRACTION = 0.8;
+
+/**
+ * Classify one run into an outcome category using fixed thresholds.
+ * `realRatio` is the end-of-plan wealth divided by the wealth entering retirement,
+ * both in today's money (inflation-adjusted); it is ignored for failed runs.
+ * `dryYear` is the calendar year the run first went unfunded (failed runs only).
+ */
+export const classifyOutcome = (args: {
+  readonly funded: boolean;
+  readonly realRatio: number;
+  readonly dryYear: number | null;
+  readonly retirementYear: number;
+  readonly retirementHorizon: number;
+}): TrialOutcomeCategory => {
+  const { funded, realRatio, dryYear, retirementYear, retirementHorizon } = args;
+  if (funded) {
+    if (realRatio >= LARGE_SURPLUS_RATIO) return 'largeSurplus';
+    if (realRatio >= TIGHT_SUCCESS_RATIO) return 'comfortable';
+    return 'tightSuccess';
+  }
+  const lastFundedYear = dryYear ?? retirementYear + retirementHorizon - 1;
+  const yearsIntoRetirement = lastFundedYear - retirementYear;
+  return yearsIntoRetirement >= FAIL_LATE_FRACTION * retirementHorizon
+    ? 'almostMadeIt'
+    : 'failedInMiddle';
+};
+
 export const runMonteCarlo = (
   input: MonteCarloInput,
   options: MonteCarloOptions = DEFAULT_MC_OPTIONS,
@@ -924,6 +962,15 @@ export const runMonteCarlo = (
   const balancesByYear: number[][] = years.map(() => new Array<number>(options.iterations));
   const withdrawalRateByYear: number[][] = years.map(() => new Array<number>(options.iterations));
 
+  // Outcome classification reference points: the wealth entering retirement is the
+  // close of the last accumulation year (refIdx); if the plan starts already retired
+  // there is no such year, so fall back to the initial portfolio total. endIdx tracks
+  // the last year that had to be funded (same fallback as endYearIndex below).
+  const refIdx = retirementYear - startYear - 1;
+  const endIdxRaw = years.findIndex((y) => y === lastRetirementYear);
+  const endIdx = endIdxRaw >= 0 ? endIdxRaw : years.length - 1;
+  const initialTotal = assets.reduce((sum, a) => sum + a.startValue, 0);
+
   let successes = 0;
   const work = new Array<number>(n);
   const draws = new Array<number>(n);
@@ -932,6 +979,10 @@ export const runMonteCarlo = (
   // First year a run went unfunded (accumulation shortfall or retirement shortfall);
   // null for runs that never failed.
   const firstFailYearByIter = new Array<number | null>(options.iterations);
+  // Cumulative inflation factor (from startYear) at the retirement-entry year and at
+  // the plan end, per iteration — used to deflate end wealth into today's money.
+  const inflAtRefByIter = new Array<number>(options.iterations);
+  const inflAtEndByIter = new Array<number>(options.iterations);
 
   for (let iter = 0; iter < options.iterations; iter += 1) {
     const state: WithdrawableAsset[] = assets.map((a) => ({
@@ -943,6 +994,8 @@ export const runMonteCarlo = (
     for (let i = 0; i < n; i += 1) dev[i] = 0;
     let funded = true;
     let firstFailYear: number | null = null;
+    // Default: retirement starts at the plan start (refIdx < 0), so no inflation yet.
+    inflAtRefByIter[iter] = 1;
     let bsIdx = 0;
     let bsBlockYear = 0;
     // Historical-real: pick a random start year in the window, then walk forward
@@ -1035,6 +1088,8 @@ export const runMonteCarlo = (
       // Spending is in today's money: inflated by the constant rate, or — in the
       // historical-real model — by the cohort's realised CPI so far.
       const inflationFactor = isHistReal ? histInfl : Math.pow(1 + inflationRate, year - startYear);
+      if (yi === refIdx) inflAtRefByIter[iter] = inflationFactor;
+      if (yi === endIdx) inflAtEndByIter[iter] = inflationFactor;
       // Expense/income flows (home purchase/sale, inheritance, tuition, rental…)
       // fire in their target year(s) regardless of retirement status.
       const flows = expenseIncomeAmountsForYear(input.expensesIncomes, year, inflationFactor);
@@ -1136,43 +1191,31 @@ export const runMonteCarlo = (
     endYearIndex >= 0 ? balancesByYear[endYearIndex]! : balancesByYear[balancesByYear.length - 1]!;
   const endSorted = endBalanceByIter.slice().sort((x, y) => x - y);
 
-  // Split successes around their own median balance, and failures around their
-  // own median failure year — relative splits, so they stay meaningful whether
-  // the plan is in dollars or millions, or fails in year one or year twenty.
-  const successBalances: number[] = [];
-  const failYears: number[] = [];
-  for (let iter = 0; iter < options.iterations; iter += 1) {
-    if (fundedByIter[iter]) {
-      successBalances.push(endBalanceByIter[iter]!);
-    } else {
-      failYears.push(firstFailYearByIter[iter] ?? lastRetirementYear);
-    }
-  }
-  const medianSuccessBalance = percentileOf(
-    successBalances.slice().sort((x, y) => x - y),
-    0.5,
-  );
-  const medianFailYear = percentileOf(
-    failYears.slice().sort((x, y) => x - y),
-    0.5,
-  );
-
+  // Classify each run with fixed thresholds (see classifyOutcome): funded runs by
+  // real end/start wealth ratio, failed runs by how far into retirement they lasted.
   const outcomeBreakdown: MonteCarloOutcomeBreakdown = {
     largeSurplus: 0,
     comfortable: 0,
+    tightSuccess: 0,
     almostMadeIt: 0,
     failedInMiddle: 0,
   };
   const breakdown: { -readonly [K in keyof MonteCarloOutcomeBreakdown]: number } = outcomeBreakdown;
   for (let iter = 0; iter < options.iterations; iter += 1) {
-    if (fundedByIter[iter]) {
-      if (endBalanceByIter[iter]! >= medianSuccessBalance) breakdown.largeSurplus += 1;
-      else breakdown.comfortable += 1;
-    } else {
-      const failYear = firstFailYearByIter[iter] ?? lastRetirementYear;
-      if (failYear >= medianFailYear) breakdown.almostMadeIt += 1;
-      else breakdown.failedInMiddle += 1;
-    }
+    const refNominal =
+      refIdx >= 0 && refIdx < balancesByYear.length ? balancesByYear[refIdx]![iter]! : initialTotal;
+    const realEnd = endBalanceByIter[iter]! / (inflAtEndByIter[iter] || 1);
+    const realRef = refNominal / (inflAtRefByIter[iter] || 1);
+    const realRatio = realRef > 0 ? realEnd / realRef : 0;
+    breakdown[
+      classifyOutcome({
+        funded: fundedByIter[iter]!,
+        realRatio,
+        dryYear: firstFailYearByIter[iter] ?? null,
+        retirementYear,
+        retirementHorizon: options.retirementHorizon,
+      })
+    ] += 1;
   }
 
   return {
@@ -1228,6 +1271,8 @@ export interface SamplePathYear {
   readonly tax: number;
   /** Portfolio total after the withdrawal. */
   readonly closingTotal: number;
+  /** Cumulative inflation factor from the plan start through this year (1 at start). */
+  readonly inflationFactor: number;
   /**
    * True when the portfolio could not fund what was asked of it this year — the
    * same funding-shortfall test `runMonteCarlo` counts as a failure. A balance
@@ -1464,6 +1509,7 @@ export const sampleMonteCarloPath = (
       grossWithdrawal: gross,
       tax,
       closingTotal: total,
+      inflationFactor,
       shortfall,
     });
   }
@@ -1582,6 +1628,7 @@ export const sampleRandomScenario = (
 export type TrialOutcomeCategory =
   | 'largeSurplus'
   | 'comfortable'
+  | 'tightSuccess'
   | 'almostMadeIt'
   | 'failedInMiddle';
 
@@ -1601,11 +1648,11 @@ export interface Trial {
 
 /**
  * Draw `count` independent simulated futures (same resampling technique as
- * `sampleScenarioPaths`) and classify each into one of the four outcome
- * categories shown in the outcome breakdown — split around this sample's own
- * median successful balance / median failure year, same convention as
- * `runMonteCarlo`'s aggregate breakdown. Lets the UI list, sort and drill into
- * every individual trial instead of only three fixed percentile paths.
+ * `sampleScenarioPaths`) and classify each into one of the five outcome
+ * categories shown in the outcome breakdown, using the same fixed thresholds as
+ * `runMonteCarlo`'s aggregate breakdown (see classifyOutcome). Lets the UI list,
+ * sort and drill into every individual trial instead of only three fixed
+ * percentile paths.
  */
 export const sampleTrials = (
   input: MonteCarloInput,
@@ -1613,9 +1660,14 @@ export const sampleTrials = (
   count = 100,
 ): Trial[] => {
   const lastRetirementYear = input.retirementYear + options.retirementHorizon - 1;
-  const terminalOf = (path: SamplePath): number => {
-    const end = path.years.find((y) => y.year === lastRetirementYear) ?? path.years.at(-1);
-    return end?.closingTotal ?? 0;
+  const initialTotal = input.assets.reduce((sum, a) => sum + a.startValue, 0);
+  const endEntryOf = (path: SamplePath): SamplePathYear | undefined =>
+    path.years.find((y) => y.year === lastRetirementYear) ?? path.years.at(-1);
+  // Wealth entering retirement (real): close of the last accumulation year, deflated
+  // to today's money. If the plan starts already retired, use the initial total.
+  const realRefOf = (path: SamplePath): number => {
+    const ref = path.years.find((y) => y.year === input.retirementYear - 1);
+    return ref ? ref.closingTotal / (ref.inflationFactor || 1) : initialTotal;
   };
   // Funding shortfall, not a zero balance, and over the whole horizon rather than
   // retirement alone — `runMonteCarlo`'s definition exactly, so a trial listed
@@ -1623,41 +1675,30 @@ export const sampleTrials = (
   const dryYearOf = (path: SamplePath): number | null =>
     path.years.find((y) => y.shortfall && y.year <= lastRetirementYear)?.year ?? null;
 
-  const drafts = Array.from({ length: count }, (_, s) => {
+  return Array.from({ length: count }, (_, s): Trial => {
     const seed = (options.seed + s * 0x9e3779b1) >>> 0;
     const path = sampleMonteCarloPath(input, { ...options, seed });
     const dryYear = dryYearOf(path);
+    const end = endEntryOf(path);
+    const realEnd = (end?.closingTotal ?? 0) / (end?.inflationFactor || 1);
+    const realRef = realRefOf(path);
+    const realRatio = realRef > 0 ? realEnd / realRef : 0;
     return {
       index: s + 1,
       seed,
       funded: dryYear === null,
-      terminalBalance: terminalOf(path),
+      terminalBalance: end?.closingTotal ?? 0,
       dryYear,
+      category: classifyOutcome({
+        funded: dryYear === null,
+        realRatio,
+        dryYear,
+        retirementYear: input.retirementYear,
+        retirementHorizon: options.retirementHorizon,
+      }),
       path,
       histStartYear: path.histStartYear,
     };
-  });
-
-  const successBalances = drafts
-    .filter((d) => d.funded)
-    .map((d) => d.terminalBalance)
-    .sort((a, b) => a - b);
-  const failYears = drafts
-    .filter((d) => !d.funded)
-    .map((d) => d.dryYear ?? lastRetirementYear)
-    .sort((a, b) => a - b);
-  const medianSuccessBalance = percentileOf(successBalances, 0.5);
-  const medianFailYear = percentileOf(failYears, 0.5);
-
-  return drafts.map((d): Trial => {
-    const category: TrialOutcomeCategory = d.funded
-      ? d.terminalBalance >= medianSuccessBalance
-        ? 'largeSurplus'
-        : 'comfortable'
-      : (d.dryYear ?? lastRetirementYear) >= medianFailYear
-        ? 'almostMadeIt'
-        : 'failedInMiddle';
-    return { ...d, category };
   });
 };
 

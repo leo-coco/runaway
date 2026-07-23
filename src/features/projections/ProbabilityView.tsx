@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Stepper } from '@/components/ui/Stepper';
-import { SUCCESS_ZONE_COLOR, SuccessRateDonut } from '@/components/ui/SuccessRateDonut';
+import { SUCCESS_BAND_COLOR, SuccessRateDonut } from '@/components/ui/SuccessRateDonut';
 import { InfoIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
@@ -47,6 +47,7 @@ import { SimulationMethodology } from './SimulationDataSourcesModal';
 import { GoalSeekModal } from './GoalSeekModal';
 import { TrialExplorerModal } from './TrialExplorerModal';
 import { AxisModeSwitch } from './AxisModeSwitch';
+import { OUTCOME_CATEGORY_COLOR } from './outcomeColors';
 import {
   buildLandmarkTicks,
   ImportantYearTick,
@@ -221,6 +222,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
     result?.percentiles.find((p) => p.year === horizonEndYear) ??
     result?.percentiles.at(-1) ??
     null;
+  const medianPortfolioDepleted = endPctl !== null && endPctl.p50 <= 0;
   // Inspector data: the assumptions used for both the "view data" table and the
   // trial explorer modal.
   /* eslint-disable react-hooks/preserve-manual-memoization -- buildMonteCarloInput is intentionally
@@ -268,14 +270,28 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
         <>
           <div className="hero hero--triple" data-tour="mc-summary-cards">
             <div
-              className="hero__card prob-success-card"
-              style={{ borderColor: SUCCESS_ZONE_COLOR[sx.zone] }}
+              className={cn(
+                'hero__card',
+                'prob-success-card',
+                status === 'running' && 'prob-success-card--calculating',
+              )}
+              style={{
+                borderColor: SUCCESS_BAND_COLOR[sx.band],
+                ['--mc-color' as string]: SUCCESS_BAND_COLOR[sx.band],
+              }}
+              aria-busy={status === 'running'}
             >
               <div className="hero__row">
                 <span className="hero__label">{t('mc.probabilityOfSuccess')}</span>
               </div>
               <div className="prob-success-card__body">
-                <SuccessRateDonut percent={sx.pct} zone={sx.zone} size="compact" />
+                <SuccessRateDonut
+                  percent={sx.pct}
+                  band={sx.band}
+                  size="compact"
+                  isCalculating={status === 'running'}
+                  calculatingLabel={t('mc.recalculating')}
+                />
                 <div className="prob-success-card__copy">
                   <span className="hero__big-note prob-success-card__note">
                     {t('dashboard.oddsNote', { age: lifeExpectancyAge })}
@@ -293,7 +309,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
               </div>
             </div>
 
-            <div className="hero__card">
+            <div className={cn('hero__card', medianPortfolioDepleted && 'hero__card--depletion')}>
               <div className="hero__row">
                 <span className="hero__label">{t('mc.medianValueTitle')}</span>
               </div>
@@ -303,7 +319,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
               </span>
             </div>
 
-            <div className="hero__card">
+            <div className={cn('hero__card', medianDryYear !== null && 'hero__card--depletion')}>
               <div className="hero__row">
                 <span className="hero__label">{t('mc.medianDepletionTitle')}</span>
               </div>
@@ -521,28 +537,35 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                     [
                       [
                         'largeSurplus',
-                        'var(--success)',
+                        OUTCOME_CATEGORY_COLOR.largeSurplus,
                         t('mc.outcomeLargeSurplus'),
                         result.outcomeBreakdown.largeSurplus,
                         t('mc.tipLargeSurplus'),
                       ],
                       [
                         'comfortable',
-                        'var(--accent)',
+                        OUTCOME_CATEGORY_COLOR.comfortable,
                         t('mc.outcomeComfortable'),
                         result.outcomeBreakdown.comfortable,
                         t('mc.tipComfortable'),
                       ],
                       [
+                        'tightSuccess',
+                        OUTCOME_CATEGORY_COLOR.tightSuccess,
+                        t('mc.outcomeTightSuccess'),
+                        result.outcomeBreakdown.tightSuccess,
+                        t('mc.tipTightSuccess'),
+                      ],
+                      [
                         'almostMadeIt',
-                        'var(--amber)',
+                        OUTCOME_CATEGORY_COLOR.almostMadeIt,
                         t('mc.outcomeAlmostMadeIt'),
                         result.outcomeBreakdown.almostMadeIt,
                         t('mc.tipAlmostMadeIt'),
                       ],
                       [
                         'failedInMiddle',
-                        'var(--danger)',
+                        OUTCOME_CATEGORY_COLOR.failedInMiddle,
                         t('mc.outcomeFailedMiddle'),
                         result.outcomeBreakdown.failedInMiddle,
                         t('mc.tipFailedMiddle'),

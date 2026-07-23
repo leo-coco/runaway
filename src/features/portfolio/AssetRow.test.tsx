@@ -25,6 +25,12 @@ describe('AssetRow keyboard editing', () => {
     );
 
     const quantity = screen.getByLabelText(`${holding.instrument.symbol} quantity`);
+    const doneButton = screen.getByRole('button', {
+      name: `Done editing ${holding.instrument.symbol}`,
+    });
+
+    expect(doneButton).toHaveTextContent('OK');
+
     fireEvent.change(quantity, { target: { value: '42' } });
     fireEvent.keyDown(quantity, { key: 'Enter' });
 

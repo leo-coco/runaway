@@ -1,5 +1,8 @@
 export const en = {
   appTitle: "Runaway - Know when you're free",
+  splash: {
+    tagline: 'Know when you’re free',
+  },
   common: {
     cancel: 'Cancel',
     close: 'Close',
@@ -389,6 +392,7 @@ export const en = {
     oddsNote: 'odds your money lasts through age {{age}}',
     portfolioToday: 'Portfolio today',
     portfolioAtRetirement: 'Portfolio at retirement',
+    portfolioAtPlanEnd: 'Portfolio at end of plan',
     depletionTitle: 'Savings depletion',
     depletionAgeNote: 'Age {{age}}',
     neverDepletes: 'Never',
@@ -397,15 +401,24 @@ export const en = {
       badgeStrong: 'Your retirement is on track',
       badgeBorderline: 'Your retirement needs attention',
       badgeWeak: 'Your retirement is at risk',
-      titleStrong: 'Excellent trajectory',
-      titleBorderline: 'Trajectory to watch',
-      titleWeak: 'At-risk trajectory',
-      descStrong:
+      titleExcellent: 'Excellent trajectory',
+      titleGood: 'Good trajectory',
+      titleFair: 'Fair trajectory',
+      titleRisky: 'Risky trajectory',
+      titleConcerning: 'Concerning trajectory',
+      titleNonViable: 'Non-viable trajectory',
+      descExcellent:
         'Your current plan has a {{pct}}% chance of funding your retirement under your current assumptions.',
-      descBorderline:
-        'Your current plan has a {{pct}}% chance of funding your retirement. A few adjustments could improve your odds.',
-      descWeak:
+      descGood:
+        'Your current plan has a solid {{pct}}% chance of funding your retirement under your current assumptions.',
+      descFair:
+        'Your current plan has a {{pct}}% chance of funding your retirement. Some adjustments could improve your odds.',
+      descRisky:
+        'Your current plan has a {{pct}}% chance of funding your retirement. Consider strengthening the plan.',
+      descConcerning:
         'Your current plan has only a {{pct}}% chance of funding your retirement. Consider revisiting your assumptions.',
+      descNonViable:
+        'Your current plan has only a {{pct}}% chance of funding your retirement. Significant changes are needed.',
       noData: 'Add assets to your portfolio to run a Monte Carlo simulation.',
       simulating: 'Running the simulation…',
       ringLabel: 'Success rate (Monte Carlo)',
@@ -728,6 +741,7 @@ export const en = {
     category: 'Category',
     categories: {
       general: 'General',
+      other: 'Other',
       vehicle: 'Vehicle',
       travel: 'Travel',
       education: 'Education',
@@ -783,6 +797,15 @@ export const en = {
     inflationLabel: 'Indexed to inflation until {{year}}',
     inflationShort: 'Indexed to inflation',
     taxableLabel: 'Taxable as ordinary income',
+    pensionInfo: {
+      ariaLabel: 'Official pension calculators',
+      body: 'For a more accurate estimate, check your pension with the official calculator for your country:',
+      countries: {
+        unitedStates: 'United States',
+        canada: 'Canada',
+        france: 'France',
+      },
+    },
     estimatedImpact: 'Estimated impact',
     projection: '{{from}} today → {{to}} in {{year}}',
     projectionRecurring:
@@ -1195,6 +1218,8 @@ export const en = {
     phaseRecovery: 'Recovery',
   },
   jtable: {
+    hideLabels: 'Hide row labels',
+    showLabels: 'Show row labels',
     retirementYear: 'Retirement Year',
     year: 'Year',
     age: 'Age',
@@ -1319,18 +1344,21 @@ export const en = {
     tipSuccess:
       'Out of {{count}} simulated futures — each a different way markets could unfold — this is the share where your money lasted the entire retirement without ever running out. Higher is safer: it means your plan survives more of the rough markets too.',
     tipLargeSurplus:
-      'Money lasted the whole way AND you finished in the wealthier half of the plans that succeeded. A comfortable cushion left over at the end.',
+      "Your money lasted the whole retirement. You end with at least twice as much as on the first day of retirement, in today's spending power. A big cushion is left over.",
     tipComfortable:
-      'Money lasted the whole way, but you finished in the leaner half of the plans that succeeded. You made it — with less to spare.',
+      'Your money lasted the whole retirement. You end with between half and twice what you had on the first day of retirement. Comfortable.',
+    tipTightSuccess:
+      'Your money lasted the whole retirement, but only barely. You end with less than half of what you had on the first day. It worked, with little to spare.',
     tipAlmostMadeIt:
-      'The money ran out before the end, but relatively late — at or after the typical point of failure. These plans came close.',
+      'Your money ran out before the end, but late: after more than 80% of your planned retirement. You came very close.',
     tipFailedMiddle:
-      'The money ran out early — before the typical point of failure. These are the plans that fell short soonest.',
+      'Your money ran out well before the end, before even 80% of your planned retirement. A big gap to fix.',
     outcomeBreakdown: 'Outcome breakdown',
     outcomeLargeSurplus: 'Large Surplus',
     outcomeComfortable: 'Comfortable',
+    outcomeTightSuccess: 'Barely Made It',
     outcomeAlmostMadeIt: 'Almost Made It',
-    outcomeFailedMiddle: 'Failed in the Middle',
+    outcomeFailedMiddle: 'Ran Out Early',
     outcomeTrials_one: '{{count}} trial',
     outcomeTrials_other: '{{count}} trials',
     outcomeFilterHint: 'View these trials in the simulation explorer',

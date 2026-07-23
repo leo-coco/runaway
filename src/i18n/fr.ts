@@ -2,6 +2,9 @@ import type { Resources } from './en';
 
 export const fr: Resources = {
   appTitle: 'Runaway - Préparez votre liberté',
+  splash: {
+    tagline: 'Préparez votre liberté',
+  },
   common: {
     cancel: 'Annuler',
     close: 'Fermer',
@@ -406,6 +409,7 @@ export const fr: Resources = {
     oddsNote: 'probabilité que votre argent dure jusqu’à vos {{age}} ans',
     portfolioToday: "Portefeuille aujourd'hui",
     portfolioAtRetirement: 'Portefeuille à la retraite',
+    portfolioAtPlanEnd: 'Portefeuille à la fin du plan',
     depletionTitle: 'Épuisement de l’épargne',
     depletionAgeNote: 'Âge {{age}}',
     neverDepletes: 'Jamais',
@@ -414,15 +418,24 @@ export const fr: Resources = {
       badgeStrong: 'Votre retraite est sur les rails',
       badgeBorderline: 'Votre retraite mérite votre attention',
       badgeWeak: 'Votre retraite est à risque',
-      titleStrong: 'Excellente trajectoire',
-      titleBorderline: 'Trajectoire à surveiller',
-      titleWeak: 'Trajectoire à risque',
-      descStrong:
+      titleExcellent: 'Excellente trajectoire',
+      titleGood: 'Bonne trajectoire',
+      titleFair: 'Trajectoire acceptable',
+      titleRisky: 'Trajectoire risquée',
+      titleConcerning: 'Trajectoire préoccupante',
+      titleNonViable: 'Trajectoire non viable',
+      descExcellent:
         'Votre plan actuel a {{pct}} % de chance de financer votre retraite selon vos paramètres actuels.',
-      descBorderline:
-        'Votre plan actuel a {{pct}} % de chance de financer votre retraite. Quelques ajustements pourraient améliorer vos chances.',
-      descWeak:
+      descGood:
+        'Votre plan actuel a une solide probabilité de {{pct}} % de financer votre retraite selon vos paramètres actuels.',
+      descFair:
+        'Votre plan actuel a {{pct}} % de chance de financer votre retraite. Certains ajustements pourraient améliorer vos chances.',
+      descRisky:
+        'Votre plan actuel a {{pct}} % de chance de financer votre retraite. Envisagez de renforcer le plan.',
+      descConcerning:
         "Votre plan actuel n'a que {{pct}} % de chance de financer votre retraite. Il serait bon de revoir vos paramètres.",
+      descNonViable:
+        "Votre plan actuel n'a que {{pct}} % de chance de financer votre retraite. Des changements importants sont nécessaires.",
       noData: 'Ajoutez des actifs à votre portefeuille pour lancer une simulation Monte-Carlo.',
       simulating: 'Simulation en cours…',
       ringLabel: 'Taux de réussite (Monte-Carlo)',
@@ -751,6 +764,7 @@ export const fr: Resources = {
     category: 'Catégorie',
     categories: {
       general: 'Général',
+      other: 'Autre',
       vehicle: 'Véhicule',
       travel: 'Voyage',
       education: 'Études',
@@ -806,6 +820,15 @@ export const fr: Resources = {
     inflationLabel: 'Indexé sur l’inflation jusqu’à {{year}}',
     inflationShort: 'Indexé sur l’inflation',
     taxableLabel: 'Imposable comme revenu ordinaire',
+    pensionInfo: {
+      ariaLabel: 'Calculateurs officiels de retraite',
+      body: 'Pour une estimation plus précise, consultez le calculateur officiel de votre pays :',
+      countries: {
+        unitedStates: 'États-Unis',
+        canada: 'Canada',
+        france: 'France',
+      },
+    },
     estimatedImpact: 'Impact estimé',
     projection: '{{from}} aujourd’hui → {{to}} en {{year}}',
     projectionRecurring:
@@ -1230,6 +1253,8 @@ export const fr: Resources = {
     phaseRecovery: 'Reprise',
   },
   jtable: {
+    hideLabels: 'Masquer les intitulés',
+    showLabels: 'Afficher les intitulés',
     retirementYear: 'Année de retraite',
     year: 'Année',
     age: 'Âge',
@@ -1356,16 +1381,19 @@ export const fr: Resources = {
     tipSuccess:
       "Sur {{count}} futurs simulés — chacun une façon différente dont les marchés pourraient évoluer — c'est la part où votre argent a duré toute la retraite sans jamais tomber à zéro. Plus c'est haut, plus c'est sûr : votre plan survit aussi à davantage de marchés difficiles.",
     tipLargeSurplus:
-      "L'argent a duré jusqu'au bout ET vous terminez dans la moitié la plus riche des plans réussis. Un coussin confortable reste à la fin.",
+      "L'argent a duré toute la retraite. Vous finissez avec au moins deux fois plus d'argent qu'au premier jour de votre retraite, en pouvoir d'achat d'aujourd'hui. Un gros coussin reste à la fin.",
     tipComfortable:
-      "L'argent a duré jusqu'au bout, mais vous terminez dans la moitié la plus juste des plans réussis. C'est passé — avec moins de marge.",
+      "L'argent a duré toute la retraite. Vous finissez avec entre la moitié et le double de ce que vous aviez au premier jour de votre retraite. Confortable.",
+    tipTightSuccess:
+      "L'argent a duré toute la retraite, mais tout juste. Vous finissez avec moins de la moitié de ce que vous aviez au premier jour. Ça passe, avec peu de marge.",
     tipAlmostMadeIt:
-      "L'argent s'est épuisé avant la fin, mais assez tard — au niveau ou après le point d'échec typique. Ces plans sont passés tout près.",
+      "L'argent s'est épuisé avant la fin, mais tard : après plus de 80 % de la durée prévue de votre retraite. Vous êtes passé tout près.",
     tipFailedMiddle:
-      "L'argent s'est épuisé tôt — avant le point d'échec typique. Ce sont les plans qui ont flanché le plus vite.",
+      "L'argent s'est épuisé bien avant la fin, avant même 80 % de la durée prévue de votre retraite. Un manque important à corriger.",
     outcomeBreakdown: 'Répartition des résultats',
     outcomeLargeSurplus: 'Gros surplus',
     outcomeComfortable: 'Confortable',
+    outcomeTightSuccess: 'Réussi de justesse',
     outcomeAlmostMadeIt: 'Presque réussi',
     outcomeFailedMiddle: 'Échec en cours de route',
     outcomeTrials_one: '{{count}} essai',

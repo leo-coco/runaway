@@ -413,7 +413,7 @@ export const RunwayTimeline = ({ className }: { className?: string } = {}) => {
 
   return (
     <section
-      className={cn('runway', className, portfolioRunsDry && 'hero__card--risk')}
+      className={cn('runway', className, portfolioRunsDry && 'hero__card--depletion')}
       aria-label={t('runway.title')}
     >
       <div className="runway__head">

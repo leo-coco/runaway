@@ -378,7 +378,7 @@ export const QuickStart = ({ onExit }: { onExit: () => void }) => {
               </div>
             </Card>
 
-            <Card className="ov">
+            <Card className={cn('ov', depletionYear !== null && 'hero__card--depletion')}>
               <div className="ov__head">
                 <span className="ov__title">{t('dashboard.depletionTitle')}</span>
               </div>

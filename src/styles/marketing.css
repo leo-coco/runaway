@@ -1825,9 +1825,11 @@ footer > div {
   .site-header {
     height: 72px;
   }
-  .header-actions .text-link,
   .header-actions .button {
     display: none;
+  }
+  .header-actions {
+    gap: 12px;
   }
   .hero {
     min-height: auto;

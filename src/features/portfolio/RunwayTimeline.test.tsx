@@ -73,8 +73,8 @@ vi.mock('@/store', () => ({
 import { RUNWAY_ITEM_WIDTH, RunwayTimeline, selectVisibleRunwayEvents } from './RunwayTimeline';
 
 const appCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
-const riskBorderRule = appCss.match(
-  /\.hero__card--risk,\s*\.runway\.hero__card--risk\s*\{([^}]*)\}/,
+const depletionRule = appCss.match(
+  /\.hero__card--depletion,\s*\.runway\.hero__card--depletion\s*\{([^}]*)\}/,
 )?.[1];
 
 beforeEach(async () => {
@@ -217,16 +217,17 @@ describe('RunwayTimeline', () => {
     }
   });
 
-  it('uses the same 2px danger border as Monte Carlo when the portfolio runs dry', () => {
+  it('uses the shared red depletion gradient when the portfolio runs dry', () => {
     const { container } = render(<RunwayTimeline />);
-    const card = container.querySelector<HTMLElement>('.runway.hero__card--risk');
+    const card = container.querySelector<HTMLElement>('.runway.hero__card--depletion');
 
     expect(card).not.toBeNull();
-    expect(riskBorderRule).toContain('border-width: 2px');
-    expect(riskBorderRule).toContain('border-color: var(--danger, #f43f5e)');
+    expect(depletionRule).toContain('border-width: 2px');
+    expect(depletionRule).toContain('--depletion-color: var(--success-band-non-viable)');
+    expect(depletionRule).toContain('radial-gradient(');
   });
 
-  it('does not use the risk border when the portfolio remains funded', () => {
+  it('does not use the depletion gradient when the portfolio remains funded', () => {
     vi.mocked(buildRunwayEvents).mockReturnValue(
       EVENTS.filter((event) => event.kind !== 'portfolio-dry'),
     );
@@ -235,7 +236,7 @@ describe('RunwayTimeline', () => {
     const card = container.querySelector<HTMLElement>('.runway');
 
     expect(card).not.toBeNull();
-    expect(container.querySelector('.runway.hero__card--risk')).toBeNull();
+    expect(container.querySelector('.runway.hero__card--depletion')).toBeNull();
   });
 
   it('opens the "see all events" modal as a vertical path sorted by year', () => {

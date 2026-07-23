@@ -16,6 +16,7 @@ import { convert, missingRates, type RatesTable } from '@/services/currencyServi
 import { PlanModals } from '@/features/settings/PlanModals';
 import { PremiumBanner } from '@/features/billing/PremiumBanner';
 import { planCurrencies, type Plan } from '@/domain/plan';
+import { useAppMode } from '@/providers/AppModeContext';
 
 export interface PlanContext {
   plan: Plan;
@@ -35,6 +36,7 @@ export const PlanLayout = () => {
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
   const setPlanSuccess = useAppStore((s) => s.setPlanSuccess);
+  const { sandbox } = useAppMode();
 
   const fx = useExchangeRate(plan?.currency ?? 'USD');
   // A table that cannot cover every currency the plan uses is worse than none:
@@ -155,7 +157,7 @@ export const PlanLayout = () => {
               )}
             </div>
           </div>
-          {lastSavedLabel && (
+          {!sandbox && lastSavedLabel && (
             <div
               key={plan.updatedAt}
               className="plan-save-badge"

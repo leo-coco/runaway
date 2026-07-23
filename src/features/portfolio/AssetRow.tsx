@@ -275,7 +275,11 @@ export const AssetRow = ({
         )}
       </div>
 
-      <div data-label={t('portfolio.colCagr')} data-tour={index === 0 ? 'cagr-input' : undefined}>
+      <div
+        className="cagr-cell"
+        data-label={t('portfolio.colCagr')}
+        data-tour={index === 0 ? 'cagr-input' : undefined}
+      >
         {editing ? (
           <>
             <Stepper
@@ -308,7 +312,7 @@ export const AssetRow = ({
           })}
           title={editing ? t('portfolio.done') : t('portfolio.edit')}
         >
-          <PencilIcon size={14} />
+          {editing ? <span className="asset-row__done-label">OK</span> : <PencilIcon size={14} />}
         </button>
         {editing && (
           <>
