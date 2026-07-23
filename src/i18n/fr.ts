@@ -405,6 +405,7 @@ export const fr: Resources = {
     depletionTitle: 'Épuisement de l’épargne',
     depletionAgeNote: 'Âge {{age}}',
     neverDepletes: 'Jamais',
+    remainingAtPlanEnd: 'Restant en fin de plan',
     mc: {
       badgeStrong: 'Votre retraite est sur les rails',
       badgeBorderline: 'Votre retraite mérite votre attention',
@@ -1223,8 +1224,8 @@ export const fr: Resources = {
     afterAppreciation: 'Solde après appréciation',
     contributions: 'Contributions d’épargne (avec CAGR)',
     lifestyleSpending: 'Train de vie à la retraite',
-    totalExpense: 'Total des dépenses',
-    totalIncome: 'Total des entrées',
+    totalExpense: 'Total des dépenses (net)',
+    totalIncome: 'Total des entrées (brut)',
     taxOnWithdrawal: 'Impôt sur le retrait',
     taxOnWithdrawalTip:
       'Impôt sur le prélèvement du portefeuille qui finance le train de vie, les dépenses ponctuelles (Goals) et une éventuelle conversion Roth de l’année, net des revenus et RMD déjà pris en compte.',

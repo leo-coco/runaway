@@ -24,6 +24,7 @@ export const PortfolioValueCard = () => {
     depletes && currentAge > 0
       ? currentAge + (depletionYear - projection.active.years[0]!.year)
       : null;
+  const endOfPlanValue = projection.active.years.at(-1)?.closingBalance ?? 0;
 
   return (
     <div className="hero hero--triple projection-summary" data-tour="projection-summary-cards">
@@ -48,12 +49,14 @@ export const PortfolioValueCard = () => {
           <span className="hero__label">{t('dashboard.depletionTitle')}</span>
         </div>
         <span className="hero__big hero__big--sm">
-          {depletes ? depletionYear : t('dashboard.neverDepletes')}
+          {depletes ? depletionYear : fmt.compact(endOfPlanValue)}
         </span>
-        {depletionAge !== null && (
+        {depletionAge !== null ? (
           <span className="hero__big-note">
             {t('dashboard.depletionAgeNote', { age: depletionAge })}
           </span>
+        ) : (
+          <span className="hero__big-note">{t('dashboard.remainingAtPlanEnd')}</span>
         )}
       </div>
     </div>

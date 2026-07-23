@@ -388,6 +388,7 @@ export const en = {
     depletionTitle: 'Savings depletion',
     depletionAgeNote: 'Age {{age}}',
     neverDepletes: 'Never',
+    remainingAtPlanEnd: 'Remaining at end of plan',
     mc: {
       badgeStrong: 'Your retirement is on track',
       badgeBorderline: 'Your retirement needs attention',
@@ -1188,8 +1189,8 @@ export const en = {
     afterAppreciation: 'Balance after asset appreciation',
     contributions: 'Savings Contributions (with CAGR)',
     lifestyleSpending: 'Retirement Lifestyle Spending',
-    totalExpense: 'Total Expense',
-    totalIncome: 'Total Income',
+    totalExpense: 'Total Expense (net)',
+    totalIncome: 'Total Income (gross)',
     taxOnWithdrawal: 'Tax on Withdrawal',
     taxOnWithdrawalTip:
       "Tax on the portfolio draw that funds this year's lifestyle spending, goal expenses, and any Roth conversion — net of income and RMDs already covering the need.",
