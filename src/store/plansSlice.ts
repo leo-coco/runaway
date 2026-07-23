@@ -60,6 +60,7 @@ export interface PlansSlice {
         | 'monthlyContribution'
         | 'accountId'
         | 'volatilityPct'
+        | 'mcExpectedReturnPct'
         | 'costBasis'
         | 'drawable'
       >

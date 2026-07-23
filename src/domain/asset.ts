@@ -62,6 +62,13 @@ export interface Holding {
    */
   readonly volatilityPct?: number;
   /**
+   * Per-holding expected-return override (percent) scoped to the Monte Carlo model,
+   * so you can stress a different assumption in the simulation without touching the
+   * plan's stated CAGR (which the deterministic projection keeps using). When
+   * undefined, the Monte Carlo engine falls back to `expectedCagrPct`. Reset clears it.
+   */
+  readonly mcExpectedReturnPct?: number;
+  /**
    * Cost basis **per unit** (purchase price per share) in the holding's native
    * currency — parallel to `pricePerUnit`. Total basis = quantity × costBasis.
    * Drives the dynamic capital-gains tracking (taxed gain = value − total basis).

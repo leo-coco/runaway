@@ -19,7 +19,7 @@ const sandboxMode = isSandboxPathname(currentPathname);
  * the server sync layer (sent as `schemaVersion` when a plan is pushed), so both
  * agree on which migration a stored plan needs.
  */
-export const PLANS_SCHEMA_VERSION = 11;
+export const PLANS_SCHEMA_VERSION = 12;
 
 const langForPathname = (pathname: string): 'en' | 'fr' =>
   pathname.startsWith('/fr/') ? 'fr' : 'en';
@@ -99,6 +99,16 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
           }))
         : [];
     const residenceCountry = plan.residenceCountry ?? 'US';
+    // v12: the two "real drift" models (bootstrap-uncentered, historical-real) were
+    // removed — every model now honors the user's CAGR. Remap stored plans to the
+    // centered equivalent that keeps the same distribution shape.
+    const legacyModel = plan.settings.monteCarloModel as string | undefined;
+    const monteCarloModel =
+      legacyModel === 'bootstrap-uncentered'
+        ? 'bootstrap'
+        : legacyModel === 'historical-real'
+          ? 'historical-real-centered'
+          : plan.settings.monteCarloModel;
     return normalizeAccounts({
       ...plan,
       // v7: tax residence added — default to US (only affects auto-mode accounts).
@@ -121,6 +131,7 @@ const migratePersisted = (persisted: unknown): { plans: Plan[] } => {
       settings: {
         ...plan.settings,
         currentAge,
+        monteCarloModel,
         lifeExpectancyAge: plan.settings.lifeExpectancyAge ?? 90,
         expensesIncomes: [
           ...(plan.settings.expensesIncomes ?? legacySettings.oneOffExpenses ?? []),

@@ -336,6 +336,7 @@ export const en = {
   },
   plan: {
     currency: 'Currency',
+    lastSaved: 'Last saved',
     currencyRatesUnavailable:
       'Exchange rates are unavailable, so the plan’s amounts cannot be converted. Try again shortly.',
     notFound: 'This plan could not be found. It may have been deleted.',
@@ -1051,12 +1052,12 @@ export const en = {
       ' Save more and add capital are exploratory — adjust your holdings to lock them in.',
   },
   assetClass: {
-    crypto: 'Crypto',
-    us_equity: 'US Equities',
-    ca_equity: 'CA Equities',
-    eu_equity: 'EU Equities',
+    crypto: 'Crypto assets',
+    us_equity: 'U.S. equities',
+    ca_equity: 'Canadian equities',
+    eu_equity: 'European equities',
     cash: 'Cash',
-    other: 'Other',
+    other: 'Other assets',
   },
   methodology: {
     title: 'Methodology: how the numbers are calculated',
@@ -1106,7 +1107,7 @@ export const en = {
     assumpHeading: 'Assumptions and data sources',
     assumpIntro:
       'Returns come from your CAGR. Volatility, correlations and crash betas are round, defensible defaults, hardcoded, not calibrated on live data, and overridable per holding.',
-    volApplied: 'Volatility (σ) and drift actually applied to this plan’s holdings:',
+    volApplied: 'Volatility (σ) and expected return applied to this plan’s holdings:',
     volDefaults: 'Default volatility and crash beta, by asset class:',
     tickerOverrides: 'Per-ticker volatility overrides (take precedence over the class):',
     corrIntro:
@@ -1168,12 +1169,8 @@ export const en = {
       'The crash hit is scaled by each asset class’s sensitivity: equities ×1, crypto ×1.3, and defensive assets (bonds/cash) ×0 — so a flight to quality spares them rather than crashing the whole portfolio together.',
     bootstrapIntro:
       'Draws blocks of {{block}} consecutive years from the real history below ({{from}}–{{to}}), keeping genuine sequences, crashes and cross-asset co-movement. The series are demeaned and standardised, so only their shape is used — the long-run drift still comes from your CAGR.',
-    bootstrapUncenteredIntro:
-      'Draws the same blocks of {{block}} consecutive years from the real history below ({{from}}–{{to}}), keeping genuine sequences, crashes and cross-asset co-movement — but this time the long-run drift is each class’s own historical average return, not your CAGR (unless you set an asset’s volatility to 0, which always trusts your stated rate).',
     bootstrapNote:
       'Sources are approximate (S&P 500 TR, MSCI Europe, S&P/TSX, US Agg, BTC). Crypto before 2014 is illustrative (BTC did not yet exist) but kept high-volatility and co-moving in crashes.',
-    realIntro:
-      'Replays one real cohort, drawn at random from {{from}}–{{to}} ({{len}} years), year by year: each holding earns its asset-class index return and spending is inflated by that year’s actual CPI. The long-run drift is history’s, not your CAGR — your per-asset CAGRs are ignored in this model.',
     realCenteredIntro:
       'Replays the same real cohort, drawn at random from {{from}}–{{to}} ({{len}} years), year by year — same sequences, same crashes, spending still inflated by that year’s actual CPI — but each year’s return is re-centred so the long-run drift is your stated CAGR, not history’s own average.',
     realClassInput: 'Class / input',
@@ -1230,8 +1227,6 @@ export const en = {
     'fat-tails': 'Fat tails',
     'crash-aware': 'Crash-aware',
     bootstrap: 'Historical pattern',
-    'bootstrap-uncentered': 'Historical pattern (real drift)',
-    'historical-real': 'Historical cohort (real drift)',
     'historical-real-centered': 'Historical cohort',
   },
   modelInfo: {
@@ -1265,27 +1260,11 @@ export const en = {
       objective:
         'Stress-test your OWN return assumptions with realistic, historically-shaped volatility and crash clustering, without importing history’s average returns.',
       caution:
-        'Not a true backtest: levels are re-centred on your CAGR, inflation is your constant input, and the window is short (2001–2024, no 1929/1970). For the real thing, use “Historical cohort (real drift)”.',
-    },
-    'bootstrap-uncentered': {
-      plain:
-        'Same block-bootstrap mechanics as “Historical pattern” (8-year blocks from 2001–2024, real sequences and co-movement) — but the drift is each asset class’s own historical average return, not your stated CAGR. Randomly resampled blocks, unlike the single fixed sequence of “Historical cohort (real drift)”.',
-      objective:
-        'Honestly tests whether YOUR return assumptions are optimistic versus what the asset class actually delivered historically — a class mapped incorrectly (e.g. a growth stock tagged “other” → bonds) will show up immediately as a much lower success rate.',
-      caution:
-        'It silently overrides your per-asset CAGR with a class-level historical average — a low result may mean your asset is misclassified, not that your plan is unsound. Same short window (2001–2024) as “Historical pattern”.',
-    },
-    'historical-real': {
-      plain:
-        'Replays an ACTUAL cohort: the real nominal returns AND the real CPI inflation of a start year drawn from 1928–2024, year by year. Drift is history’s, not your CAGR — each holding earns its asset-class index (US stocks, 10-yr Treasuries; crypto is a leveraged-equity proxy).',
-      objective:
-        'The genuine backtest: “would my plan have survived retiring into 1929, the 1966–73 stagflation, or 2000?” — returns and inflation hit together.',
-      caution:
-        'It ignores your per-asset CAGRs (e.g. NVDA → the index), can’t cover assets without deep history (crypto is proxied), and even 97 years can’t contain a truly unprecedented future. For a version that keeps this real sequence but follows your CAGR, use “Historical cohort”.',
+        'Not a true backtest: levels are re-centred on your CAGR, inflation is your constant input, and the window is short (2001–2024, no 1929/1970). For a real 1928→ cohort, use “Historical cohort”.',
     },
     'historical-real-centered': {
       plain:
-        'The same real cohort as “Historical cohort (real drift)” — the actual sequence of nominal returns and CPI inflation of a start year drawn from 1928–2024, year by year — but each year’s return is re-centred so the long-run trend is your stated CAGR, not history’s own average. The crashes and recoveries still land on their real calendar years.',
+        'Replays a real cohort — the actual sequence of nominal returns and CPI inflation of a start year drawn from 1928–2024, year by year — but each year’s return is re-centred so the long-run trend is your stated CAGR, not history’s own average. The crashes and recoveries still land on their real calendar years.',
       objective:
         'Combines a realistic, sequence-correlated shape (the same crashes, the same stagflation stretch) with your own return assumptions — sequence-of-returns risk tested honestly, without importing history’s average return.',
       caution:
@@ -1305,7 +1284,7 @@ export const en = {
     probabilityOfSuccess: 'Probability of success',
     recalculating: 'recalculating…',
     fundedIn: 'Your plan was fully funded in {{count}} of {{total}} simulated markets.',
-    parametersTitle: 'Parameters',
+    parametersTitle: 'Simulation parameters',
     returnModel: 'Return model',
     selectModel: 'Select model',
     groupStandard: 'Standard',
@@ -1329,8 +1308,6 @@ export const en = {
     fadeToggle: 'Fade CAGRs',
     fadeHint:
       'Assets with a CAGR above {{target}}% gradually converge toward {{target}}% per year over {{years}} years, then remain at that rate. Assets already at or below that level are unchanged.',
-    fadeHintDisabled:
-      "No effect under {{model}}: every volatile asset's drift comes from a historical average instead of your stated CAGR, so there is no CAGR left to fade. Switch to a model that honors your CAGR (Normal, Fat tails, Crash-aware, Historical pattern, or Historical cohort) to use this.",
     top25: 'Top 25%',
     median: 'Median',
     bottom25: 'Bottom 25%',
@@ -1375,31 +1352,29 @@ export const en = {
     newRandomSample: 'New random sample',
     totalDesc:
       'Total portfolio value for one simulated future — one possible path, not an average across runs.',
-    aboutSimulation: 'About this simulation',
+    aboutSimulation: 'Your assumptions',
     iterationsLabel: 'Number of simulations',
     iterationsHint:
       'Each simulation is one randomly drawn market future. More of them steady the extreme percentiles (top/bottom 1%) at the cost of a slower run.',
     capText:
       'Across every model, each asset’s yearly return is capped at {{max}}% on the upside and {{min}}% on the downside. At high volatility the model would otherwise produce absurd single-year moves that dominate the best-case tail — the cap keeps realistic crashes and big years for any volatile holding (not just Bitcoin) while cutting the runaway upside no plan should rely on.',
-    viewData: 'Edit data',
+    viewData: 'Edit assumptions',
     hideData: 'Hide simulation data',
-    dataPerAsset: 'Per-asset assumptions',
+    dataPerAsset: 'Your assumptions',
     dataVolHint:
-      'Volatility is editable — adjust an asset’s ±1σ to see how the spread and success rate respond. “reset” restores the asset-class default.',
+      'These are your inputs — the model only shapes the dispersion around them. Both the expected return (CAGR) and the volatility are editable per asset; every model uses the return you set here. “Historical” fills the return with the asset class’s long-run 1928–2024 average, and “Reset” restores your plan’s stated CAGR. These edits stay in the simulation and do not change your plan’s projection.',
     colAsset: 'Asset',
     colClass: 'Class',
     colStartValue: 'Start value',
-    colExpectedReturn: 'Expected return',
-    driftUserCagr: 'your CAGR: {{value}}%',
-    driftOverrideTitle:
-      'You entered a {{userCagr}}% CAGR, but the {{source}} overrides it to {{effective}}% for this model.',
-    driftSourceClass2001: 'asset class’s 2001–2024 historical average',
-    driftSourceClass1928: 'asset class’s 1928–2024 historical average',
-    colVolatility: 'Volatility (±1σ · editable)',
+    colExpectedReturn: 'Expected return (CAGR)',
+    fillHistory: 'Historical',
+    fillHistoryTitle: 'Fill with the asset class’s long-run 1928–2024 historical average',
+    resetReturnTitle: 'Reset to your plan’s stated CAGR for this asset',
+    colVolatility: 'Volatility (±1σ)',
     colAnnualContribution: 'Annual contribution',
     colAccount: 'Account',
     resetVolTitle: 'Reset to the default for this asset class',
-    reset: 'reset',
+    reset: 'Reset',
     perYrShort: '{{value}}/yr',
     correlationMatrix: 'Correlation matrix',
     correlationHint:
@@ -1671,8 +1646,8 @@ export const en = {
         body: 'Click the info button for a plain-language explanation of the selected model — what it is, its objective and its limits.',
       },
       mcViewData: {
-        title: 'Simulation data',
-        body: "Open the data view to inspect each asset's expected return, volatility, contributions and the correlation matrix driving the run.",
+        title: 'Your assumptions',
+        body: "Open the data view to edit each asset's expected return and volatility — your inputs, which every model uses — plus the correlation matrix driving the run. “history” fills a return with its asset class's long-run average.",
       },
       mcWhatIf: {
         title: 'What-if scenarios',

@@ -11,7 +11,8 @@ import type { ConversionPlan } from './taxAdvantaged';
 export type ExpensePeriod = 'monthly' | 'yearly';
 
 /**
- * Return model used by the Monte Carlo engine:
+ * Return model used by the Monte Carlo engine. Every model centers on the user's
+ * stated CAGR (their own assumption); the model only shapes the dispersion around it.
  *  - `normal`      : lognormal with Gaussian shocks (thin tails).
  *  - `fat-tails`   : Student-t shocks — heavier tails, more extremes both ways.
  *  - `crash-aware` : fat tails + a crash regime where correlations jump toward 1,
@@ -19,26 +20,16 @@ export type ExpensePeriod = 'monthly' | 'yearly';
  *  - `bootstrap`        : draws blocks of real historical years per asset class —
  *    keeps sequences, fat tails and crash co-movement, but the series are
  *    standardised so the drift still comes from the user's CAGR ("historical shape").
- *  - `bootstrap-uncentered` : same block-bootstrap mechanics as `bootstrap`, but the
- *    drift is each asset class's own historical average return instead of the
- *    user's CAGR — "historical shape, historical drift" (still randomly resampled
- *    blocks, unlike `historical-real`'s single sequential cohort).
- *  - `historical-real`  : replays the actual nominal returns AND actual inflation of
- *    a real cohort (1928→) sequentially — the drift is history's, not the user's
- *    CAGR; each holding earns its asset-class index return ("historical cycles").
- *  - `historical-real-centered` : same sequential real cohort (same crashes, same
- *    calendar sequence, same real inflation) as `historical-real`, but each year's
- *    return is re-centred so the long-run drift is the user's CAGR instead of
- *    history's — "historical shape, your trend", the cohort counterpart to how
- *    `bootstrap` relates to `bootstrap-uncentered`.
+ *  - `historical-real-centered` : replays a sequential real cohort (1928→) — the same
+ *    crashes, calendar sequence and real inflation of a start year — but each year's
+ *    return is re-centred so the long-run drift is the user's CAGR, not history's own
+ *    average ("historical shape, your trend").
  */
 export type MonteCarloModel =
   | 'normal'
   | 'fat-tails'
   | 'crash-aware'
   | 'bootstrap'
-  | 'bootstrap-uncentered'
-  | 'historical-real'
   | 'historical-real-centered';
 
 /**
@@ -55,8 +46,6 @@ export const MONTE_CARLO_MODEL_LABEL: Record<MonteCarloModel, string> = {
   'fat-tails': 'Fat tails',
   'crash-aware': 'Crash-aware',
   bootstrap: 'Historical pattern',
-  'bootstrap-uncentered': 'Historical pattern (real drift)',
-  'historical-real': 'Historical cohort (real drift)',
   'historical-real-centered': 'Historical cohort',
 };
 
@@ -86,11 +75,10 @@ export interface RetirementSettings {
   /** Return model for the Monte Carlo simulation. Defaults to bootstrap (historical pattern). */
   readonly monteCarloModel?: MonteCarloModel;
   /**
-   * Fixed cohort start year for the `historical-real` / `historical-real-centered`
-   * models (e.g. 1966, 2000, 1929) — every path replays the same real sequence
-   * from that year instead of each path drawing its own random start. Only used
-   * when `monteCarloModel` is one of those two; undefined means each path still
-   * picks a random start year.
+   * Fixed cohort start year for the `historical-real-centered` model (e.g. 1966,
+   * 2000, 1929) — every path replays the same real sequence from that year instead
+   * of each path drawing its own random start. Only used by that model; undefined
+   * means each path still picks a random start year.
    */
   readonly histStartYear?: number;
   /**
@@ -107,7 +95,7 @@ export interface RetirementSettings {
   readonly growthFade?: GrowthFadeConfig;
   /**
    * Number of simulated paths per Monte Carlo run. Higher counts smooth the tail
-   * percentiles at the cost of a slower run. Defaults to 5,000; see
+   * percentiles at the cost of a slower run. Defaults to 500; see
    * `MC_ITERATIONS_MAX` for the ceiling (more paths buy negligible extra precision).
    */
   readonly monteCarloIterations?: number;
@@ -117,7 +105,7 @@ export interface RetirementSettings {
  * Bounds for the "number of simulations" input. Above the max, extra paths
  * smooth the tail percentiles by a negligible amount for a much slower run.
  */
-export const MC_ITERATIONS_MIN = 500;
+export const MC_ITERATIONS_MIN = 1;
 export const MC_ITERATIONS_MAX = 5_000;
 export const MC_ITERATIONS_STEP = 500;
 

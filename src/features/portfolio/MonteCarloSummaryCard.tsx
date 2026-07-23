@@ -5,14 +5,9 @@ import { useFeature } from '@/hooks/useEntitlements';
 import { useAppStore } from '@/store';
 import { ProBadge } from '@/features/billing/ProBadge';
 import { StarIcon } from '@/components/icons';
+import { SuccessRateDonut } from '@/components/ui/SuccessRateDonut';
 import { cn } from '@/lib/cn';
 import { usePlanContext } from './PlanLayout';
-
-const ZONE_COLOR: Record<SuccessZone, string> = {
-  strong: 'var(--success)',
-  borderline: 'var(--amber)',
-  weak: 'var(--danger, #f43f5e)',
-};
 
 const TITLE_KEY: Record<SuccessZone, string> = {
   strong: 'dashboard.mc.titleStrong',
@@ -83,20 +78,7 @@ export const MonteCarloSummaryCard = () => {
       </div>
 
       {hasAssets && sx ? (
-        <div className="mc-card__donut-wrap">
-          <div
-            className="mc-donut"
-            style={{
-              ['--mc-pct' as string]: sx.pct,
-              ['--mc-color' as string]: ZONE_COLOR[sx.zone],
-            }}
-          >
-            <div className="mc-donut__hole">
-              <span className="mc-donut__pct">{sx.pct.toFixed(0)}%</span>
-            </div>
-          </div>
-          <span className="mc-card__donut-label">{t('dashboard.mc.ringLabel')}</span>
-        </div>
+        <SuccessRateDonut percent={sx.pct} zone={sx.zone} label={t('dashboard.mc.ringLabel')} />
       ) : null}
     </div>
   );

@@ -351,6 +351,7 @@ export const fr: Resources = {
   },
   plan: {
     currency: 'Devise',
+    lastSaved: 'Dernière sauvegarde',
     currencyRatesUnavailable:
       'Les taux de change sont indisponibles : les montants du plan ne peuvent pas être convertis. Réessayez dans un instant.',
     notFound: 'Ce plan est introuvable. Il a peut-être été supprimé.',
@@ -1083,12 +1084,12 @@ export const fr: Resources = {
       ' Épargner plus et ajouter du capital sont exploratoires — ajustez vos positions pour les figer.',
   },
   assetClass: {
-    crypto: 'Crypto',
-    us_equity: 'Actions US',
-    ca_equity: 'Actions CA',
-    eu_equity: 'Actions EU',
+    crypto: 'Cryptoactifs',
+    us_equity: 'Actions américaines',
+    ca_equity: 'Actions canadiennes',
+    eu_equity: 'Actions européennes',
     cash: 'Liquidités',
-    other: 'Autre',
+    other: 'Autres actifs',
   },
   methodology: {
     title: 'Méthodologie : comment les chiffres sont calculés',
@@ -1139,7 +1140,7 @@ export const fr: Resources = {
     assumpHeading: 'Hypothèses et sources de données',
     assumpIntro:
       'Les rendements viennent de votre CAGR. La volatilité, les corrélations et les bêtas de krach sont des valeurs par défaut rondes et défendables, codées en dur, non calibrées sur des données en direct, et remplaçables par position.',
-    volApplied: 'Volatilité (σ) et dérive réellement appliquées aux positions de ce plan :',
+    volApplied: 'Volatilité (σ) et rendement attendu appliqués aux positions de ce plan :',
     volDefaults: 'Volatilité et bêta de krach par défaut, par classe d’actifs :',
     tickerOverrides: 'Surcharges de volatilité par ticker (priment sur la classe) :',
     corrIntro:
@@ -1202,12 +1203,8 @@ export const fr: Resources = {
       'L’impact du krach est mis à l’échelle par la sensibilité de chaque classe : actions ×1, crypto ×1,3, et actifs défensifs (obligations/cash) ×0 — une fuite vers la qualité les épargne plutôt que de faire chuter tout le portefeuille ensemble.',
     bootstrapIntro:
       'Tire des blocs de {{block}} années consécutives de l’histoire réelle ci-dessous ({{from}}–{{to}}), conservant les séquences, krachs et co-mouvements réels. Les séries sont centrées et standardisées, donc seule leur forme est utilisée — la tendance de long terme vient toujours de votre CAGR.',
-    bootstrapUncenteredIntro:
-      'Tire les mêmes blocs de {{block}} années consécutives de l’histoire réelle ci-dessous ({{from}}–{{to}}), conservant les séquences, krachs et co-mouvements réels — mais cette fois la tendance de long terme est la moyenne historique propre à chaque classe, pas votre CAGR (sauf si vous mettez la volatilité d’un actif à 0, auquel cas votre taux saisi est toujours respecté).',
     bootstrapNote:
       'Les sources sont approximatives (S&P 500 TR, MSCI Europe, S&P/TSX, US Agg, BTC). La crypto avant 2014 est illustrative (le BTC n’existait pas encore) mais maintenue à forte volatilité et co-mouvante en krach.',
-    realIntro:
-      'Rejoue une cohorte réelle, tirée au hasard entre {{from}}–{{to}} ({{len}} ans), année par année : chaque position gagne le rendement de l’indice de sa classe et les dépenses sont indexées sur le CPI réel de l’année. La tendance de long terme est celle de l’histoire, pas votre CAGR — vos CAGR par actif sont ignorés dans ce modèle.',
     realCenteredIntro:
       'Rejoue la même cohorte réelle, tirée au hasard entre {{from}}–{{to}} ({{len}} ans), année par année — mêmes séquences, mêmes krachs, dépenses toujours indexées sur le CPI réel de l’année — mais chaque rendement annuel est recentré pour que la tendance de long terme soit votre CAGR saisi, pas la moyenne de l’histoire.',
     realClassInput: 'Classe / entrée',
@@ -1265,8 +1262,6 @@ export const fr: Resources = {
     'fat-tails': 'Queues lourdes',
     'crash-aware': 'Alerte krach',
     bootstrap: 'Motif historique',
-    'bootstrap-uncentered': 'Motif historique (dérive réelle)',
-    'historical-real': 'Cohorte historique (dérive réelle)',
     'historical-real-centered': 'Cohorte historique',
   },
   modelInfo: {
@@ -1300,27 +1295,11 @@ export const fr: Resources = {
       objective:
         'Tester VOS propres hypothèses de rendement avec une volatilité et un regroupement de krachs réalistes, sans importer les rendements moyens de l’histoire.',
       caution:
-        'Pas un vrai backtest : les niveaux sont recentrés sur votre CAGR, l’inflation est votre saisie constante, et la fenêtre est courte (2001–2024, pas 1929/1970). Pour le vrai, utilisez « Cohorte historique (dérive réelle) ».',
-    },
-    'bootstrap-uncentered': {
-      plain:
-        'Même mécanique de block-bootstrap que « Motif historique » (blocs de 8 ans entre 2001–2024, séquences et co-mouvements réels) — mais la tendance est la moyenne historique propre à chaque classe d’actif, pas votre CAGR saisi. Blocs rééchantillonnés aléatoirement, contrairement à la séquence unique fixe de « Cohorte historique (dérive réelle) ».',
-      objective:
-        'Teste honnêtement si VOS hypothèses de rendement sont optimistes par rapport à ce que la classe d’actif a réellement livré historiquement — une classe mal mappée (ex. une action de croissance étiquetée « other » → obligations) se traduira immédiatement par un taux de réussite bien plus bas.',
-      caution:
-        'Il remplace silencieusement votre CAGR par actif par une moyenne historique de classe — un mauvais résultat peut signifier que votre actif est mal classé, pas que votre plan est mauvais. Même fenêtre courte (2001–2024) que « Motif historique ».',
-    },
-    'historical-real': {
-      plain:
-        'Rejoue une cohorte RÉELLE : les vrais rendements nominaux ET la vraie inflation (CPI) d’une année de départ tirée de 1928–2024, année par année. La tendance est celle de l’histoire, pas votre CAGR — chaque position gagne l’indice de sa classe (actions US, obligations 10 ans ; la crypto est un proxy actions à effet de levier).',
-      objective:
-        'Le vrai backtest : « mon plan aurait-il survécu à un départ en retraite en 1929, à la stagflation 1966–73 ou en 2000 ? » — rendements et inflation frappent ensemble.',
-      caution:
-        'Il ignore vos CAGR par actif (ex. NVDA → l’indice), ne couvre pas les actifs sans historique profond (la crypto est un proxy), et même 97 ans ne peuvent contenir un futur vraiment inédit. Pour une version qui garde cette séquence réelle mais suit votre CAGR, utilisez « Cohorte historique ».',
+        'Pas un vrai backtest : les niveaux sont recentrés sur votre CAGR, l’inflation est votre saisie constante, et la fenêtre est courte (2001–2024, pas 1929/1970). Pour une vraie cohorte depuis 1928, utilisez « Cohorte historique ».',
     },
     'historical-real-centered': {
       plain:
-        'La même cohorte réelle que « Cohorte historique (dérive réelle) » — la séquence réelle des rendements nominaux et de l’inflation (CPI) d’une année de départ tirée de 1928–2024, année par année — mais chaque rendement annuel est recentré pour que la tendance de long terme soit votre CAGR saisi, pas la moyenne de l’histoire. Les krachs et les reprises tombent toujours sur leurs années calendaires réelles.',
+        'Rejoue une cohorte réelle — la séquence réelle des rendements nominaux et de l’inflation (CPI) d’une année de départ tirée de 1928–2024, année par année — mais chaque rendement annuel est recentré pour que la tendance de long terme soit votre CAGR saisi, pas la moyenne de l’histoire. Les krachs et les reprises tombent toujours sur leurs années calendaires réelles.',
       objective:
         'Combine une forme réaliste et corrélée dans le temps (pas rééchantillonnée) — les mêmes krachs, la même période de stagflation — avec vos propres hypothèses de rendement, pour tester honnêtement le risque de séquence sans importer le rendement moyen de l’histoire.',
       caution:
@@ -1341,7 +1320,7 @@ export const fr: Resources = {
     recalculating: 'recalcul…',
     fundedIn:
       'Votre plan a été entièrement financé dans {{count}} cas sur {{total}} marchés simulés.',
-    parametersTitle: 'Paramètres',
+    parametersTitle: 'Paramètres de simulation',
     returnModel: 'Modèle de rendement',
     selectModel: 'Choisir le modèle',
     groupStandard: 'Standard',
@@ -1366,8 +1345,6 @@ export const fr: Resources = {
     fadeToggle: 'Atténuer les CAGR',
     fadeHint:
       'Les actifs dont le CAGR dépasse {{target}} % convergent progressivement vers {{target}} % par an sur {{years}} ans, puis restent à ce taux. Les actifs déjà à ce niveau ou en dessous ne changent pas.',
-    fadeHintDisabled:
-      'Sans effet avec le modèle {{model}} : la dérive de chaque actif volatil vient d’une moyenne historique au lieu de votre CAGR, il n’y a donc aucun CAGR à atténuer. Passez à un modèle qui respecte votre CAGR (Normale, Queues lourdes, Alerte krach, Motif historique, ou Cohorte historique) pour l’utiliser.',
     top25: 'Top 25 %',
     median: 'Médiane',
     bottom25: 'Bottom 25 %',
@@ -1412,31 +1389,30 @@ export const fr: Resources = {
     newRandomSample: 'Nouvel échantillon aléatoire',
     totalDesc:
       'Valeur totale du portefeuille pour un futur simulé — un chemin possible, pas une moyenne sur toutes les exécutions.',
-    aboutSimulation: 'À propos de cette simulation',
+    aboutSimulation: 'Vos hypothèses',
     iterationsLabel: 'Nombre de simulations',
     iterationsHint:
       'Chaque simulation est un futur de marché tiré au hasard. Plus il y en a, plus les percentiles extrêmes (haut/bas 1 %) sont stables, au prix d’un calcul plus lent.',
     capText:
       'Pour chaque modèle, le rendement annuel de chaque actif est plafonné à {{max}} % à la hausse et {{min}} % à la baisse. À forte volatilité, le modèle produirait sinon des mouvements annuels absurdes qui dominent le scénario optimiste — le plafond conserve des krachs et de grosses années réalistes pour tout actif volatil (pas seulement le Bitcoin) tout en coupant la hausse incontrôlée sur laquelle aucun plan ne devrait compter.',
-    viewData: 'Modifier les données',
+    viewData: 'Modifier les hypothèses',
     hideData: 'Masquer les données de simulation',
-    dataPerAsset: 'Hypothèses par actif',
+    dataPerAsset: 'Vos hypothèses',
     dataVolHint:
-      'La volatilité est modifiable — ajustez le ±1σ d’un actif pour voir comment la dispersion et le taux de réussite réagissent. « reset » rétablit la valeur par défaut de la classe.',
+      'Ce sont vos saisies — le modèle ne fait que façonner la dispersion autour d’elles. Le rendement attendu (TCAC) et la volatilité sont modifiables par actif ; tous les modèles utilisent le rendement que vous fixez ici. « Historique » remplit le rendement avec la moyenne de long terme 1928–2024 de la classe d’actifs, et « Réinitialiser » rétablit le TCAC saisi dans votre plan. Ces modifications restent dans la simulation et ne changent pas la projection de votre plan.',
     colAsset: 'Actif',
     colClass: 'Classe',
     colStartValue: 'Valeur initiale',
-    colExpectedReturn: 'Rendement attendu',
-    driftUserCagr: 'votre CAGR : {{value}} %',
-    driftOverrideTitle:
-      'Vous avez saisi un CAGR de {{userCagr}} %, mais {{source}} le remplace par {{effective}} % pour ce modèle.',
-    driftSourceClass2001: 'la moyenne historique 2001-2024 de la classe d’actifs',
-    driftSourceClass1928: 'la moyenne historique 1928-2024 de la classe d’actifs',
-    colVolatility: 'Volatilité (±1σ · modifiable)',
+    colExpectedReturn: 'Rendement attendu (TCAC)',
+    fillHistory: 'Historique',
+    fillHistoryTitle:
+      'Remplir avec la moyenne historique de long terme 1928–2024 de la classe d’actifs',
+    resetReturnTitle: 'Rétablir le TCAC saisi dans votre plan pour cet actif',
+    colVolatility: 'Volatilité (±1σ)',
     colAnnualContribution: 'Contribution annuelle',
     colAccount: 'Compte',
     resetVolTitle: 'Rétablir la valeur par défaut de cette classe d’actifs',
-    reset: 'reset',
+    reset: 'Réinitialiser',
     perYrShort: '{{value}}/an',
     correlationMatrix: 'Matrice de corrélation',
     correlationHint:
@@ -1710,8 +1686,8 @@ export const fr: Resources = {
         body: 'Cliquez sur le bouton d’info pour une explication en clair du modèle sélectionné — ce qu’il est, son objectif et ses limites.',
       },
       mcViewData: {
-        title: 'Données de simulation',
-        body: 'Ouvrez la vue des données pour inspecter le rendement attendu, la volatilité, les contributions et la matrice de corrélation qui pilotent la simulation.',
+        title: 'Vos hypothèses',
+        body: 'Ouvrez la vue des données pour modifier le rendement attendu et la volatilité de chaque actif — vos saisies, utilisées par tous les modèles — ainsi que la matrice de corrélation qui pilote la simulation. « historique » remplit un rendement avec la moyenne de long terme de sa classe.',
       },
       mcWhatIf: {
         title: 'Scénarios « et si »',

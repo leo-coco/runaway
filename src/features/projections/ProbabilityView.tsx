@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Area,
@@ -15,6 +14,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Stepper } from '@/components/ui/Stepper';
+import { SUCCESS_ZONE_COLOR, SuccessRateDonut } from '@/components/ui/SuccessRateDonut';
 import { InfoIcon } from '@/components/icons';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAppStore } from '@/store';
@@ -26,13 +26,14 @@ import {
   usesCorrelationMatrix,
   type MonteCarloModel,
 } from '@/domain/retirementSettings';
+import { ASSET_CLASSES, type AssetClass } from '@/domain/assetClass';
 import type { UseMonteCarloResult } from '@/hooks/useMonteCarlo';
-import { successStatus, type SuccessZone } from '@/domain/successRate';
+import { successStatus } from '@/domain/successRate';
 import {
   DEFAULT_MC_OPTIONS,
   MODEL_PARAMS,
   buildMonteCarloInput,
-  effectiveDriftPct,
+  historicalDriftPct,
   isBitcoinSymbol,
   type MonteCarloOptions,
   type TrialOutcomeCategory,
@@ -58,12 +59,6 @@ interface Props {
   monteCarlo: UseMonteCarloResult;
   rates: RatesTable | undefined;
 }
-
-const ZONE_COLOR: Record<SuccessZone, string> = {
-  strong: 'var(--success)',
-  borderline: 'var(--amber)',
-  weak: 'var(--danger, #f43f5e)',
-};
 
 /**
  * Per-model explanation shown in the info bubble, in the standardised format:
@@ -156,10 +151,6 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
   // The matrix is still shown under a replay model (it documents the class
   // defaults) but is read-only: editing it there would change nothing.
   const correlationLive = usesCorrelationMatrix(model);
-  // Both models substitute a hardcoded historical class average for the drift of
-  // any asset with nonzero volatility (see effectiveDriftPct in monteCarlo.ts), so
-  // the user's CAGR — and therefore its fade — never enters the calculation.
-  const fadeIgnoredByModel = model === 'historical-real' || model === 'bootstrap-uncentered';
   const setModel = (m: MonteCarloModel) =>
     updateSettings(plan.id, { ...plan.settings, monteCarloModel: m });
   const histStartYear = plan.settings.histStartYear;
@@ -177,6 +168,8 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
     updateSettings(plan.id, { ...plan.settings, growthFade: { ...fadeCfg, enabled: on } });
   const { status, result, error } = monteCarlo;
   const [showData, setShowData] = useState(false);
+  const [editingAssumptions, setEditingAssumptions] = useState(false);
+  const [editingCorrelations, setEditingCorrelations] = useState(false);
   const [showGoalSeek, setShowGoalSeek] = useState(false);
   const [showModelInfo, setShowModelInfo] = useState(false);
   const [showTrialExplorer, setShowTrialExplorer] = useState(false);
@@ -249,10 +242,12 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
   }, [hasAssets, plan, rates, startYear, endYear, retirementYear, monteCarlo.seed]);
   /* eslint-enable react-hooks/preserve-manual-memoization */
 
-  const accountName = (id: string | null): string =>
-    id === null
-      ? t('portfolio.unassigned')
-      : (plan.accounts.find((a) => a.id === id)?.name ?? t('portfolio.unassigned'));
+  const assetClassLabel = (assetClass: string | undefined): string => {
+    if (!assetClass) return '—';
+    return (ASSET_CLASSES as readonly string[]).includes(assetClass)
+      ? t(`assetClass.${assetClass as AssetClass}`)
+      : assetClass.replaceAll('_', ' ');
+  };
 
   return (
     <div className="prob-view">
@@ -274,28 +269,28 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
           <div className="hero hero--triple" data-tour="mc-summary-cards">
             <div
               className="hero__card prob-success-card"
-              style={{ borderColor: ZONE_COLOR[sx.zone] }}
+              style={{ borderColor: SUCCESS_ZONE_COLOR[sx.zone] }}
             >
               <div className="hero__row">
                 <span className="hero__label">{t('mc.probabilityOfSuccess')}</span>
               </div>
-              <div className="hero__big-row prob-success-card__value">
-                <span className="hero__big hero__big--sm" style={{ color: ZONE_COLOR[sx.zone] }}>
-                  {sx.pct.toFixed(0)}%
-                </span>
-                <span className="hero__big-note prob-success-card__note">
-                  {t('dashboard.oddsNote', { age: lifeExpectancyAge })}
-                </span>
+              <div className="prob-success-card__body">
+                <SuccessRateDonut percent={sx.pct} zone={sx.zone} size="compact" />
+                <div className="prob-success-card__copy">
+                  <span className="hero__big-note prob-success-card__note">
+                    {t('dashboard.oddsNote', { age: lifeExpectancyAge })}
+                  </span>
+                  {sx.pct < 80 && (
+                    <button
+                      type="button"
+                      className="hero__action-link"
+                      onClick={() => setShowGoalSeek(true)}
+                    >
+                      {t('mc.whatWouldItTake')}
+                    </button>
+                  )}
+                </div>
               </div>
-              {sx.pct < 80 && (
-                <button
-                  type="button"
-                  className="hero__action-link"
-                  onClick={() => setShowGoalSeek(true)}
-                >
-                  {t('mc.whatWouldItTake')}
-                </button>
-              )}
             </div>
 
             <div className="hero__card">
@@ -610,6 +605,19 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
 
               <div className="mc-body-card">
                 <div className="wo-section-label">{t('mc.parametersTitle')}</div>
+                <div className="mc-iterations-setting">
+                  <div className="mc-iterations-setting__label">
+                    <span>{t('mc.iterationsLabel')}</span>
+                  </div>
+                  <Stepper
+                    ariaLabel={t('mc.iterationsLabel')}
+                    value={iterations}
+                    min={MC_ITERATIONS_MIN}
+                    max={MC_ITERATIONS_MAX}
+                    step={MC_ITERATIONS_STEP}
+                    onChange={setIterations}
+                  />
+                </div>
                 <div className="model-picker" data-tour="mc-model">
                   <label htmlFor="mc-model-select" className="model-picker__label">
                     {t('mc.selectModel')}
@@ -628,14 +636,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                       ))}
                     </optgroup>
                     <optgroup label={t('mc.groupAdvanced')}>
-                      {(
-                        [
-                          'fat-tails',
-                          'bootstrap-uncentered',
-                          'historical-real-centered',
-                          'historical-real',
-                        ] as const
-                      ).map((m) => (
+                      {(['fat-tails', 'historical-real-centered'] as const).map((m) => (
                         <option key={m} value={m}>
                           {t(`modelName.${m}`)}
                         </option>
@@ -653,7 +654,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   </button>
                 </div>
 
-                {(model === 'historical-real' || model === 'historical-real-centered') && (
+                {model === 'historical-real-centered' && (
                   <div className="hist-year-picker" data-tour="mc-hist-start-year">
                     <div className="hist-year-picker__row">
                       <span className="model-picker__label">{t('mc.histStartYear')}</span>
@@ -688,7 +689,7 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                     )}
                   </div>
                 )}
-                {(model === 'historical-real' || model === 'historical-real-centered') && (
+                {model === 'historical-real-centered' && (
                   <p className="field__hint" style={{ marginTop: 0 }}>
                     {histStartYear === undefined
                       ? t('mc.histStartYearHintRandom')
@@ -715,23 +716,20 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                   </div>
 
                   <div className="mc-option">
-                    <label className={cn('mc-switch', fadeIgnoredByModel && 'is-disabled')}>
+                    <label className="mc-switch">
                       <span className="mc-switch__control">
                         <input
                           type="checkbox"
                           checked={fadeCfg.enabled}
-                          disabled={fadeIgnoredByModel}
                           onChange={(e) => setFade(e.target.checked)}
                         />
                         <span>{t('mc.fadeToggle')}</span>
                       </span>
                       <span className="mc-tip mc-tip--right" role="tooltip">
-                        {fadeIgnoredByModel
-                          ? t('mc.fadeHintDisabled', { model: t(`modelName.${model}`) })
-                          : t('mc.fadeHint', {
-                              target: fadeCfg.targetPct,
-                              years: fadeCfg.years,
-                            })}
+                        {t('mc.fadeHint', {
+                          target: fadeCfg.targetPct,
+                          years: fadeCfg.years,
+                        })}
                       </span>
                     </label>
                   </div>
@@ -775,154 +773,168 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
         />
       )}
       {showData && inspector && (
-        <Modal title={t('mc.aboutSimulation')} onClose={() => setShowData(false)} xl>
+        <Modal
+          title={t('mc.aboutSimulation')}
+          onClose={() => {
+            setShowData(false);
+            setEditingAssumptions(false);
+            setEditingCorrelations(false);
+          }}
+          xl
+        >
           <div className="mc-data__body">
             <div className="wo-section-label" style={{ marginTop: 0 }}>
-              {t('mc.iterationsLabel')}
-            </div>
-            <Stepper
-              ariaLabel={t('mc.iterationsLabel')}
-              value={iterations}
-              min={MC_ITERATIONS_MIN}
-              max={MC_ITERATIONS_MAX}
-              step={MC_ITERATIONS_STEP}
-              onChange={setIterations}
-            />
-            <p className="field__hint" style={{ marginTop: 4 }}>
-              {t('mc.iterationsHint')}
-            </p>
-            <div className="mc-cap-note">
-              {t('mc.capText', {
-                max: MODEL_PARAMS.returnCapMaxPct,
-                min: MODEL_PARAMS.returnCapMinPct,
-              })}
-            </div>
-            <div className="wo-section-label" style={{ marginTop: 4 }}>
               {t('mc.dataPerAsset')}
             </div>
             <p className="field__hint" style={{ marginTop: 0 }}>
               {t('mc.dataVolHint')}
             </p>
-            <div className="mc-table-wrap">
-              <table className="mc-table">
-                <thead>
-                  <tr>
-                    <th>{t('mc.colAsset')}</th>
-                    <th>{t('mc.colClass')}</th>
-                    <th>{t('mc.colStartValue')}</th>
-                    <th>{t('mc.colExpectedReturn')}</th>
-                    <th>{t('mc.colVolatility')}</th>
-                    <th>{t('mc.colAnnualContribution')}</th>
-                    <th>{t('mc.colAccount')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inspector.input.assets.map((a, i) => {
-                    const hid = a.holdingId;
-                    const overridden =
-                      hid !== undefined &&
-                      plan.holdings.find((h) => h.id === hid)?.volatilityPct !== undefined;
-                    const effective = effectiveDriftPct(a, model);
-                    const diverges = Math.abs(effective.pct - a.driftPct) > 0.05;
-                    return (
-                      <tr key={i}>
-                        <td>{a.symbol ?? `Asset ${i + 1}`}</td>
-                        <td>{a.assetClass ?? '—'}</td>
-                        <td>{fmt.compact(a.startValue)}</td>
-                        <td>
-                          {diverges ? (
-                            <span
-                              className="mc-drift-cell"
-                              title={t('mc.driftOverrideTitle', {
-                                userCagr: a.driftPct.toFixed(1),
-                                effective: effective.pct.toFixed(1),
-                                source: t(
-                                  effective.source === 'class-history-2001'
-                                    ? 'mc.driftSourceClass2001'
-                                    : 'mc.driftSourceClass1928',
-                                ),
-                              })}
-                            >
-                              <span className="mc-drift-cell__effective">
-                                {effective.pct.toFixed(1)}%
-                              </span>
-                              <span className="mc-drift-cell__user">
-                                {t('mc.driftUserCagr', { value: a.driftPct.toFixed(1) })}
-                              </span>
-                            </span>
-                          ) : (
-                            `${a.driftPct.toFixed(1)}%`
-                          )}
-                        </td>
-                        <td>
-                          {hid !== undefined ? (
-                            <span className="mc-vol-cell">
-                              <Stepper
-                                compact
-                                ariaLabel={`${a.symbol ?? 'asset'} volatility`}
-                                value={Math.round(a.sigmaPct)}
-                                min={0}
-                                max={200}
-                                step={5}
-                                suffix="%"
-                                onChange={(v) => updateHolding(plan.id, hid, { volatilityPct: v })}
-                              />
-                              {overridden && (
+            <div className="mc-editable-table">
+              <div className="mc-editable-table__toolbar">
+                <Button
+                  size="sm"
+                  aria-label={`${editingAssumptions ? t('common.done') : t('common.edit')} — ${t('mc.dataPerAsset')}`}
+                  onClick={() => setEditingAssumptions((editing) => !editing)}
+                >
+                  {editingAssumptions ? t('common.done') : t('common.edit')}
+                </Button>
+              </div>
+              <div className="mc-table-wrap">
+                <table className="mc-table">
+                  <thead>
+                    <tr>
+                      <th>{t('mc.colAsset')}</th>
+                      <th>{t('mc.colClass')}</th>
+                      <th>{t('mc.colExpectedReturn')}</th>
+                      <th>{t('mc.colVolatility')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inspector.input.assets.map((a, i) => {
+                      const hid = a.holdingId;
+                      const holding =
+                        hid !== undefined ? plan.holdings.find((h) => h.id === hid) : undefined;
+                      const overridden = holding?.volatilityPct !== undefined;
+                      const returnOverridden = holding?.mcExpectedReturnPct !== undefined;
+                      return (
+                        <tr key={i}>
+                          <td>{a.symbol ?? `Asset ${i + 1}`}</td>
+                          <td>{assetClassLabel(a.assetClass)}</td>
+                          <td>
+                            {editingAssumptions && hid !== undefined ? (
+                              <span className="mc-vol-cell">
+                                <Stepper
+                                  compact
+                                  ariaLabel={`${a.symbol ?? 'asset'} expected return`}
+                                  value={Math.round(
+                                    holding?.mcExpectedReturnPct ??
+                                      holding?.expectedCagrPct ??
+                                      a.driftPct,
+                                  )}
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  suffix="%"
+                                  onChange={(v) =>
+                                    updateHolding(plan.id, hid, { mcExpectedReturnPct: v })
+                                  }
+                                />
                                 <button
                                   type="button"
                                   className="mc-vol-reset"
-                                  title={t('mc.resetVolTitle')}
+                                  title={t('mc.fillHistoryTitle')}
                                   onClick={() =>
-                                    updateHolding(plan.id, hid, { volatilityPct: undefined })
+                                    updateHolding(plan.id, hid, {
+                                      mcExpectedReturnPct: Math.round(
+                                        historicalDriftPct(a.assetClass),
+                                      ),
+                                    })
+                                  }
+                                >
+                                  {t('mc.fillHistory')}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="mc-vol-reset"
+                                  title={t('mc.resetReturnTitle')}
+                                  disabled={!returnOverridden}
+                                  onClick={() =>
+                                    updateHolding(plan.id, hid, { mcExpectedReturnPct: undefined })
                                   }
                                 >
                                   {t('mc.reset')}
                                 </button>
-                              )}
-                            </span>
-                          ) : (
-                            `±${a.sigmaPct.toFixed(0)}%`
-                          )}
-                        </td>
-                        <td>
-                          {a.annualContribution > 0
-                            ? t('mc.perYrShort', { value: fmt.compact(a.annualContribution) })
-                            : '—'}
-                        </td>
-                        <td>{accountName(a.accountId)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="mc-method-note">
-              <SimulationMethodology
-                assets={inspector.input.assets}
-                model={model}
-                btcCycle={btcCycleOn && hasBtc}
-              />
-              <p className="field__hint" style={{ marginTop: 8 }}>
-                <Link to={`/plan/${plan.id}/methodology`} className="method-link">
-                  {t('methodology.seeFull')}
-                </Link>
-              </p>
+                              </span>
+                            ) : (
+                              `${(
+                                holding?.mcExpectedReturnPct ??
+                                holding?.expectedCagrPct ??
+                                a.driftPct
+                              ).toFixed(1)}%`
+                            )}
+                          </td>
+                          <td>
+                            {editingAssumptions && hid !== undefined ? (
+                              <span className="mc-vol-cell">
+                                <Stepper
+                                  compact
+                                  ariaLabel={`${a.symbol ?? 'asset'} volatility`}
+                                  value={Math.round(a.sigmaPct)}
+                                  min={0}
+                                  max={200}
+                                  step={5}
+                                  suffix="%"
+                                  onChange={(v) =>
+                                    updateHolding(plan.id, hid, { volatilityPct: v })
+                                  }
+                                />
+                                {overridden && (
+                                  <button
+                                    type="button"
+                                    className="mc-vol-reset"
+                                    title={t('mc.resetVolTitle')}
+                                    onClick={() =>
+                                      updateHolding(plan.id, hid, { volatilityPct: undefined })
+                                    }
+                                  >
+                                    {t('mc.reset')}
+                                  </button>
+                                )}
+                              </span>
+                            ) : (
+                              `±${a.sigmaPct.toFixed(0)}%`
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {inspector.input.assets.length > 1 && (
               <>
-                <div
-                  className="wo-section-label"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                >
+                <div className="wo-section-label mc-data-section-heading">
                   <span>{t('mc.correlationMatrix')}</span>
-                  {correlationLive &&
-                    plan.correlationOverrides &&
-                    Object.keys(plan.correlationOverrides).length > 0 && (
-                      <Button size="sm" onClick={() => resetCorrelations(plan.id)}>
-                        {t('mc.resetCorrelations')}
-                      </Button>
-                    )}
+                  <span className="mc-data-section-actions">
+                    {editingCorrelations &&
+                      correlationLive &&
+                      plan.correlationOverrides &&
+                      Object.keys(plan.correlationOverrides).length > 0 && (
+                        <Button size="sm" onClick={() => resetCorrelations(plan.id)}>
+                          {t('mc.resetCorrelations')}
+                        </Button>
+                      )}
+                    <Button
+                      size="sm"
+                      disabled={!correlationLive}
+                      aria-label={`${editingCorrelations ? t('common.done') : t('common.edit')} — ${t('mc.correlationMatrix')}`}
+                      onClick={() => setEditingCorrelations((editing) => !editing)}
+                    >
+                      {editingCorrelations ? t('common.done') : t('common.edit')}
+                    </Button>
+                  </span>
                 </div>
                 <div className="mc-table-wrap">
                   <table className="mc-table mc-table--matrix">
@@ -942,7 +954,11 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                             const idA = inspector.input.assets[i]?.holdingId;
                             const idB = inspector.input.assets[j]?.holdingId;
                             const editable =
-                              correlationLive && i !== j && idA !== undefined && idB !== undefined;
+                              editingCorrelations &&
+                              correlationLive &&
+                              i !== j &&
+                              idA !== undefined &&
+                              idB !== undefined;
                             return (
                               <td key={j}>
                                 {editable ? (
@@ -969,13 +985,29 @@ export const ProbabilityView = ({ plan, monteCarlo, rates }: Props) => {
                     </tbody>
                   </table>
                 </div>
-                <p className="field__hint" style={{ marginTop: 0 }}>
-                  {correlationLive
-                    ? t('mc.correlationHint')
-                    : t('mc.correlationIgnored', { model: t(`modelName.${model}`) })}
-                </p>
+                {(editingCorrelations || !correlationLive) && (
+                  <p className="field__hint" style={{ marginTop: 0 }}>
+                    {correlationLive
+                      ? t('mc.correlationHint')
+                      : t('mc.correlationIgnored', { model: t(`modelName.${model}`) })}
+                  </p>
+                )}
               </>
             )}
+
+            <div className="mc-cap-note">
+              {t('mc.capText', {
+                max: MODEL_PARAMS.returnCapMaxPct,
+                min: MODEL_PARAMS.returnCapMinPct,
+              })}
+            </div>
+            <div className="mc-method-note">
+              <SimulationMethodology
+                assets={inspector.input.assets}
+                model={model}
+                btcCycle={btcCycleOn && hasBtc}
+              />
+            </div>
           </div>
         </Modal>
       )}
