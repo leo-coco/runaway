@@ -7,6 +7,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ServicesProvider } from '@/providers/ServicesContext';
 import { createQueryClient } from '@/providers/queryClient';
 import { PlanLayout } from '@/features/portfolio/PlanLayout';
+import { LastSavedBadge } from '@/components/layout/LastSavedBadge';
 import { DashboardPage } from '@/features/portfolio/DashboardPage';
 import { PortfolioPage } from '@/features/portfolio/PortfolioPage';
 import { ProjectionPage } from '@/features/portfolio/ProjectionPage';
@@ -62,6 +63,7 @@ const renderAt = async (
       <ServicesProvider services={mockServices}>
         <AppModeProvider sandbox={sandbox}>
           <MemoryRouter initialEntries={[`/plan/${planId}/${section}`]}>
+            <LastSavedBadge />
             <Routes>
               <Route path="/plan/:id" element={<PlanLayout />}>
                 <Route path="dashboard" element={<DashboardPage />} />
