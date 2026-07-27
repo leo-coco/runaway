@@ -780,6 +780,15 @@ h4 {
   padding: 12px 0 0;
   border-top: 1px solid var(--border);
 }
+/* When the "last saved" pill precedes the user row, it takes over the auto
+   margin so the two sit together at the sidebar's bottom instead of the pill
+   staying in normal flow above a gap. */
+.sidebar > .plan-save-badge {
+  margin-top: auto;
+}
+.sidebar > .plan-save-badge + .sb-user {
+  margin-top: 0;
+}
 .sb-user__trigger {
   display: flex;
   align-items: center;
@@ -1254,10 +1263,6 @@ h4 {
     align-items: flex-start;
     flex-direction: column;
   }
-  .plan-save-badge {
-    align-self: flex-end;
-    white-space: normal;
-  }
 }
 @media (max-width: 900px) and (min-width: 821px) {
   .sidebar {
@@ -1311,6 +1316,24 @@ h4 {
     text-transform: uppercase;
     font-size: 0.9375rem;
     color: var(--text);
+  }
+  .app-mobilebar__save {
+    display: flex;
+    margin-left: auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .app-mobilebar__save .plan-save-badge {
+    min-width: 0;
+    padding: 6px 9px;
+    font-size: 0.7rem;
+  }
+  .app-mobilebar__save .plan-save-badge__label {
+    display: none;
+  }
+  .app-mobilebar__save .plan-save-badge time {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* The sidebar lifts out of flow and slides in from the left. */

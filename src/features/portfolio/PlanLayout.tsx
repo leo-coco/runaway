@@ -16,7 +16,6 @@ import { convert, missingRates, type RatesTable } from '@/services/currencyServi
 import { PlanModals } from '@/features/settings/PlanModals';
 import { PremiumBanner } from '@/features/billing/PremiumBanner';
 import { planCurrencies, type Plan } from '@/domain/plan';
-import { useAppMode } from '@/providers/AppModeContext';
 
 export interface PlanContext {
   plan: Plan;
@@ -31,12 +30,11 @@ export const usePlanContext = () => useOutletContext<PlanContext>();
 
 export const PlanLayout = () => {
   const { id } = useParams<{ id: string }>();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const plansSynced = useAppStore((s) => s.plansSynced);
   const plan = usePlan(id);
   const setPlanCurrency = useAppStore((s) => s.setPlanCurrency);
   const setPlanSuccess = useAppStore((s) => s.setPlanSuccess);
-  const { sandbox } = useAppMode();
 
   const fx = useExchangeRate(plan?.currency ?? 'USD');
   // A table that cannot cover every currency the plan uses is worse than none:
@@ -117,13 +115,6 @@ export const PlanLayout = () => {
   };
 
   const ctx: PlanContext = { plan, rates, totalValue, projection, monteCarlo };
-  const lastSaved = new Date(plan.updatedAt);
-  const lastSavedLabel = Number.isNaN(lastSaved.getTime())
-    ? null
-    : new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      }).format(lastSaved);
 
   return (
     <>
@@ -157,18 +148,6 @@ export const PlanLayout = () => {
               )}
             </div>
           </div>
-          {!sandbox && lastSavedLabel && (
-            <div
-              key={plan.updatedAt}
-              className="plan-save-badge"
-              role="status"
-              aria-label={`${t('plan.lastSaved')} ${lastSavedLabel}`}
-            >
-              <span className="plan-save-badge__dot" aria-hidden="true" />
-              <span className="plan-save-badge__label">{t('plan.lastSaved')}</span>
-              <time dateTime={plan.updatedAt}>{lastSavedLabel}</time>
-            </div>
-          )}
         </div>
 
         {fx.isError && <InlineError error={fx.error} />}

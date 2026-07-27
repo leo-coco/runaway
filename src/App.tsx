@@ -29,6 +29,7 @@ import { useSession } from '@/lib/authClient';
 import i18n, { languageFromPathname, type Lang } from '@/i18n';
 import { AppModeProvider, useAppMode } from '@/providers/AppModeContext';
 import { asCountry } from '@/domain/country';
+import { LastSavedBadge } from '@/components/layout/LastSavedBadge';
 
 const RootRedirect = () => {
   const { t } = useTranslation();
@@ -150,6 +151,9 @@ const AppShell = ({ sandbox }: { sandbox: boolean }) => {
             />
             <span className="app-mobilebar__name">Runaway</span>
           </span>
+          <div className="app-mobilebar__save">
+            <LastSavedBadge />
+          </div>
         </header>
         <div className="app-content">
           <ErrorBoundary feature="app">
