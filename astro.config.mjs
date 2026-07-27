@@ -56,6 +56,9 @@ export default defineConfig({
         // them meanwhile would only earn "submitted URL marked noindex" in GSC.
         const isLegal = path in legalPaths || Object.values(legalPaths).includes(path);
         if (isLegal && !legalPagesArePublishable) return false;
+        // /us/* and /ca/* legal pages carry lawyer-facing placeholders (see legalContent.ts
+        // usOverrides/caOverrides) and stay out of the sitemap regardless of legal.json state.
+        if (path.startsWith('/us/') || path.startsWith('/ca/')) return false;
         return !page.includes('/app') && !page.endsWith('/sandbox') && !page.endsWith('/en/sandbox');
       },
       lastmod: new Date(),

@@ -1030,6 +1030,15 @@ footer > div {
   color: #d8bf94;
   background: #241f19;
 }
+[data-theme='dark'] .legal-document__jurisdiction a,
+[data-theme='dark'] .legal-document__jurisdiction-current {
+  border-color: #37322d;
+  color: #aaa29a;
+}
+[data-theme='dark'] .legal-document__jurisdiction-current {
+  color: var(--ink);
+  border-color: var(--champagne-gold);
+}
 [data-theme='dark'] .sandbox-profile-card--protective {
   background: linear-gradient(145deg, #211f1c, #171513);
 }
@@ -1191,6 +1200,36 @@ footer > div {
   width: min(760px, calc(100% - 48px));
   margin: 0 auto;
   padding: 72px 0 112px;
+}
+.legal-document__jurisdiction {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 22px;
+  font-size: 0.82rem;
+}
+.legal-document__jurisdiction span:first-child {
+  color: #8c837a;
+}
+.legal-document__jurisdiction a,
+.legal-document__jurisdiction-current {
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #625c54;
+  border: 1px solid #d9d0c5;
+}
+.legal-document__jurisdiction a {
+  text-decoration: none;
+}
+.legal-document__jurisdiction a:hover {
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.legal-document__jurisdiction-current {
+  color: #29251f;
+  border-color: #29251f;
+  font-weight: 600;
 }
 .legal-document__header {
   padding-bottom: 34px;
