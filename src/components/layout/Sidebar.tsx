@@ -23,6 +23,7 @@ import {
 } from '@/components/icons';
 import { PlanNameModal } from '@/features/settings/PlanNameModal';
 import { AuthMenu } from '@/features/auth/AuthMenu';
+import { LastSavedBadge } from '@/components/layout/LastSavedBadge';
 import { useSession } from '@/lib/authClient';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -439,6 +440,7 @@ export const Sidebar = ({
           </>
         )}
 
+        {!effectiveCollapsed && <LastSavedBadge />}
         <AuthMenu />
       </aside>
 
