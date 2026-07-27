@@ -2,19 +2,36 @@
 import MarketingFooter from '../components/MarketingFooter.astro';
 import MarketingHeader from '../components/MarketingHeader.astro';
 import { LEGAL_IDENTITY, isLegalIdentityComplete } from '../config/legal';
-import { LEGAL_PATHS, legalDocument, type LegalPage } from '../config/legalContent';
+import { LEGAL_PATHS, legalDocument, type LegalPage, type LegalRegion } from '../config/legalContent';
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 
-const { lang, page } = Astro.props as { lang: 'fr' | 'en'; page: LegalPage };
+const { lang, page, region = lang } = Astro.props as {
+  lang: 'fr' | 'en';
+  page: LegalPage;
+  /** Which jurisdiction's document to render. Defaults to `lang` (fr/en both mean French jurisdiction). */
+  region?: LegalRegion;
+};
 const isFr = lang === 'fr';
 
-const copy = legalDocument(lang, page);
-const currentPath = LEGAL_PATHS[page][isFr ? 'fr' : 'en'];
+const copy = legalDocument(region, page);
+const currentPath = LEGAL_PATHS[page][region] ?? LEGAL_PATHS[page][isFr ? 'fr' : 'en'];
+// The header's EN/FR toggle only ever switches language within French jurisdiction; from a
+// us/ca page it goes back to the English French-jurisdiction version, not a translated us/ca page.
 const alternatePath = LEGAL_PATHS[page][isFr ? 'en' : 'fr'];
 
+const jurisdictionLinks = [
+  { code: 'fr' as const, label: 'France', href: LEGAL_PATHS[page][isFr ? 'fr' : 'en'] },
+  ...(LEGAL_PATHS[page].us ? [{ code: 'us' as const, label: 'United States', href: LEGAL_PATHS[page].us! }] : []),
+  ...(LEGAL_PATHS[page].ca ? [{ code: 'ca' as const, label: 'Canada', href: LEGAL_PATHS[page].ca! }] : []),
+];
+const currentJurisdiction = region === 'en' ? 'fr' : region;
+
 // An unfinished document must never be indexed: it would rank on the operator's
-// own name while still showing `[à compléter]` markers.
-const publishable = isLegalIdentityComplete();
+// own name while still showing `[à compléter]` markers. us/ca documents additionally
+// carry lawyer-facing `[To be finalized by counsel: …]` placeholders and must stay
+// unpublishable regardless of legal.json completeness until those are resolved.
+const isPlaceholderJurisdiction = region === 'us' || region === 'ca';
+const publishable = isLegalIdentityComplete() && !isPlaceholderJurisdiction;
 
 const effectiveDate = new Date(`${LEGAL_IDENTITY.effectiveDate}T00:00:00Z`).toLocaleDateString(
   isFr ? 'fr-FR' : 'en-GB',
@@ -35,6 +52,18 @@ const effectiveDate = new Date(`${LEGAL_IDENTITY.effectiveDate}T00:00:00Z`).toLo
   <MarketingHeader {lang} alternatePath={alternatePath} />
   <main class="legal-document">
     <article>
+      {jurisdictionLinks.length > 1 && (
+        <nav class="legal-document__jurisdiction" aria-label={isFr ? 'Juridiction' : 'Jurisdiction'}>
+          <span>{isFr ? 'Version applicable :' : 'You are viewing:'}</span>
+          {jurisdictionLinks.map((link) =>
+            link.code === currentJurisdiction ? (
+              <span class="legal-document__jurisdiction-current" aria-current="true">{link.label}</span>
+            ) : (
+              <a href={link.href}>{link.label}</a>
+            ),
+          )}
+        </nav>
+      )}
       <header class="legal-document__header">
         <p>{copy.eyebrow}</p>
         <h1>{copy.heading}</h1>
@@ -45,9 +74,11 @@ const effectiveDate = new Date(`${LEGAL_IDENTITY.effectiveDate}T00:00:00Z`).toLo
       </header>
       {!publishable && (
         <aside class="legal-document__draft">
-          {isFr
-            ? 'Brouillon : les informations entre crochets doivent être renseignées dans src/config/legal.json avant publication. Cette page reste en noindex et hors sitemap tant qu’elles manquent.'
-            : 'Draft: the bracketed details must be filled in src/config/legal.json before publishing. This page stays noindex and out of the sitemap until they are.'}
+          {isPlaceholderJurisdiction
+            ? 'Draft: sections marked "[To be finalized by counsel: …]" must be drafted by a qualified lawyer for this jurisdiction before publishing. This page stays noindex and out of the sitemap until they are.'
+            : isFr
+              ? 'Brouillon : les informations entre crochets doivent être renseignées dans src/config/legal.json avant publication. Cette page reste en noindex et hors sitemap tant qu’elles manquent.'
+              : 'Draft: the bracketed details must be filled in src/config/legal.json before publishing. This page stays noindex and out of the sitemap until they are.'}
         </aside>
       )}
       <div class="legal-document__content">

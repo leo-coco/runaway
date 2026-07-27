@@ -17,12 +17,22 @@ export interface LegalDocument {
   sections: LegalSection[];
 }
 
-export const LEGAL_PATHS: Record<LegalPage, { fr: string; en: string }> = {
-  privacy: { fr: '/confidentialite', en: '/en/privacy' },
-  'legal-notice': { fr: '/mentions-legales', en: '/en/legal-notice' },
-  terms: { fr: '/conditions-utilisation', en: '/en/terms' },
-  'sales-terms': { fr: '/conditions-vente', en: '/en/sales-terms' },
-};
+/** A routable legal variant: `fr`/`en` share French jurisdiction, `us`/`ca` are separate jurisdictions (English only for now). */
+export type LegalRegion = 'fr' | 'en' | 'us' | 'ca';
+
+export const LEGAL_PATHS: Record<LegalPage, { fr: string; en: string; us?: string; ca?: string }> =
+  {
+    privacy: { fr: '/confidentialite', en: '/en/privacy', us: '/us/privacy', ca: '/ca/privacy' },
+    // Mentions légales is a French-law concept (art. 6 III LCEN) with no US/Canada equivalent, so it has no us/ca variant.
+    'legal-notice': { fr: '/mentions-legales', en: '/en/legal-notice' },
+    terms: { fr: '/conditions-utilisation', en: '/en/terms', us: '/us/terms', ca: '/ca/terms' },
+    'sales-terms': {
+      fr: '/conditions-vente',
+      en: '/en/sales-terms',
+      us: '/us/sales-terms',
+      ca: '/ca/sales-terms',
+    },
+  };
 
 const p = (text: string): LegalBlock => ({ p: text });
 const ul = (items: string[]): LegalBlock => ({ ul: items });
@@ -1090,5 +1100,255 @@ const enDocuments = (): Record<LegalPage, LegalDocument> => {
   };
 };
 
-export const legalDocument = (lang: 'fr' | 'en', page: LegalPage): LegalDocument =>
-  (lang === 'fr' ? frDocuments() : enDocuments())[page];
+/** Marks prose that a lawyer must draft before a us/ca legal page can be published. */
+const todo = (topic: string): string => `[To be finalized by counsel: ${topic}.]`;
+
+const overrideSections = (
+  doc: LegalDocument,
+  overrides: Record<string, LegalSection>,
+): LegalDocument => ({
+  ...doc,
+  sections: doc.sections.map((section) => overrides[section.title] ?? section),
+});
+
+type SectionOverrides = Partial<Record<LegalPage, Record<string, LegalSection>>>;
+
+const usOverrides = (privacyEmail: string): SectionOverrides => ({
+  privacy: {
+    'Transfers outside the European Union': {
+      title: 'Cross-border data transfers',
+      blocks: [
+        p(
+          'The operator and several of its providers are established in France and the European Union, so your data may be processed there.',
+        ),
+        p(todo('cross-border transfer disclosure required under applicable US state privacy law')),
+      ],
+    },
+    'Your rights': {
+      title: 'Your privacy rights',
+      blocks: [
+        p(
+          'Depending on your state of residence, applicable state privacy law (for example the California Consumer Privacy Act as amended by the CPRA) may give you rights to know, access, correct, delete or limit the use of your personal information, and to opt out of certain disclosures.',
+        ),
+        p(
+          todo(
+            'state-by-state rights matrix, opt-out / "Do Not Sell or Share" mechanism, and authorized-agent process',
+          ),
+        ),
+        p(`To exercise these rights, write to ${privacyEmail}.`),
+      ],
+    },
+  },
+  terms: {
+    'No personalized advice': {
+      title: 'No personalized advice',
+      blocks: [
+        p(
+          'Runaway provides no investment advice, no personalized recommendation, and no tax, legal or wealth-management advice. The operator is not registered as an investment adviser with the SEC or any state securities regulator and carries out no regulated activity of that kind.',
+        ),
+        p(
+          todo(
+            'confirmation that the tool and its marketing do not trigger investment-adviser registration under the Investment Advisers Act of 1940 or state equivalents',
+          ),
+        ),
+      ],
+    },
+    'Governing law and disputes': {
+      title: 'Governing law and disputes',
+      blocks: [
+        p(
+          todo(
+            'choice of governing state law and venue, and whether an arbitration / class-action-waiver clause applies',
+          ),
+        ),
+      ],
+    },
+  },
+  'sales-terms': {
+    'Prices and taxes': {
+      title: 'Prices and taxes',
+      blocks: [
+        p(
+          'Prices are shown on the order page, in the currency displayed there. The total amount payable is shown before the order is finally confirmed.',
+        ),
+        p(
+          todo(
+            'applicable US sales tax treatment by state, and whether tax is collected at checkout',
+          ),
+        ),
+      ],
+    },
+    'Term, renewal and cancellation': {
+      title: 'Term, renewal and cancellation',
+      blocks: [
+        p(
+          'The subscription runs for the period displayed at checkout and renews automatically for identical periods until cancelled. You can cancel at any time from the billing portal available in your account; cancellation takes effect at the end of the current period.',
+        ),
+        p(
+          todo(
+            'state auto-renewal disclosure requirements (e.g. California) and any required reminder notice',
+          ),
+        ),
+      ],
+    },
+    'Right of withdrawal': {
+      title: 'Cancellation and refunds',
+      blocks: [
+        p(
+          todo(
+            'there is no federal cooling-off right for digital subscriptions in the US; confirm the refund policy and any state-specific right (e.g. California, New York) before publishing',
+          ),
+        ),
+      ],
+    },
+    'Legal guarantees': {
+      title: 'Legal guarantees',
+      blocks: [
+        p(
+          todo(
+            'applicable US warranty framework (e.g. Magnuson-Moss Warranty Act, UCC as adopted by the relevant state) to replace the French legal-guarantee references',
+          ),
+        ),
+      ],
+    },
+    'Mediation and disputes': {
+      title: 'Disputes',
+      blocks: [
+        p(
+          todo(
+            'US dispute-resolution clause: governing state law, venue, and arbitration / class-action waiver, if any; the French consumer mediator and EU ODR platform do not apply here',
+          ),
+        ),
+      ],
+    },
+  },
+});
+
+const caOverrides = (privacyEmail: string): SectionOverrides => ({
+  privacy: {
+    'Transfers outside the European Union': {
+      title: 'Cross-border data transfers',
+      blocks: [
+        p(
+          'The operator and several of its providers are established in France and the European Union, so your data may be processed there.',
+        ),
+        p(
+          todo(
+            'cross-border transfer disclosure required under PIPEDA and, for Quebec residents, Law 25',
+          ),
+        ),
+      ],
+    },
+    'Your rights': {
+      title: 'Your privacy rights',
+      blocks: [
+        p(
+          'Under the Personal Information Protection and Electronic Documents Act (PIPEDA) and, for Quebec residents, the Act respecting the protection of personal information in the private sector (Law 25), you have rights to access and correct your personal information and to file a complaint with the applicable privacy regulator.',
+        ),
+        p(
+          todo(
+            'Law 25 requirements specific to Quebec residents (privacy officer designation, incident register, French-language notice) and the federal/Quebec complaint channels',
+          ),
+        ),
+        p(`To exercise these rights, write to ${privacyEmail}.`),
+      ],
+    },
+  },
+  terms: {
+    'No personalized advice': {
+      title: 'No personalized advice',
+      blocks: [
+        p(
+          'Runaway provides no investment advice, no personalized recommendation, and no tax, legal or wealth-management advice. The operator is not registered as an adviser with any Canadian securities regulator and carries out no regulated activity of that kind.',
+        ),
+        p(
+          todo(
+            'confirmation that the tool and its marketing do not trigger adviser/dealer registration under applicable provincial securities acts',
+          ),
+        ),
+      ],
+    },
+    'Governing law and disputes': {
+      title: 'Governing law and disputes',
+      blocks: [p(todo('choice of governing provincial law and venue'))],
+    },
+  },
+  'sales-terms': {
+    'Prices and taxes': {
+      title: 'Prices and taxes',
+      blocks: [
+        p(
+          'Prices are shown on the order page, in the currency displayed there. The total amount payable is shown before the order is finally confirmed.',
+        ),
+        p(
+          todo(
+            'applicable GST/HST/QST treatment by province, and whether tax is collected at checkout',
+          ),
+        ),
+      ],
+    },
+    'Term, renewal and cancellation': {
+      title: 'Term, renewal and cancellation',
+      blocks: [
+        p(
+          'The subscription runs for the period displayed at checkout and renews automatically for identical periods until cancelled. You can cancel at any time from the billing portal available in your account; cancellation takes effect at the end of the current period.',
+        ),
+        p(
+          todo(
+            'provincial auto-renewal disclosure requirements, in particular Quebec’s Consumer Protection Act rules on negative-option billing',
+          ),
+        ),
+      ],
+    },
+    'Right of withdrawal': {
+      title: 'Cancellation and refunds',
+      blocks: [
+        p(
+          todo(
+            'applicable provincial cancellation/cooling-off right for digital subscriptions, if any (varies by province; Quebec has specific distance-contract rules)',
+          ),
+        ),
+      ],
+    },
+    'Legal guarantees': {
+      title: 'Legal guarantees',
+      blocks: [
+        p(
+          todo(
+            'applicable provincial consumer-protection and sale-of-goods warranty framework to replace the French legal-guarantee references',
+          ),
+        ),
+      ],
+    },
+    'Mediation and disputes': {
+      title: 'Disputes',
+      blocks: [
+        p(
+          todo(
+            'Canadian/provincial dispute-resolution clause; the French consumer mediator and EU ODR platform do not apply here',
+          ),
+        ),
+      ],
+    },
+  },
+});
+
+const jurisdictionDocuments = (region: 'us' | 'ca'): Record<LegalPage, LegalDocument> => {
+  const base = enDocuments();
+  const privacyEmail = legalField(LEGAL_IDENTITY.privacyEmail, 'en', 'privacy email');
+  const overrides = region === 'us' ? usOverrides(privacyEmail) : caOverrides(privacyEmail);
+  const apply = (page: LegalPage): LegalDocument =>
+    overrides[page] ? overrideSections(base[page], overrides[page]!) : base[page];
+  return {
+    privacy: apply('privacy'),
+    'legal-notice': base['legal-notice'],
+    terms: apply('terms'),
+    'sales-terms': apply('sales-terms'),
+  };
+};
+
+export const legalDocument = (region: LegalRegion, page: LegalPage): LegalDocument => {
+  if (region === 'fr') return frDocuments()[page];
+  if (region === 'en') return enDocuments()[page];
+  return jurisdictionDocuments(region)[page];
+};
