@@ -1100,8 +1100,15 @@ const enDocuments = (): Record<LegalPage, LegalDocument> => {
   };
 };
 
-/** Marks prose that a lawyer must draft before a us/ca legal page can be published. */
-const todo = (topic: string): string => `[To be finalized by counsel: ${topic}.]`;
+/**
+ * Wraps a plausible starting clause with a visible "not reviewed" flag. These pages stay
+ * noindex and out of the sitemap unconditionally for region 'us'/'ca' (see
+ * LegalMarketingPage.astro's isPlaceholderJurisdiction), regardless of this text, so drafting
+ * here does not risk publishing unreviewed legal content — but the text must still say so
+ * plainly, since a human reading the page source has no other signal that it is a draft.
+ */
+const draft = (text: string): string =>
+  `${text} [DRAFT — not reviewed by a lawyer for this jurisdiction; confirm before publishing.]`;
 
 const overrideSections = (
   doc: LegalDocument,
@@ -1121,7 +1128,11 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
         p(
           'The operator and several of its providers are established in France and the European Union, so your data may be processed there.',
         ),
-        p(todo('cross-border transfer disclosure required under applicable US state privacy law')),
+        p(
+          draft(
+            'For certain providers listed in the privacy policy, your data may also be processed in the United States. None of these transfers involve a sale or sharing of personal information for cross-context behavioral advertising, and each provider processes data only on the operator’s instructions.',
+          ),
+        ),
       ],
     },
     'Your rights': {
@@ -1131,8 +1142,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
           'Depending on your state of residence, applicable state privacy law (for example the California Consumer Privacy Act as amended by the CPRA) may give you rights to know, access, correct, delete or limit the use of your personal information, and to opt out of certain disclosures.',
         ),
         p(
-          todo(
-            'state-by-state rights matrix, opt-out / "Do Not Sell or Share" mechanism, and authorized-agent process',
+          draft(
+            'You may have the right to know what personal information is collected and how it is used, to access a copy of it, to correct inaccuracies, to delete it, to limit the use of sensitive personal information, and to opt out of the sale or sharing of personal information for cross-context behavioral advertising. Runaway does not sell or share personal information as those terms are defined by the CCPA/CPRA, so no "Do Not Sell or Share My Personal Information" link is provided. You may exercise these rights yourself or through an authorized agent who provides written proof of authorization; the operator may ask you to verify your identity directly where there is serious doubt about a request.',
           ),
         ),
         p(`To exercise these rights, write to ${privacyEmail}.`),
@@ -1147,8 +1158,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
           'Runaway provides no investment advice, no personalized recommendation, and no tax, legal or wealth-management advice. The operator is not registered as an investment adviser with the SEC or any state securities regulator and carries out no regulated activity of that kind.',
         ),
         p(
-          todo(
-            'confirmation that the tool and its marketing do not trigger investment-adviser registration under the Investment Advisers Act of 1940 or state equivalents',
+          draft(
+            'Based on the nature of the service — a general-purpose, self-directed simulation tool that gives no personalized recommendation and receives no compensation tied to any investment outcome — the operator does not consider that operating Runaway requires registration as an investment adviser under the Investment Advisers Act of 1940 or equivalent state statutes. This should be reconfirmed if the service later adds features closer to personalized advice.',
           ),
         ),
       ],
@@ -1157,8 +1168,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Governing law and disputes',
       blocks: [
         p(
-          todo(
-            'choice of governing state law and venue, and whether an arbitration / class-action-waiver clause applies',
+          draft(
+            'These terms are governed by the laws of France. Any dispute is submitted to the courts having jurisdiction over the operator’s registered address, without prejudice to any mandatory consumer-protection provision of your state of residence that cannot be displaced by this choice of law. These terms include no arbitration clause and no class-action waiver.',
           ),
         ),
       ],
@@ -1172,8 +1183,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
           'Prices are shown on the order page, in the currency displayed there. The total amount payable is shown before the order is finally confirmed.',
         ),
         p(
-          todo(
-            'applicable US sales tax treatment by state, and whether tax is collected at checkout',
+          draft(
+            'The operator does not currently collect US sales, use or similar transaction tax. This reflects the absence of a US registration or physical presence, not a conclusion that no state has established economic nexus over these sales; the position should be reassessed as US revenue grows, against each state’s economic-nexus thresholds for remote sellers of digital services.',
           ),
         ),
       ],
@@ -1185,8 +1196,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
           'The subscription runs for the period displayed at checkout and renews automatically for identical periods until cancelled. You can cancel at any time from the billing portal available in your account; cancellation takes effect at the end of the current period.',
         ),
         p(
-          todo(
-            'state auto-renewal disclosure requirements (e.g. California) and any required reminder notice',
+          draft(
+            'Several states, including California, Vermont and Illinois, impose specific disclosure and reminder requirements for automatically renewing consumer subscriptions. The recurring nature of the subscription is disclosed at checkout and a self-service cancellation path is available in the billing portal at all times; state-specific notice-timing requirements have not been individually verified for every state.',
           ),
         ),
       ],
@@ -1195,8 +1206,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Cancellation and refunds',
       blocks: [
         p(
-          todo(
-            'there is no federal cooling-off right for digital subscriptions in the US; confirm the refund policy and any state-specific right (e.g. California, New York) before publishing',
+          draft(
+            'US law does not provide a general cooling-off right for digital subscriptions delivered immediately. [Operator’s refund policy to be stated here — e.g. no refund outside of billing errors, or a stated goodwill refund window.] Some states, for example New York, impose specific cancellation mechanics for automatically renewing consumer contracts that may go beyond this general policy and have not been individually checked.',
           ),
         ),
       ],
@@ -1205,8 +1216,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Legal guarantees',
       blocks: [
         p(
-          todo(
-            'applicable US warranty framework (e.g. Magnuson-Moss Warranty Act, UCC as adopted by the relevant state) to replace the French legal-guarantee references',
+          draft(
+            'Premium is a digital service, not a good, so the implied-warranty provisions of the Uniform Commercial Code as adopted by the various states generally do not apply to it. State consumer-protection statutes prohibiting unfair or deceptive trade practices may still apply. Except as required by law, the service is provided without warranty of uninterrupted or error-free operation.',
           ),
         ),
       ],
@@ -1215,8 +1226,8 @@ const usOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Disputes',
       blocks: [
         p(
-          todo(
-            'US dispute-resolution clause: governing state law, venue, and arbitration / class-action waiver, if any; the French consumer mediator and EU ODR platform do not apply here',
+          draft(
+            'These terms are governed by the laws of France; the French consumer mediator and the EU online dispute resolution platform described above are not available to US residents. No arbitration clause or alternative dispute-resolution scheme is currently designated for US customers; disputes are resolved before the courts having jurisdiction over the operator’s registered address, without prejudice to any consumer-protection right that cannot be displaced by this choice of law.',
           ),
         ),
       ],
@@ -1233,8 +1244,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
           'The operator and several of its providers are established in France and the European Union, so your data may be processed there.',
         ),
         p(
-          todo(
-            'cross-border transfer disclosure required under PIPEDA and, for Quebec residents, Law 25',
+          draft(
+            'For certain providers listed in the privacy policy, your data may also be processed in the United States. Under PIPEDA, the operator remains accountable for this data and requires its processors, by contract, to provide a level of protection comparable to what Canadian law requires, including the technical safeguards described above (encryption at rest).',
           ),
         ),
       ],
@@ -1246,8 +1257,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
           'Under the Personal Information Protection and Electronic Documents Act (PIPEDA) and, for Quebec residents, the Act respecting the protection of personal information in the private sector (Law 25), you have rights to access and correct your personal information and to file a complaint with the applicable privacy regulator.',
         ),
         p(
-          todo(
-            'Law 25 requirements specific to Quebec residents (privacy officer designation, incident register, French-language notice) and the federal/Quebec complaint channels',
+          draft(
+            'As a sole proprietor, the operator personally acts as the person in charge of the protection of personal information required by Law 25, unless a delegate is later designated, and maintains a register of confidentiality incidents as required by that Act. Quebec residents are entitled to receive this notice in French; until a dedicated French-language Canadian version of this page exists, a French translation is available on request to the address below. Quebec residents may also file a complaint with the Commission d’accès à l’information du Québec; residents of other provinces may complain to the Office of the Privacy Commissioner of Canada.',
           ),
         ),
         p(`To exercise these rights, write to ${privacyEmail}.`),
@@ -1262,15 +1273,21 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
           'Runaway provides no investment advice, no personalized recommendation, and no tax, legal or wealth-management advice. The operator is not registered as an adviser with any Canadian securities regulator and carries out no regulated activity of that kind.',
         ),
         p(
-          todo(
-            'confirmation that the tool and its marketing do not trigger adviser/dealer registration under applicable provincial securities acts',
+          draft(
+            'Based on the nature of the service — a general-purpose, self-directed simulation tool that gives no personalized recommendation and receives no compensation tied to any investment outcome — the operator does not consider that operating Runaway requires registration as an adviser or dealer under National Instrument 31-103 or any provincial securities act. This should be reconfirmed if the service later adds features closer to personalized advice.',
           ),
         ),
       ],
     },
     'Governing law and disputes': {
       title: 'Governing law and disputes',
-      blocks: [p(todo('choice of governing provincial law and venue'))],
+      blocks: [
+        p(
+          draft(
+            'These terms are governed by the laws of France. Any dispute is submitted to the courts having jurisdiction over the operator’s registered address, without prejudice to any mandatory consumer-protection provision of your province of residence — in particular Quebec’s Consumer Protection Act — that cannot be displaced by this choice of law.',
+          ),
+        ),
+      ],
     },
   },
   'sales-terms': {
@@ -1281,8 +1298,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
           'Prices are shown on the order page, in the currency displayed there. The total amount payable is shown before the order is finally confirmed.',
         ),
         p(
-          todo(
-            'applicable GST/HST/QST treatment by province, and whether tax is collected at checkout',
+          draft(
+            'The operator does not currently collect GST/HST, QST or other Canadian sales tax. Canada’s simplified GST/HST registration regime requires non-resident vendors of digital services to register and collect tax once taxable supplies to Canadian consumers exceed CAD 30,000 over 12 months; this threshold, and equivalent provincial thresholds such as Quebec’s QST regime for non-residents, should be monitored as Canadian revenue grows.',
           ),
         ),
       ],
@@ -1294,8 +1311,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
           'The subscription runs for the period displayed at checkout and renews automatically for identical periods until cancelled. You can cancel at any time from the billing portal available in your account; cancellation takes effect at the end of the current period.',
         ),
         p(
-          todo(
-            'provincial auto-renewal disclosure requirements, in particular Quebec’s Consumer Protection Act rules on negative-option billing',
+          draft(
+            'Quebec’s Consumer Protection Act imposes specific consent and disclosure requirements for contracts with automatic renewal (negative-option billing), including clear disclosure of the renewal terms and, in some cases, a reminder notice before renewal. The recurring nature of the subscription is disclosed at checkout and a self-service cancellation path is available in the billing portal at all times; the specific Quebec notice-timing requirements have not been individually verified.',
           ),
         ),
       ],
@@ -1304,8 +1321,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Cancellation and refunds',
       blocks: [
         p(
-          todo(
-            'applicable provincial cancellation/cooling-off right for digital subscriptions, if any (varies by province; Quebec has specific distance-contract rules)',
+          draft(
+            'Canadian federal law does not provide a general cooling-off right for digital subscriptions delivered immediately. [Operator’s refund policy to be stated here.] Quebec’s Consumer Protection Act gives consumers a right to cancel certain contracts entered at a distance within specific timeframes; whether and how that right applies to an immediately-delivered digital subscription has not been individually confirmed.',
           ),
         ),
       ],
@@ -1314,8 +1331,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Legal guarantees',
       blocks: [
         p(
-          todo(
-            'applicable provincial consumer-protection and sale-of-goods warranty framework to replace the French legal-guarantee references',
+          draft(
+            'Premium is a digital service, not a good, so provincial sale-of-goods warranty statutes generally do not apply to it in the same way. Quebec’s Consumer Protection Act nonetheless implies a warranty that services sold conform to representations made and are fit for their intended purpose; other provinces have comparable consumer-protection warranties. Except as required by law, the service is provided without warranty of uninterrupted or error-free operation.',
           ),
         ),
       ],
@@ -1324,8 +1341,8 @@ const caOverrides = (privacyEmail: string): SectionOverrides => ({
       title: 'Disputes',
       blocks: [
         p(
-          todo(
-            'Canadian/provincial dispute-resolution clause; the French consumer mediator and EU ODR platform do not apply here',
+          draft(
+            'These terms are governed by the laws of France; the French consumer mediator and the EU online dispute resolution platform described above are not available to Canadian residents. Quebec residents may bring complaints to the Office de la protection du consommateur. No arbitration clause is currently designated for Canadian customers; disputes are resolved before the courts having jurisdiction over the operator’s registered address, without prejudice to any consumer-protection right that cannot be displaced by this choice of law.',
           ),
         ),
       ],

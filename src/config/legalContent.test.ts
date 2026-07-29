@@ -37,6 +37,12 @@ describe('legal identity', () => {
     ).toBe(false);
   });
 
+  it('is publishable without a mediator when requireMediator is false', () => {
+    const noMediator = { ...filledIdentity, mediator: { name: '', address: '', url: '' } };
+    expect(isLegalIdentityComplete(noMediator)).toBe(false);
+    expect(isLegalIdentityComplete(noMediator, { requireMediator: false })).toBe(true);
+  });
+
   it('marks empty fields instead of rendering an empty string', () => {
     expect(legalField('', 'fr', 'numéro SIREN')).toBe('[à compléter : numéro SIREN]');
     expect(legalField('', 'en', 'SIREN number')).toBe('[to complete: SIREN number]');

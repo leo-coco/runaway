@@ -1,13 +1,13 @@
 {
-  "legalName": "",
-  "address": "",
-  "siren": "",
-  "publicationDirector": "",
-  "contactEmail": "",
-  "privacyEmail": "",
-  "supportEmail": "",
+  "legalName": "Octet Libre",
+  "address": "83470 Saint Maximin La Sainte Beaume, France",
+  "siren": "849 005 237",
+  "publicationDirector": "Leo Clipet",
+  "contactEmail": "hello@runaway.money",
+  "privacyEmail": "hello@runaway.money",
+  "supportEmail": "hello@runaway.money",
   "vatNumber": "",
   "mediator": { "name": "", "address": "", "url": "" },
-  "hosting": { "name": "Vercel Inc.", "address": "", "phone": "" },
+  "hosting": { "name": "Vercel Inc.", "address": "440 N Barranca Avenue #4133, Covina, CA 91723, United States", "phone": "N/A" },
   "effectiveDate": "2026-07-21"
 }
