@@ -204,7 +204,10 @@ const probeAllocation = async (symbol: string): Promise<AllocationProbe> => {
     return hasNoComposition(allocation) ? { kind: 'empty' } : { kind: 'data', allocation };
   } catch (cause) {
     if (isYahooThrottle(cause)) throw cause;
-    return { kind: 'error', cause: new Error(NO_FUNDAMENTALS, { cause }) };
+    return {
+      kind: 'error',
+      cause: Object.assign(new Error(NO_FUNDAMENTALS), { cause }),
+    };
   }
 };
 
