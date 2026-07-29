@@ -31,7 +31,9 @@ const currentJurisdiction = region === 'en' ? 'fr' : region;
 // carry lawyer-facing `[To be finalized by counsel: …]` placeholders and must stay
 // unpublishable regardless of legal.json completeness until those are resolved.
 const isPlaceholderJurisdiction = region === 'us' || region === 'ca';
-const publishable = isLegalIdentityComplete() && !isPlaceholderJurisdiction;
+const publishable =
+  isLegalIdentityComplete(LEGAL_IDENTITY, { requireMediator: page === 'sales-terms' }) &&
+  !isPlaceholderJurisdiction;
 
 const effectiveDate = new Date(`${LEGAL_IDENTITY.effectiveDate}T00:00:00Z`).toLocaleDateString(
   isFr ? 'fr-FR' : 'en-GB',
@@ -75,7 +77,7 @@ const effectiveDate = new Date(`${LEGAL_IDENTITY.effectiveDate}T00:00:00Z`).toLo
       {!publishable && (
         <aside class="legal-document__draft">
           {isPlaceholderJurisdiction
-            ? 'Draft: sections marked "[To be finalized by counsel: …]" must be drafted by a qualified lawyer for this jurisdiction before publishing. This page stays noindex and out of the sitemap until they are.'
+            ? 'Draft: sections marked "[DRAFT — not reviewed by a lawyer…]" must be reviewed by a qualified lawyer for this jurisdiction before publishing. This page stays noindex and out of the sitemap until they are.'
             : isFr
               ? 'Brouillon : les informations entre crochets doivent être renseignées dans src/config/legal.json avant publication. Cette page reste en noindex et hors sitemap tant qu’elles manquent.'
               : 'Draft: the bracketed details must be filled in src/config/legal.json before publishing. This page stays noindex and out of the sitemap until they are.'}

@@ -42,13 +42,24 @@ export const LEGAL_IDENTITY: LegalIdentity = identity;
  * Completeness rule, mirrored in `astro.config.mjs`: every string in the file
  * must be filled except `vatNumber`, since staying under the art. 293 B CGI
  * exemption is a valid final state the sales terms state explicitly.
+ *
+ * `mediator` is excluded unless `requireMediator` is set: of the four legal pages,
+ * only the sales terms actually interpolate the mediator's name/address/url (see
+ * legalContent.ts's "Médiation et litiges" / "Mediation and disputes" section) —
+ * the other pages only forward-reference it in prose. Subscribing to a consumer
+ * mediator (art. L616-1 C. conso.) is a real recurring commitment the operator
+ * only needs once consumer sales exist, so the legal notice, privacy policy and
+ * terms of use can publish without it.
  */
 const flatten = (value: LegalIdentity[keyof LegalIdentity]): string[] =>
   typeof value === 'string' ? [value] : Object.values(value);
 
-export const isLegalIdentityComplete = (identity: LegalIdentity = LEGAL_IDENTITY): boolean =>
+export const isLegalIdentityComplete = (
+  identity: LegalIdentity = LEGAL_IDENTITY,
+  { requireMediator = true }: { requireMediator?: boolean } = {},
+): boolean =>
   Object.entries(identity)
-    .filter(([key]) => key !== 'vatNumber')
+    .filter(([key]) => key !== 'vatNumber' && (requireMediator || key !== 'mediator'))
     .every(([, value]) => flatten(value).every((field) => field.trim().length > 0));
 
 /** Renders `value`, or a visible bracketed marker naming what is still missing. */

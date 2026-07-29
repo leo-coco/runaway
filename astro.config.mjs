@@ -9,20 +9,28 @@ const legalIdentity = JSON.parse(
   readFileSync(new URL('./src/config/legal.json', import.meta.url), 'utf8'),
 );
 
-/** Mirrors `isLegalIdentityComplete` in src/config/legal.ts — keep the two in sync. */
-const legalPagesArePublishable = Object.entries(legalIdentity).every(([key, value]) =>
-  key === 'vatNumber'
-    ? true
-    : typeof value === 'string'
-      ? value.trim().length > 0
-      : Object.values(value).every((nested) => nested.trim().length > 0),
-);
-
 const legalPaths = {
   '/confidentialite': '/en/privacy',
   '/mentions-legales': '/en/legal-notice',
   '/conditions-utilisation': '/en/terms',
   '/conditions-vente': '/en/sales-terms',
+};
+
+// Only the sales terms interpolate the mediator's name/address/url (see
+// legalContent.ts's "Médiation et litiges" section) — the other legal pages just
+// forward-reference it in prose, so they don't need a mediator subscription to publish.
+const SALES_TERMS_PATHS = new Set(['/conditions-vente', '/en/sales-terms']);
+
+/** Mirrors `isLegalIdentityComplete` in src/config/legal.ts — keep the two in sync. */
+const legalPagesArePublishable = (path) => {
+  const requireMediator = SALES_TERMS_PATHS.has(path);
+  return Object.entries(legalIdentity).every(([key, value]) => {
+    if (key === 'vatNumber') return true;
+    if (key === 'mediator' && !requireMediator) return true;
+    return typeof value === 'string'
+      ? value.trim().length > 0
+      : Object.values(value).every((nested) => nested.trim().length > 0);
+  });
 };
 
 export default defineConfig({
@@ -55,7 +63,7 @@ export default defineConfig({
         // Legal pages ship noindex until src/config/legal.json is filled; listing
         // them meanwhile would only earn "submitted URL marked noindex" in GSC.
         const isLegal = path in legalPaths || Object.values(legalPaths).includes(path);
-        if (isLegal && !legalPagesArePublishable) return false;
+        if (isLegal && !legalPagesArePublishable(path)) return false;
         // /us/* and /ca/* legal pages carry lawyer-facing placeholders (see legalContent.ts
         // usOverrides/caOverrides) and stay out of the sitemap regardless of legal.json state.
         if (path.startsWith('/us/') || path.startsWith('/ca/')) return false;

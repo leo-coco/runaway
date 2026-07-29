@@ -111,7 +111,11 @@
       "Bash(curl -sI https://runaway.money)",
       "Bash(curl -sI https://www.runaway.money)",
       "Bash(grep -n \"^      [a-zA-Z]*: {$\" \"/Users/leococo/Claude/Projects/Retire Model/retire-on-model/src/i18n/fr.ts\")",
-      "Bash(awk -F'[: {]' '{print $7}')"
+      "Bash(awk -F'[: {]' '{print $7}')",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:www.economie.gouv.fr)",
+      "WebFetch(domain:sasmediationsolution-conso.fr)",
+      "Bash(curl -s http://localhost:4321/sitemap-0.xml)"
     ]
   }
 }
