@@ -24,7 +24,10 @@ vi.mock('../db/client.js', async () => {
 });
 
 const customersCreate = vi.fn();
-vi.mock('./stripe.js', () => ({ stripe: () => ({ customers: { create: customersCreate } }) }));
+const customersRetrieve = vi.fn();
+vi.mock('./stripe.js', () => ({
+  stripe: () => ({ customers: { create: customersCreate, retrieve: customersRetrieve } }),
+}));
 
 const { applySubscriptionState, priceIdForCheckout, getOrCreateCustomer, findUserIdByCustomer } =
   await import('./subscriptions.js');
@@ -57,6 +60,7 @@ const userRow = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   fakeDb.reset();
   customersCreate.mockReset();
+  customersRetrieve.mockReset();
   fakeDb.seed(userTable, [userRow()]);
 });
 
@@ -109,8 +113,35 @@ describe('getOrCreateCustomer', () => {
 
   it('reuses an existing customer without calling Stripe', async () => {
     fakeDb.seed(userTable, [userRow({ stripeCustomerId: 'cus_existing' })]);
+    customersRetrieve.mockResolvedValue({ id: 'cus_existing', deleted: false });
     const id = await getOrCreateCustomer({ id: 'user-1', email: 'user@example.com' });
     expect(id).toBe('cus_existing');
+    expect(customersCreate).not.toHaveBeenCalled();
+  });
+
+  it('replaces a customer left over from another Stripe environment', async () => {
+    fakeDb.seed(userTable, [
+      userRow({ stripeCustomerId: 'cus_test', stripeSubscriptionId: 'sub_test' }),
+    ]);
+    customersRetrieve.mockRejectedValue({ code: 'resource_missing' });
+    customersCreate.mockResolvedValue({ id: 'cus_live' });
+
+    const id = await getOrCreateCustomer({ id: 'user-1', email: 'user@example.com' });
+
+    expect(id).toBe('cus_live');
+    expect(fakeDb.rows(userTable)[0]).toMatchObject({
+      stripeCustomerId: 'cus_live',
+      stripeSubscriptionId: null,
+    });
+  });
+
+  it('does not replace a customer when Stripe fails for another reason', async () => {
+    fakeDb.seed(userTable, [userRow({ stripeCustomerId: 'cus_existing' })]);
+    customersRetrieve.mockRejectedValue({ code: 'api_connection_error' });
+
+    await expect(
+      getOrCreateCustomer({ id: 'user-1', email: 'user@example.com' }),
+    ).rejects.toMatchObject({ code: 'api_connection_error' });
     expect(customersCreate).not.toHaveBeenCalled();
   });
 });
