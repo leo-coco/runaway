@@ -41,9 +41,32 @@ export const findUserIdByCustomer = async (customerId: string): Promise<string |
   return row?.id ?? null;
 };
 
+const isMissingStripeResource = (cause: unknown): boolean =>
+  typeof cause === 'object' &&
+  cause !== null &&
+  'code' in cause &&
+  cause.code === 'resource_missing';
+
+const createAndStoreCustomer = async (appUser: { id: string; email: string }): Promise<string> => {
+  const customer = await stripe().customers.create({
+    email: appUser.email,
+    metadata: { userId: appUser.id },
+  });
+  await db
+    .update(userTable)
+    .set({
+      stripeCustomerId: customer.id,
+      stripeSubscriptionId: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(userTable.id, appUser.id));
+  return customer.id;
+};
+
 /**
- * Reuse the user's Stripe customer or create one, persisting the id. `metadata.userId`
- * lets webhook events map back to the user even before the row is written.
+ * Reuse the user's Stripe customer when it exists in the active Stripe environment,
+ * or create and persist one. A customer left over from Test mode is absent in Live,
+ * so replace only that exact missing resource instead of masking other Stripe errors.
  */
 export const getOrCreateCustomer = async (appUser: {
   id: string;
@@ -53,17 +76,17 @@ export const getOrCreateCustomer = async (appUser: {
     .select({ stripeCustomerId: userTable.stripeCustomerId })
     .from(userTable)
     .where(eq(userTable.id, appUser.id));
-  if (row?.stripeCustomerId) return row.stripeCustomerId;
 
-  const customer = await stripe().customers.create({
-    email: appUser.email,
-    metadata: { userId: appUser.id },
-  });
-  await db
-    .update(userTable)
-    .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
-    .where(eq(userTable.id, appUser.id));
-  return customer.id;
+  if (row?.stripeCustomerId) {
+    try {
+      const customer = await stripe().customers.retrieve(row.stripeCustomerId);
+      if (!customer.deleted) return customer.id;
+    } catch (cause) {
+      if (!isMissingStripeResource(cause)) throw cause;
+    }
+  }
+
+  return createAndStoreCustomer(appUser);
 };
 
 /**

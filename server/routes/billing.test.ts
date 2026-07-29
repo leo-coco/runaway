@@ -30,7 +30,7 @@ vi.mock('../auth.js', () => ({ auth: { api: { getSession } } }));
 vi.mock('../env.js', () => ({ serverEnv: () => ({ BETTER_AUTH_URL: 'http://localhost:5173' }) }));
 
 const stripeMock = {
-  customers: { create: vi.fn() },
+  customers: { create: vi.fn(), retrieve: vi.fn() },
   checkout: { sessions: { create: vi.fn() } },
   billingPortal: { sessions: { create: vi.fn() } },
   subscriptions: { retrieve: vi.fn() },
@@ -78,6 +78,7 @@ beforeEach(() => {
   fakeDb.reset();
   getSession.mockReset().mockResolvedValue({ user: session });
   stripeMock.customers.create.mockReset();
+  stripeMock.customers.retrieve.mockReset();
   stripeMock.checkout.sessions.create.mockReset();
   stripeMock.billingPortal.sessions.create.mockReset();
   stripeMock.subscriptions.retrieve.mockReset();
@@ -134,11 +135,30 @@ describe('POST /checkout', () => {
 
   it('reuses an existing customer', async () => {
     fakeDb.seed(userTable, [userRow({ stripeCustomerId: 'cus_existing' })]);
+    stripeMock.customers.retrieve.mockResolvedValue({ id: 'cus_existing', deleted: false });
     stripeMock.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe/x' });
 
     await post('/checkout');
     expect(stripeMock.customers.create).not.toHaveBeenCalled();
     expect(stripeMock.checkout.sessions.create.mock.calls[0]![0].customer).toBe('cus_existing');
+  });
+
+  it('replaces a Test customer before opening a Live checkout', async () => {
+    fakeDb.seed(userTable, [
+      userRow({ stripeCustomerId: 'cus_test', stripeSubscriptionId: 'sub_test' }),
+    ]);
+    stripeMock.customers.retrieve.mockRejectedValue({ code: 'resource_missing' });
+    stripeMock.customers.create.mockResolvedValue({ id: 'cus_live' });
+    stripeMock.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe/x' });
+
+    const res = await post('/checkout');
+
+    expect(res.status).toBe(200);
+    expect(stripeMock.checkout.sessions.create.mock.calls[0]![0].customer).toBe('cus_live');
+    expect(fakeDb.rows(userTable)[0]).toMatchObject({
+      stripeCustomerId: 'cus_live',
+      stripeSubscriptionId: null,
+    });
   });
 });
 
